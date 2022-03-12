@@ -7,19 +7,19 @@
 /* NOTE(dchu): Assumes that implicit conversion to int is legal. This is not
 to be used exernally, which is why it  is not in mem.h. */
 enum custom_error {
-    NULLPTR = -10, PTR2NULL = -11
+    PTR_IS_NULL = -10, PTR2NULL = -11
 };
 
 int mem_new(void **const p, const size_t size) {
-    /* Check for NULL passed in */
-    if (!p) {
-        return (int)NULLPTR;
-    }
-
     /* Check for unhandled errors. */
     if (errno) {
-        assert(!errno && "unhandled error before malloc.");
+        /* assert(!errno && "unhandled error before malloc."); */
         return errno;
+    }
+
+    /* Check for NULL passed in */
+    if (!p) {
+        return (int)PTR_IS_NULL;
     }
 
     if (!size) {    /* This is probably an error */
@@ -37,15 +37,15 @@ int mem_new(void **const p, const size_t size) {
 }
 
 int mem_del(void **const p) {
-    /* Check for NULL passed in */
-    if (!p) {
-        return (int)NULLPTR;
-    }
-
     /* Check for unhandled errors. */
     if (errno) {
-        assert(!errno && "unhandled error before free.");
+        /* assert(!errno && "unhandled error before free."); */
         return errno;
+    }
+
+    /* Check for NULL passed in */
+    if (!p) {
+        return (int)PTR_IS_NULL;
     }
 
     if (*p) {
@@ -60,15 +60,15 @@ int mem_del(void **const p) {
 int mem_resize(void **const p, const size_t size) {
     void *temp;
 
-    /* Check for NULL passed in */
-    if (!p) {
-        return (int)NULLPTR;
-    }
-
     /* Check for unhandled errors. */
     if (errno) {
-        assert(!errno && "unhandled error before malloc.");
+        /* assert(!errno && "unhandled error before malloc."); */
         return errno;
+    }
+
+    /* Check for NULL passed in */
+    if (!p) {
+        return (int)PTR_IS_NULL;
     }
 
     if (*p == NULL && !size) {  /* This is probably an error */

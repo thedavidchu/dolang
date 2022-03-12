@@ -50,6 +50,13 @@ bool test_mem(void) {
     TEST(mem_resize(NULL, -1), pass);
     TEST(!mem_resize(&p, 0) && p == NULL, pass);
     TEST(ENOMEM == mem_resize(&p, -1) && p == NULL, pass);
+    /* errno still set! */
+    TEST(ENOMEM == mem_resize(NULL, 0), pass);   /* Pass in NULL ptr => error*/
+    TEST(ENOMEM == mem_resize(NULL, 1), pass);
+    TEST(ENOMEM == mem_resize(NULL, -1), pass);
+    TEST(ENOMEM == mem_resize(&p, 0), pass);   /* Pass in ptr => error*/
+    TEST(ENOMEM == mem_resize(&p, 1), pass);
+    TEST(ENOMEM == mem_resize(&p, -1), pass);
     errno = 0;
 
     TEST(!mem_resize(&p, 10) && p != NULL, pass); /* Works */
