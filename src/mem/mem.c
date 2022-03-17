@@ -12,21 +12,17 @@ enum custom_error {
 
 int mem_new(void **const p, const size_t size) {
     /* Check for unhandled errors. */
-    if (errno) {
-        /* assert(!errno && "unhandled error before malloc."); */
-        return errno;
-    }
-
+    if (errno) { return errno; }
     /* Check for NULL passed in */
-    if (!p) {
-        return (int)PTR_IS_NULL;
-    }
+    if (!p) { return (int)PTR_IS_NULL; }
 
     if (!size) {    /* This is probably an error */
-        *p = NULL;
+        *p = NULL;  /* Explicitly set *p to NULL; malloc(0)'s result is
+                       implementation defined */
         return 0;
     }
-    /* We do not check if there is already a value, so this may overwrite values */
+    /* We do not check if there is already a value, so this may overwrite values
+    */
     if (!(*p = malloc(size))) {
         /* *p is NULL becasue of malloc. Check that errno != 0; if errno = 0,
         then something fishy is going on, so return -1. */
@@ -48,12 +44,10 @@ int mem_del(void **const p) {
         return (int)PTR_IS_NULL;
     }
 
-    if (*p) {
-        free(*p);
-        if (!errno) {
-            *p = NULL;
-        }
-    }   /* Otherwise *p == NULL, and errno = 0 presumably */
+    free(*p);   /* free(NULL) is no-op */
+    if (!errno) {
+        *p = NULL;
+    }
     return errno;
 }
 
