@@ -123,6 +123,7 @@ terminated. Only use ones that have a known number of bytes to operate upon.
 
 ## Conventions
 
+### Braces and If-Else Chains
 The structure of braces shall follow K&R. The braces for functions shall follow
 this pattern (contrary to K&R's usage).
 
@@ -138,6 +139,7 @@ int function(int x, int y) {
 }
 ```
 
+### Labels and Switches
 Labels shall be indented 1 less than the surrounding code.
 
 ```c
@@ -159,3 +161,8 @@ cleanup:
     /* ... */
 }
 ```
+
+### Use of Assertions
+Use assertions for code where it is impossible to get to somewhere. Otherwise,
+use a return statement for ease of testing. This means that assertions can be
+used liberally for commenting.
