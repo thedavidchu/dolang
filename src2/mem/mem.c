@@ -2,7 +2,7 @@
 #include <errno.h>
 #include <stdlib.h>
 
-#include "src2/mem.h"
+#include "src2/mem/mem.h"
 
 /* Allow use of inline in this file, even if it is not valid. */
 #ifndef __STDC_VERSION__
