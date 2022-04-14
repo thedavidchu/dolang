@@ -2,7 +2,7 @@
 
 /** Allocate memory to a pointer (if possible) or return an error value and NULL
 if the allocation cannot be done. */
-int mem_malloc(void **const me, size_t num, size_t size);
+int mem_malloc(void **const me, const size_t num, const size_t size);
 
 /** Resize a (assumed-to-be) valid pointer (if possible) and keep the old
 pointer and return an error value if the resize cannot be done.
@@ -29,7 +29,7 @@ num * size      | Call      : (no op)           | Call      : (no op)
                 | Return    : -1                | Return    : -1
 --------------------------------------------------------------------------------
 */
-int mem_realloc(void **const me, size_t num, size_t size);
+int mem_realloc(void **const me, const size_t num, const size_t size);
 
 /** Free a (assumed-to-be) valid pointer and set it to NULL. */
 int mem_free(void **const me);

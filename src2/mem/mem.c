@@ -2,12 +2,9 @@
 #include <errno.h>
 #include <stdlib.h>
 
+#include "src2/common/common.h"
 #include "src2/mem/mem.h"
 
-/* Allow use of inline in this file, even if it is not valid. */
-#ifndef __STDC_VERSION__
-#   define inline
-#endif
 
 /** Test for errors:
     (1) errno is not set (error is unhandled),
@@ -15,10 +12,10 @@
     (2b) *$me is not NULL (we may be over-writing memory) (OPTIONAL???), and
     (3) $num * $size is valid,
 */
-static inline int is_error(void **const me, size_t num, size_t size);
+static inline int is_error(void **const me, const size_t num, const size_t size);
 
 
-static inline int is_error(void **const me, size_t num, size_t size) {
+static inline int is_error(void **const me, const size_t num, const size_t size) {
     size_t num_bytes = 0;
 
     if (errno) {
