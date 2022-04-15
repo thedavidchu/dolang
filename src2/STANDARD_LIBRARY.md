@@ -232,8 +232,9 @@ if (errno == EDOM) {
 }
 
 assert(r >= 0.0 && "illegal value for exponent!");
-/* Overflow */
-if ((r == HUGE_VAL /* we do not check for -HUGE_VAL because it must be positive according to the assertion */) && errno == ERANGE) {
+assert(r != -HUGE_VAL && "-HUGE_VAL is an illegal value!");
+/* Overflow. */
+if (r == HUGE_VAL && errno == ERANGE) {
     return EDOM;
 } else if (r == 0.0 && errno == ERANGE) {
     return EDOM;
