@@ -20,6 +20,8 @@ set(CMAKE_C_FLAGS "-Wall -Werror -pedantic -g")
 include_directories("${CMAKE_SOURCE_DIR}")
 
 # Add libraries
+add_subdirectory("${CMAKE_SOURCE_DIR}/bool")
+add_subdirectory("${CMAKE_SOURCE_DIR}/common")
 add_subdirectory("${CMAKE_SOURCE_DIR}/mem")
 
 # Create executable
