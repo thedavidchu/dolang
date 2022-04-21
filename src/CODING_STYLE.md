@@ -166,3 +166,16 @@ cleanup:
 Use assertions for code where it is impossible to get to somewhere. Otherwise,
 use a return statement for ease of testing. This means that assertions can be
 used liberally for commenting.
+
+Assertions should not be used for deployment code of legitimate cases (e.g. NULL
+error handling). This makes the code untestable (because it exits the test
+program).
+
+### Use of macros as functions
+
+If a macro behaves entirely like a function (i.e. arguments evaluated exactly
+once each, no manipulating variables), then it can be named following the
+function naming conventions.
+
+Otherwise, it shall be upper-case to warn the user of potentially funky
+behaviour.
