@@ -2,7 +2,7 @@
 
 #include <stddef.h>
 
-#include "src2/common/common.h"
+#include "common/common.h"
 
 
 typedef struct {

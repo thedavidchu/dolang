@@ -2,13 +2,13 @@
 #include <errno.h>
 #include <string.h>
 
-#include "src2/mem/mem.h"
+#include "mem/mem.h"
 
-#include "src2/arr/arr.h"
+#include "arr/arr.h"
 
 /* This block of code must not be imported to another translation unit, lest the
 typedef be defined twice. */
-#ifndef __STD_VERSION__
+#ifndef __STDC_VERSION__
 typedef unsigned char Byte;
 #else
 #   include <inttypes.h>
