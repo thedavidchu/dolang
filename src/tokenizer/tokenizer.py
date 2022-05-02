@@ -17,7 +17,31 @@ import argparse
 
 
 PUNCTUATION = {c for c in r"~!@#$%^&*-+=|\:<>.?/"} - {"#"} # Remove comment char
+INVALID_CHAR = None
 
+class Text:
+    def __init__(self, text: str):
+        self.text = text
+        self.idx = 0
+        self.line_number: int = 1  # Line numbers start on 1
+        self.col_number: int = 0   # Col numbers start on 0
+        
+        self.prev_c: str = INVALID_CHAR
+
+    def next_char(self) -> str:
+        self.idx += 1
+        if self.idx >= len(self.text):
+            return INVALID_CHAR
+        c = self.text[self.idx]
+        # We look at the previous character because a new line pushes the _next_
+        # character onto the new line.
+        if self.prev_c == "\n":
+            self.line_number += 1
+            self.col_number = 0
+        else:
+            self.col_number += 1
+        return c
+         
 
 class Token:
     def __init__(self, token: str, token_type: str):
