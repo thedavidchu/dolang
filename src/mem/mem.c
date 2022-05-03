@@ -1,85 +1,108 @@
 #include <assert.h>
-#include <stdlib.h>
 #include <errno.h>
+#include <stdlib.h>
 
-#include "mem.h"
+#include "common/common.h"
+#include "mem/mem.h"
 
-/* NOTE(dchu): Assumes that implicit conversion to int is legal. This is not
-to be used exernally, which is why it  is not in mem.h. */
-enum custom_error {
-    PTR_IS_NULL = -10, PTR2NULL = -11
-};
 
-int mem_new(void **const p, const size_t size) {
-    /* Check for unhandled errors. */
-    if (errno) { return errno; }
-    /* Check for NULL passed in */
-    if (!p) { return (int)PTR_IS_NULL; }
+/** Test for errors:
+    (1) errno is not set (error is unhandled),
+    (2a) $me is NULL (big error!),
+    (2b) *$me is not NULL (we may be over-writing memory) (OPTIONAL???), and
+    (3) $num * $size is valid,
+*/
+static inline int is_error(void **const me, const size_t num, const size_t size);
 
-    if (!size) {    /* This is probably an error */
-        *p = NULL;  /* Explicitly set *p to NULL; malloc(0)'s result is
-                       implementation defined */
+
+static inline int is_error(void **const me, const size_t num, const size_t size) {
+    size_t num_bytes = 0;
+
+    if (errno) {
+        return errno;
+    }
+    if (me == NULL) {
+        return -1;
+    }
+    /* Check if either $num or $size are zero. If so, then we know that the
+    number of bytes will be in the valid range, because it will be zero. We also
+    do this check to ensure that we don't divide be zero in the next step. */
+    if ((num_bytes = num * size) == 0) {
         return 0;
     }
-    /* We do not check if there is already a value, so this may overwrite values
-    */
-    if (!(*p = malloc(size))) {
-        /* *p is NULL becasue of malloc. Check that errno != 0; if errno = 0,
-        then something fishy is going on, so return -1. */
-        return errno ? errno : -1;
+    if (num != num_bytes / size) {
+        return -1;
     }
-    /* Ok! *p is a valid pointer => errno = 0 */
     return 0;
 }
 
-int mem_del(void **const p) {
-    /* Check for unhandled errors. */
-    if (errno) {
-        /* assert(!errno && "unhandled error before free."); */
+
+int mem_malloc(void **const me, size_t num, size_t size) {
+    int err = 0;
+    size_t num_bytes = 0;
+
+    if ((err = is_error(me, num, size))) {
+        return err;
+    }
+    /* By convention, we assume that all non-initialized pointers are NULL. This
+    will add verbosity, but prevent memory leaks. (Maybe? It will prevent
+    memory leaks if we don't set pointers to NULL willy-nilly). */
+    if (*me != NULL) {
+        return -1;
+    }
+    if ((num_bytes = num * size) == 0) {
+        *me = NULL;
+        return 0;
+    }
+    if ((*me = malloc(num_bytes)) == NULL) {
+        assert(errno && "errno is not set when malloc returned an error!");
         return errno;
     }
-
-    /* Check for NULL passed in */
-    if (!p) {
-        return (int)PTR_IS_NULL;
-    }
-
-    free(*p);   /* free(NULL) is no-op */
-    if (!errno) {
-        *p = NULL;
-    }
-    return errno;
+    assert(errno == 0 && "errno is set when malloc returned valid value!");
+    return 0;
 }
 
-int mem_resize(void **const p, const size_t size) {
-    void *temp;
+int mem_realloc(void **const me, size_t num, size_t size) {
+    int err = 0;
+    size_t num_bytes = 0;
+    void *new_ptr = NULL;
 
-    /* Check for unhandled errors. */
-    if (errno) {
-        /* assert(!errno && "unhandled error before malloc."); */
+    if ((err = is_error(me, num, size))) {
+        return err;
+    }
+    if ((num_bytes = num * size) == 0) {
+        if (*me == NULL) {
+            /* I included this assertion to reinforce that *me is NULL. I under-
+            stand that it is redundant, but assertions are removed when we
+            compile in deployment mode. */
+            assert(*me == NULL && "invalid pointer *me is non-NULL!");
+            return 0;
+        } else {
+            err = mem_free(me);
+            assert(err == errno && "returned error and errno do not match!");
+            return err;
+        }
+    }
+    if ((new_ptr = realloc(*me, num_bytes)) == NULL) {
+        assert(errno && "errno is not set when malloc returned an error!");
         return errno;
     }
+    assert(errno == 0 && "errno is set when malloc returned valid value!");
+    *me = new_ptr;
+    return 0;
+}
 
-    /* Check for NULL passed in */
-    if (!p) {
-        return (int)PTR_IS_NULL;
+int mem_free(void **const me) {
+    int err = 0;
+    
+    if ((err = is_error(me, /*num=*/0, /*size=*/0))) {
+        return err;
     }
-
-    if (*p == NULL && !size) {  /* This is probably an error */
-        return 0;
-    } else if (*p == NULL) {
-        return mem_new(p, size);
-    } else if (!size) {
-        return mem_del(p);
+    free(*me);
+    /* If there is an error, we cannot guarantee that the memory was freed. */
+    if (errno) {
+        return errno;
     }
-
-    /* Actually do the resize */
-    if (!(temp = realloc(*p, size))) {
-        /* *temp is NULL becasue of realloc. Check that errno != 0; if errno = 0,
-        then something fishy is going on, so return -1. */
-        return errno ? errno : -1;
-    } else {
-        *p = temp;
-    }
-    return errno;
+    *me = NULL;
+    return 0;
 }

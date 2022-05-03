@@ -20,7 +20,15 @@ set(CMAKE_C_FLAGS "-Wall -Werror -pedantic -g")
 include_directories("${CMAKE_SOURCE_DIR}")
 
 # Add libraries
+## Compiler Compatibility Files
+add_subdirectory("${CMAKE_SOURCE_DIR}/bool")
+add_subdirectory("${CMAKE_SOURCE_DIR}/common")
+
+## Standard Library Wrappers
 add_subdirectory("${CMAKE_SOURCE_DIR}/mem")
+
+## Custom Library
+add_subdirectory("${CMAKE_SOURCE_DIR}/arr")
 
 # Create executable
 add_executable("main" "${CMAKE_SOURCE_DIR}/main.c")

@@ -1,0 +1,47 @@
+io = import("io");
+
+# Function to calculate the n-th Fibonacci Sequence term.
+function fibo(arg num_iterations: int[0..=100] = 0) -> int[0..=fibo(100)]: pure {
+    var prev: int = 1;
+    var prev_prev: int = 0;
+
+    for (let i: int = 0..=num_iterations) {
+        prev, prev_prev = prev + prev_prev, prev;
+    }
+
+    return prev;
+}
+
+print("The 10th Fibonacci Number is:", fibo(10));
+_, blah = (10, 11);
+
+
+# Harder Tokens to Parse
+	# Tab
+## Multiple Comment Characters
+
+# Escape Characters
+`This is some type of string`;
+'This is some type of string';
+"Escape characters: \'\n\t\"";
+
+# Grouped Single-Characters
+# Not sure what () or (_) will represent...
+({[]}),(),{},[],(()),{{}},[[]];;;;
+
+# Floating Point Numbers
+0.0 # Should tokenize: 0.0
+0.0e+1
+.0
+0
+
+# Parsing . vs .. (I am not sure how to do this without backtracking for floats?)
+# Maybe disallow float..=NUMBER???
+0..=10;
+0...=+10; # Should tokenize: 0 ... = +10 ;
+
+
+# Punctuation (No real idea what to test here)
++++10===1000;
+===-10+10;
+!@@#$@%@#%^@$###^$^##^!@$^@#$ 	 # Commented out

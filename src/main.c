@@ -1,83 +1,129 @@
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "bool/bool.h"
 #include "mem/mem.h"
 
 /* Print status and set test variable as pass or fail */
-#define TEST(expression, test_var) \
+#define TEST_INT_EQ(output, oracle, err) \
 do {\
-    if ((expression)) {\
-        fprintf(stderr, #expression ": OK\n");\
+    int _output = (output);\
+    int _oracle = (oracle);\
+    if (_output == _oracle) {\
+        fprintf(stderr, #output " == " #oracle ": OK\n");\
     } else {\
-        fprintf(stderr,\
-            /*RED*/"\033[31m" #expression\
+        fprintf(stderr, /*RED*/"\033[31m" #output "(=%d) != " #oracle "(=%d)"\
+            ", expected " #output " == " #oracle\
             ": FAILURE in %s:%d\033[0m\n"/*END RED*/,\
-            __FILE__, __LINE__);\
-        test_var = false;\
+            _output, _oracle, __FILE__, __LINE__);\
+        (err) = -1;\
+    }\
+} while (0)
+
+/* Print status and set test variable as pass or fail */
+#define TEST_PTR_EQ(output, oracle, err) \
+do {\
+    void *_output = (output);\
+    void *_oracle = (oracle);\
+    if (_output == _oracle) {\
+        fprintf(stderr, #output " == " #oracle ": OK\n");\
+    } else {\
+        fprintf(stderr, /*RED*/"\033[31m" #output "(=%p) != " #oracle "(=%p)"\
+            ", expected " #output " == " #oracle\
+            ": FAILURE in %s:%d\033[0m\n"/*END RED*/,\
+            _output, _oracle, __FILE__, __LINE__);\
+        (err) = -1;\
+    }\
+} while (0)
+
+/* Print status and set test variable as pass or fail */
+#define TEST_PTR_NE(output, oracle, err) \
+do {\
+    void *_output = (output);\
+    void *_oracle = (oracle);\
+    if (_output != _oracle) {\
+        fprintf(stderr, #output " != " #oracle ": OK\n");\
+    } else {\
+        fprintf(stderr, /*RED*/"\033[31m" #output "(=%p) == " #oracle "(=%p)"\
+            ", expected " #output " != " #oracle\
+            ": FAILURE in %s:%d\033[0m\n"/*END RED*/,\
+            _output, _oracle, __FILE__, __LINE__);\
+        (err) = -1;\
     }\
 } while (0)
 
 int test_bool(void) {
     /* Cannot use regular testing, because that relies upon the boolean working */
     assert((true && !false) && (true == 1 && false == 0));
-    return 1;
+    return 0;
 }
 
 bool test_mem(void) {
-    bool pass = true;
-    void *p, *tmp;
+    bool err = 0;
+    void *p = NULL, *tmp = NULL;
 
     /* Basic test malloc and free. */
-    TEST(!mem_new(&p, 1) && p != NULL, pass);
-    TEST(!mem_del(&p) && p == NULL, pass);
+    TEST_INT_EQ(mem_malloc(&p, 1, 1), 0, err);
+    TEST_PTR_NE(p, NULL, err);
+    TEST_INT_EQ(mem_free(&p), 0, err);
+    TEST_PTR_EQ(p, NULL, err);
 
-    /* Test bad arguments for mem_new() */
-    TEST(mem_new(NULL, 0), pass);   /* Pass in NULL ptr => error*/
-    TEST(mem_new(NULL, 1), pass);
-    TEST(mem_new(NULL, -1), pass);
-    TEST(!mem_new(&p, 0) && p == NULL, pass);   /* p returned as NULL */
-    TEST(ENOMEM == mem_new(&p, -1) && p == NULL, pass); /* Not enough memory => error*/
+    /* Test bad arguments for mem_malloc() */
+    TEST_INT_EQ(mem_malloc(NULL, 0, 1), -1, err);   /* Pass in NULL ptr => error*/
+    TEST_INT_EQ(mem_malloc(NULL, 1, 1), -1, err);
+    TEST_INT_EQ(mem_malloc(NULL, -1, 1), -1, err);
+    TEST_INT_EQ(mem_malloc(&p, 0, 0), 0, err);
+    TEST_PTR_EQ(p, NULL, err);   /* p returned as NULL */
+    TEST_INT_EQ(mem_malloc(&p, -1, 1), ENOMEM, err);
+    TEST_PTR_EQ(p, NULL, err); /* Not enough memory => error*/
     errno = 0;
 
-    /* Test bad arguments for mem_del() */
-    TEST(mem_del(NULL), pass);
+    /* Test bad arguments for mem_free() */
+    TEST_INT_EQ(mem_free(NULL), -1, err);
 
-    /* Test bad arguments for mem_resize() */
-    TEST(mem_resize(NULL, 0), pass);   /* Pass in NULL ptr => error*/
-    TEST(mem_resize(NULL, 1), pass);
-    TEST(mem_resize(NULL, -1), pass);
-    TEST(!mem_resize(&p, 0) && p == NULL, pass);
-    TEST(ENOMEM == mem_resize(&p, -1) && p == NULL, pass);
+    /* Test bad arguments for  mem_realloc() */
+    TEST_INT_EQ(mem_realloc(NULL, 0, 1), -1, err);   /* Pass in NULL ptr => error*/
+    TEST_INT_EQ(mem_realloc(NULL, 1, 1), -1, err);
+    TEST_INT_EQ(mem_realloc(NULL, -1, 1), -1, err);
+    TEST_INT_EQ(mem_realloc(&p, 0, 1), 0, err);
+    TEST_PTR_EQ(p, NULL, err);
+    TEST_INT_EQ(mem_realloc(&p, -1, 1), ENOMEM, err);
+    TEST_PTR_EQ(p, NULL, err);
     /* errno still set! */
-    TEST(ENOMEM == mem_resize(NULL, 0), pass);   /* Pass in NULL ptr => error*/
-    TEST(ENOMEM == mem_resize(NULL, 1), pass);
-    TEST(ENOMEM == mem_resize(NULL, -1), pass);
-    TEST(ENOMEM == mem_resize(&p, 0), pass);   /* Pass in ptr => error*/
-    TEST(ENOMEM == mem_resize(&p, 1), pass);
-    TEST(ENOMEM == mem_resize(&p, -1), pass);
+    TEST_INT_EQ(mem_realloc(NULL, 0, 1),  ENOMEM, err);   /* Pass in NULL ptr => error*/
+    TEST_INT_EQ(mem_realloc(NULL, 1, 1),  ENOMEM, err);
+    TEST_INT_EQ(mem_realloc(NULL, -1, 1), ENOMEM, err);
+    TEST_INT_EQ(mem_realloc(&p, 0, 1),    ENOMEM, err);   /* Pass in ptr => error*/
+    TEST_INT_EQ(mem_realloc(&p, 1, 1),    ENOMEM, err);
+    TEST_INT_EQ(mem_realloc(&p, -1, 1),   ENOMEM, err);
     errno = 0;
 
-    TEST(!mem_resize(&p, 10) && p != NULL, pass); /* Works */
-    TEST(!mem_resize(&p, 0) && p == NULL, pass);
-    TEST(!mem_resize(&p, 10) && p != NULL, pass);
+    TEST_INT_EQ(mem_realloc(&p, 10, 1), 0, err);
+    TEST_PTR_NE(p, NULL, err); /* Works */
+    TEST_INT_EQ(mem_realloc(&p, 0, 1), 0, err);
+    TEST_PTR_EQ(p, NULL, err);
+    TEST_INT_EQ(mem_realloc(&p, 10, 1), 0, err);
+    TEST_PTR_NE(p, NULL, err);
     tmp = p;
-    TEST(ENOMEM == mem_resize(&p, -1) && p != NULL && p == tmp, pass);
+    TEST_INT_EQ(mem_realloc(&p, -1, 1), ENOMEM, err);
+    TEST_PTR_NE(p, NULL, err);
+    TEST_PTR_EQ(p, tmp, err);
     errno = 0;
     tmp = NULL;
-    TEST(!mem_resize(&p, 0) && p == NULL, pass);
+    TEST_INT_EQ(mem_realloc(&p, 0, 1), 0, err);
+    TEST_PTR_EQ(p, NULL, err);
 
-
-    return pass;
+    return err;
 }
 
 int main(void) {
-    bool pass = true;
+    int err = 0;
     
     /* Technically, this is sketchy because we are assuming that bool works. */
-    TEST(test_bool(), pass);
-    TEST(test_mem(), pass);
+    TEST_INT_EQ(test_bool(), 0, err);
+    TEST_INT_EQ(test_mem(), 0, err);
 
-    return (int)pass;
+    return err;
 }
