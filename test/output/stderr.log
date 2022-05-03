@@ -1,0 +1,64 @@
+test_bool() == 0: OK
+mem_malloc(&p, 1, 1) == 0: OK
+p != NULL: OK
+mem_free(&p) == 0: OK
+p == NULL: OK
+[ERROR] /mnt/c/Users/theda/Desktop/c_lib/src/mem/mem.c:45: -1 = Unknown error -1
+	me == NULL || *me != NULL
+mem_malloc(NULL, 0, 1) == -1: OK
+[ERROR] /mnt/c/Users/theda/Desktop/c_lib/src/mem/mem.c:45: -1 = Unknown error -1
+	me == NULL || *me != NULL
+mem_malloc(NULL, 1, 1) == -1: OK
+[ERROR] /mnt/c/Users/theda/Desktop/c_lib/src/mem/mem.c:45: -1 = Unknown error -1
+	me == NULL || *me != NULL
+mem_malloc(NULL, -1, 1) == -1: OK
+mem_malloc(&p, 0, 0) == 0: OK
+p == NULL: OK
+mem_malloc(&p, -1, 1) == ENOMEM: OK
+p == NULL: OK
+[ERROR] /mnt/c/Users/theda/Desktop/c_lib/src/mem/mem.c:87: -1 = Unknown error -1
+	me == NULL
+mem_free(NULL) == -1: OK
+[ERROR] /mnt/c/Users/theda/Desktop/c_lib/src/mem/mem.c:66: -1 = Unknown error -1
+	me == NULL
+mem_realloc(NULL, 0, 1) == -1: OK
+[ERROR] /mnt/c/Users/theda/Desktop/c_lib/src/mem/mem.c:66: -1 = Unknown error -1
+	me == NULL
+mem_realloc(NULL, 1, 1) == -1: OK
+[ERROR] /mnt/c/Users/theda/Desktop/c_lib/src/mem/mem.c:66: -1 = Unknown error -1
+	me == NULL
+mem_realloc(NULL, -1, 1) == -1: OK
+mem_realloc(&p, 0, 1) == 0: OK
+p == NULL: OK
+mem_realloc(&p, -1, 1) == ENOMEM: OK
+p == NULL: OK
+[ERROR] /mnt/c/Users/theda/Desktop/c_lib/src/mem/mem.c:65: 12 = Cannot allocate memory
+	(err = errno) || (err = is_overflow(num, size))
+mem_realloc(NULL, 0, 1) == ENOMEM: OK
+[ERROR] /mnt/c/Users/theda/Desktop/c_lib/src/mem/mem.c:65: 12 = Cannot allocate memory
+	(err = errno) || (err = is_overflow(num, size))
+mem_realloc(NULL, 1, 1) == ENOMEM: OK
+[ERROR] /mnt/c/Users/theda/Desktop/c_lib/src/mem/mem.c:65: 12 = Cannot allocate memory
+	(err = errno) || (err = is_overflow(num, size))
+mem_realloc(NULL, -1, 1) == ENOMEM: OK
+[ERROR] /mnt/c/Users/theda/Desktop/c_lib/src/mem/mem.c:65: 12 = Cannot allocate memory
+	(err = errno) || (err = is_overflow(num, size))
+mem_realloc(&p, 0, 1) == ENOMEM: OK
+[ERROR] /mnt/c/Users/theda/Desktop/c_lib/src/mem/mem.c:65: 12 = Cannot allocate memory
+	(err = errno) || (err = is_overflow(num, size))
+mem_realloc(&p, 1, 1) == ENOMEM: OK
+[ERROR] /mnt/c/Users/theda/Desktop/c_lib/src/mem/mem.c:65: 12 = Cannot allocate memory
+	(err = errno) || (err = is_overflow(num, size))
+mem_realloc(&p, -1, 1) == ENOMEM: OK
+mem_realloc(&p, 10, 1) == 0: OK
+p != NULL: OK
+mem_realloc(&p, 0, 1) == 0: OK
+p == NULL: OK
+mem_realloc(&p, 10, 1) == 0: OK
+p != NULL: OK
+mem_realloc(&p, -1, 1) == ENOMEM: OK
+p != NULL: OK
+p == tmp: OK
+mem_realloc(&p, 0, 1) == 0: OK
+p == NULL: OK
+test_mem() == 0: OK
