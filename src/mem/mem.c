@@ -1,55 +1,50 @@
+/*! In each of these functions, important tests are:
+    (1) errno is not set (error is unhandled),
+    (2) $me is NULL (big error!), and
+    (3) $num * $size is valid,
+*/
+
 #include <assert.h>
 #include <errno.h>
+#include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "common/common.h"
 #include "mem/mem.h"
 
 
-/** Test for errors:
-    (1) errno is not set (error is unhandled),
-    (2a) $me is NULL (big error!),
-    (2b) *$me is not NULL (we may be over-writing memory) (OPTIONAL???), and
-    (3) $num * $size is valid,
-*/
-static inline int is_error(void **const me, const size_t num, const size_t size);
+/*! Check that $num * $size is valid. */
+static inline int is_overflow(const size_t num, const size_t size);
 
 
-static inline int is_error(void **const me, const size_t num, const size_t size) {
+static inline int is_overflow(const size_t num, const size_t size) {
     size_t num_bytes = 0;
-
-    if (errno) {
-        return errno;
-    }
-    if (me == NULL) {
-        return -1;
-    }
+    
     /* Check if either $num or $size are zero. If so, then we know that the
     number of bytes will be in the valid range, because it will be zero. We also
     do this check to ensure that we don't divide be zero in the next step. */
     if ((num_bytes = num * size) == 0) {
         return 0;
-    }
-    if (num != num_bytes / size) {
+    } else if (num != num_bytes / size) {
         return -1;
     }
     return 0;
 }
 
+/******************************************************************************/
 
 int mem_malloc(void **const me, size_t num, size_t size) {
     int err = 0;
     size_t num_bytes = 0;
 
-    if ((err = is_error(me, num, size))) {
-        return err;
-    }
+    RETURN_IF_ERROR((err = errno) || (err = is_overflow(num, size)), err);
     /* By convention, we assume that all non-initialized pointers are NULL. This
     will add verbosity, but prevent memory leaks. (Maybe? It will prevent
     memory leaks if we don't set pointers to NULL willy-nilly). */
-    if (*me != NULL) {
-        return -1;
-    }
+    RETURN_IF_ERROR(me == NULL || *me != NULL, -1);
+    /* We specifically enumerate the 0 case, because we want to ensure that
+    calls to mem_malloc(ptr, 0, 0) return NULL. */
     if ((num_bytes = num * size) == 0) {
         *me = NULL;
         return 0;
@@ -67,15 +62,10 @@ int mem_realloc(void **const me, size_t num, size_t size) {
     size_t num_bytes = 0;
     void *new_ptr = NULL;
 
-    if ((err = is_error(me, num, size))) {
-        return err;
-    }
+    RETURN_IF_ERROR((err = errno) || (err = is_overflow(num, size)), err);
+    RETURN_IF_ERROR(me == NULL, -1);
     if ((num_bytes = num * size) == 0) {
         if (*me == NULL) {
-            /* I included this assertion to reinforce that *me is NULL. I under-
-            stand that it is redundant, but assertions are removed when we
-            compile in deployment mode. */
-            assert(*me == NULL && "invalid pointer *me is non-NULL!");
             return 0;
         } else {
             err = mem_free(me);
@@ -93,16 +83,52 @@ int mem_realloc(void **const me, size_t num, size_t size) {
 }
 
 int mem_free(void **const me) {
-    int err = 0;
-    
-    if ((err = is_error(me, /*num=*/0, /*size=*/0))) {
-        return err;
-    }
+    RETURN_IF_ERROR(errno, errno);
+    RETURN_IF_ERROR(me == NULL, -1);
     free(*me);
     /* If there is an error, we cannot guarantee that the memory was freed. */
-    if (errno) {
-        return errno;
-    }
+    RETURN_IF_ERROR(errno, errno);
+
     *me = NULL;
     return 0;
 }
+
+
+int mem_memcpy(const void *const restrict src, void *const restrict dst, const size_t num, const size_t size) {
+    int err = 0;
+    const void *dst_ = NULL;
+
+    if ((err = errno) || (err = is_overflow(num, size))) {
+        return err;
+    } else if (src == NULL || dst == NULL) {
+        return -1;
+    }
+    if ((dst_ = memcpy(dst, src, num * size)) == NULL || errno) {
+        assert(dst_ == NULL && errno &&
+            "error return and error code are mismatched!");
+        return errno;
+    }
+    assert(dst_ != NULL && errno == 0 &&
+        "no error returned but error code claims error!");
+    return 0;
+}
+
+int mem_memmove(const void *const src, void *const dst, const size_t num, const size_t size) {
+    int err = 0;
+    const void *dst_ = NULL;
+    
+    if ((err = errno) || (err = is_overflow(num, size))) {
+        return err;
+    } else if (src == NULL || dst == NULL) {
+        return -1;
+    }
+    if ((dst_ = memmove(dst, src, num * size)) == NULL || errno) {
+        assert(dst_ == NULL && errno &&
+            "error return and error code are mismatched!");
+        return errno;
+    }
+    assert(dst_ != NULL && errno == 0 &&
+        "no error returned but error code claims error!");
+    return 0;
+}
+

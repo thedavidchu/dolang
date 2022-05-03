@@ -33,3 +33,7 @@ int mem_realloc(void **const me, const size_t num, const size_t size);
 
 /** Free a (assumed-to-be) valid pointer and set it to NULL. */
 int mem_free(void **const me);
+
+int mem_memcpy(const void *const restrict src, void *const restrict dst, const size_t num, const size_t size);
+
+int mem_memmove(const void *const src, void *const dst, const size_t num, const size_t size);
