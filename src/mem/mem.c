@@ -63,6 +63,7 @@ int mem_realloc(void **const me, size_t num, size_t size) {
     void *new_ptr = NULL;
 
     RETURN_IF_ERROR((err = errno) || (err = is_overflow(num, size)), err);
+    RETURN_IF_ERROR(0, err);
     RETURN_IF_ERROR(me == NULL, -1);
     if ((num_bytes = num * size) == 0) {
         if (*me == NULL) {

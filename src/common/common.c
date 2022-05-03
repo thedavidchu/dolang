@@ -1,4 +1,7 @@
+#include <assert.h>
 #include <errno.h>
+#include <stdarg.h>
+#include <stdio.h>
 #include <string.h> /* strerror, NULL */
 
 #include "common/common.h"
@@ -12,8 +15,25 @@ const char *_safe_strerror(const int errnum) {
     /* This standardizes unknown errors. Unknown errors that return a valid string but set errno are changed to a standard error. */
     if ((s = strerror(errnum)) == NULL || errno) {
         s = UNKNOWN_ERROR;
-        errno = old_errno;
     }
+    errno = old_errno;
 
     return s;
+}
+
+int print_stderr(const char *const restrict format, ...) {
+    int err = 0;
+    va_list ap;
+    const int old_errno = errno;
+
+    va_start(ap, format);
+    errno = 0;
+    if (vfprintf(stderr, format, ap) < 0) {
+        assert((err = errno) && "no error message upon failure!");
+    } else {
+        assert((err = errno) == 0 && "error message upon pass!");
+    }
+    va_end(ap);
+    errno = old_errno;
+    return err;
 }
