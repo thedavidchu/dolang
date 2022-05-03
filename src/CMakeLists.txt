@@ -10,7 +10,8 @@ cmake_minimum_required(VERSION 3.10)
 project(CLib VERSION 0.0.0 LANGUAGES C)
 
 # Set ISO C90 standard
-set(CMAKE_C_STANDARD 90)
+# set(CMAKE_C_STANDARD 90)
+set(CMAKE_C_STANDARD 99)    # Allow // comments for debugging
 set(CMAKE_C_STANDARD_REQUIRED True)
 
 # Show all warnings, warnings as errors, show where C90-non-compliant, debug

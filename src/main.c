@@ -60,8 +60,8 @@ int test_bool(void) {
     return 0;
 }
 
-bool test_mem(void) {
-    bool err = 0;
+int test_mem(void) {
+    int err = 0;
     void *p = NULL, *tmp = NULL;
 
     /* Basic test malloc and free. */
@@ -116,6 +116,13 @@ bool test_mem(void) {
     TEST_PTR_EQ(p, NULL, err);
 
     return err;
+}
+
+int test_arr(void) {
+    int err = 0;
+
+    return err;
+
 }
 
 int main(void) {
