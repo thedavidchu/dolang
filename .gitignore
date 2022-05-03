@@ -4,6 +4,7 @@
 # Ignore CMake's build directory
 build/
 cmake/
+test/output/*
 
 # Prerequisites
 *.d
