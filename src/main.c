@@ -5,6 +5,9 @@
 
 #include "bool/bool.h"
 #include "mem/mem.h"
+#include "arr/arr.h"
+
+#define CHANNEL stdout
 
 /* Print status and set test variable as pass or fail */
 #define TEST_INT_EQ(output, oracle, err) \
@@ -12,9 +15,9 @@ do {\
     int _output = (output);\
     int _oracle = (oracle);\
     if (_output == _oracle) {\
-        fprintf(stderr, #output " == " #oracle ": OK\n");\
+        fprintf(CHANNEL, /*GREEN*/"\033[32m" #output " == " #oracle ": OK\033[0m\n"/*END GREEN*/);\
     } else {\
-        fprintf(stderr, /*RED*/"\033[31m" #output "(=%d) != " #oracle "(=%d)"\
+        fprintf(CHANNEL, /*RED*/"\033[31m" #output "(=%d) != " #oracle "(=%d)"\
             ", expected " #output " == " #oracle\
             ": FAILURE in %s:%d\033[0m\n"/*END RED*/,\
             _output, _oracle, __FILE__, __LINE__);\
@@ -28,9 +31,9 @@ do {\
     void *_output = (output);\
     void *_oracle = (oracle);\
     if (_output == _oracle) {\
-        fprintf(stderr, #output " == " #oracle ": OK\n");\
+        fprintf(CHANNEL, #output " == " #oracle ": OK\n");\
     } else {\
-        fprintf(stderr, /*RED*/"\033[31m" #output "(=%p) != " #oracle "(=%p)"\
+        fprintf(CHANNEL, /*RED*/"\033[31m" #output "(=%p) != " #oracle "(=%p)"\
             ", expected " #output " == " #oracle\
             ": FAILURE in %s:%d\033[0m\n"/*END RED*/,\
             _output, _oracle, __FILE__, __LINE__);\
@@ -44,9 +47,9 @@ do {\
     void *_output = (output);\
     void *_oracle = (oracle);\
     if (_output != _oracle) {\
-        fprintf(stderr, #output " != " #oracle ": OK\n");\
+        fprintf(CHANNEL, #output " != " #oracle ": OK\n");\
     } else {\
-        fprintf(stderr, /*RED*/"\033[31m" #output "(=%p) == " #oracle "(=%p)"\
+        fprintf(CHANNEL, /*RED*/"\033[31m" #output "(=%p) == " #oracle "(=%p)"\
             ", expected " #output " != " #oracle\
             ": FAILURE in %s:%d\033[0m\n"/*END RED*/,\
             _output, _oracle, __FILE__, __LINE__);\
@@ -118,8 +121,43 @@ int test_mem(void) {
     return err;
 }
 
+int int_stderr(const void *const ip) {
+    fprintf(stderr, "%d", *(int *)ip);
+    return 0;
+}
+
+int int_dtor(void *const ip) {
+    return 0;
+}
+
 int test_arr(void) {
-    int err = 0;
+    int err = 0, x = 0;
+    int *y = NULL;
+    arr a = { 0 }, b = { 0 };
+
+    TEST_INT_EQ(arr_ctor(&a, 10, sizeof(int)), 0, err);
+    TEST_INT_EQ(arr_ctor(&b, 10, sizeof(int)), 0, err);
+
+    arr_stderr(&a, int_stderr);
+    for (x = 0; x < 11; ++x) {
+        TEST_INT_EQ(arr_insert(&a, 0, &x), 0, err);
+        arr_stderr(&a, int_stderr);
+        y = (int *)arr_search(&a, 0);
+        assert(y != NULL && "null!");
+        TEST_INT_EQ(*y == x, 1, err);
+    }
+
+    x = 12;
+    TEST_INT_EQ(arr_change(&a, 0, &x, int_dtor), 0, err);
+    arr_stderr(&a, int_stderr);
+
+    for (x = 0; x < 11; ++x) {
+        TEST_INT_EQ(arr_remove(&a, 0, int_dtor), 0, err);
+        arr_stderr(&a, int_stderr);
+    }
+
+    TEST_INT_EQ(arr_dtor(&a, int_dtor), 0, err);
+    TEST_INT_EQ(arr_dtor(&b, int_dtor), 0, err);
 
     return err;
 
@@ -131,6 +169,7 @@ int main(void) {
     /* Technically, this is sketchy because we are assuming that bool works. */
     TEST_INT_EQ(test_bool(), 0, err);
     TEST_INT_EQ(test_mem(), 0, err);
+    TEST_INT_EQ(test_arr(), 0, err);
 
     return err;
 }

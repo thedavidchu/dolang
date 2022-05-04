@@ -60,7 +60,7 @@ static inline int arr_openhole_nocheck(arr *const me, const size_t hole_idx) {
         void *const src = ARR_GETITEM(me, hole_idx);
         void *const dst = ARR_GETITEM(me, hole_idx + 1);
 
-        if ((err = mem_memmove(src, dst, 1, me->size))) {
+        if ((err = mem_memmove(src, dst, me->len - hole_idx, me->size))) {
             return err;
         }
     }
@@ -71,14 +71,14 @@ static inline int arr_openhole_nocheck(arr *const me, const size_t hole_idx) {
 static inline int arr_closehole_nocheck(arr *const me, const size_t hole_idx) {
     int err = 0;
     
-    assert(hole_idx >= me->len && "hole index is too large.");
+    assert(hole_idx <= me->len && "hole index is too large.");
     if (hole_idx < me->len - 1) { /* Not the last valid idx. [X X X] */
         /* We declare this in a new block because we need to declare these after
         the first error check. */
         void *const src = ARR_GETITEM(me, hole_idx + 1);
         void *const dst = ARR_GETITEM(me, hole_idx);
 
-        if ((err = mem_memmove(src, dst, 1, me->size))) {
+        if ((err = mem_memmove(src, dst, me->len - hole_idx - 1, me->size))) {
             return err;
         }
     }

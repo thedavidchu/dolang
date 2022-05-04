@@ -35,4 +35,4 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/arr")
 add_executable("main" "${CMAKE_SOURCE_DIR}/main.c")
 
 # Link executable to libraries
-target_link_libraries("main" PUBLIC "mem")
+target_link_libraries("main" PUBLIC "mem" "arr")

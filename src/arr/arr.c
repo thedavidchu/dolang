@@ -64,9 +64,8 @@ int arr_dtor(arr *const me, int (*item_dtor)(void *const)) {
 int arr_insert(arr *const me, const size_t idx, void *const item) {
     int err = 0;
 
-    if ((err = is_malformed(me)) || (err = is_outofbounds(me, idx))) {
-        return err;
-    }
+    RETURN_IF_ERROR((err = is_malformed(me)), err);
+    RETURN_IF_ERROR((err = is_outofinsertbounds(me, idx)) , err);
 
     /* Grow if necessary. */
     if (SHOULD_GROW(me)) {
@@ -75,12 +74,10 @@ int arr_insert(arr *const me, const size_t idx, void *const item) {
         }
     }
 
-    /* Move to make space. */
+    /* Move to make space and increment length. */
     if ((err = arr_openhole_nocheck(me, idx))) {
         return err;
     }
-    /* Increment length. */
-    ++me->len;
     /* Copy in item. */
     if ((err = arr_copyitem_nocheck(me, idx, item))) {
         return err;
@@ -153,8 +150,8 @@ int arr_stderr(const arr *const me, int (*item_stderr)(const void *const)) {
             err = tmperr;
             fprintf(stderr, "?");
         }
-        fprintf(stderr, "%s", i == me->len - 1 ? "]" : ", ");
+        fprintf(stderr, "%s", i == me->len - 1 ? "" : ", ");
     }
-
+    fprintf(stderr, "]\n");
     return err;
 }
