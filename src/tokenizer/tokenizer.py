@@ -14,10 +14,18 @@ TODO
 
 
 import argparse
+from enum import Enum
 
 
 PUNCTUATION = {c for c in r"~!@#$%^&*-+=|\:<>.?/"} - {"#"} # Remove comment char
 INVALID_CHAR = None
+
+class TokenType(str, enum):
+    PUNCTUATION = "PUNCTUATION" # Single punctuation, multi-punctuation, specific type
+    NUMBER = "NUMBER" # Float, int, complex
+    IDENTIFIER = "IDENTIFIER" # Keyword, identifier
+    COMMENT = "COMMENT" # Block comment (may be nested), line comment
+    
 
 class Text:
     def __init__(self, text: str):
