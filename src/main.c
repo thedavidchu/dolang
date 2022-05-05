@@ -127,6 +127,9 @@ int int_stderr(const void *const ip) {
 }
 
 int int_dtor(void *const ip) {
+    if (ip == NULL) {
+        return -1;
+    }
     return 0;
 }
 
@@ -141,26 +144,30 @@ int test_arr(void) {
     arr_stderr(&a, int_stderr);
     for (x = 0; x < 11; ++x) {
         TEST_INT_EQ(arr_insert(&a, 0, &x), 0, err);
-        arr_stderr(&a, int_stderr);
         y = (int *)arr_search(&a, 0);
         assert(y != NULL && "null!");
         TEST_INT_EQ(*y == x, 1, err);
     }
+    arr_stderr(&a, int_stderr);
+
+    for (x = 11; x < 22; ++x) {
+        TEST_INT_EQ(arr_append(&a, &x), 0, err);
+    }
+    arr_stderr(&a, int_stderr);
 
     x = 12;
     TEST_INT_EQ(arr_change(&a, 0, &x, int_dtor), 0, err);
     arr_stderr(&a, int_stderr);
 
-    for (x = 0; x < 11; ++x) {
+    while (a.len > 0) {
         TEST_INT_EQ(arr_remove(&a, 0, int_dtor), 0, err);
-        arr_stderr(&a, int_stderr);
     }
+    arr_stderr(&a, int_stderr);
 
     TEST_INT_EQ(arr_dtor(&a, int_dtor), 0, err);
     TEST_INT_EQ(arr_dtor(&b, int_dtor), 0, err);
 
     return err;
-
 }
 
 int main(void) {
