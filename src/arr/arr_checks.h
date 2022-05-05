@@ -35,7 +35,7 @@ static inline int is_malformed(const arr *const me) {
     /* At this point, we know that 0 <= idx < len <= cap. This means that cap
     upper bounds all other values. We will check that me->cap * me->size does
     not overflow. */
-    assert(0 <= me->len && me->len <= me->cap &&
+    assert(/* 0 <= me->len (always true bc unsigned) */ me->len <= me->cap &&
            "unexpected mismatch in lenth or capacity!");
     
     /* We already know that me->size is not zero, but I am including it here

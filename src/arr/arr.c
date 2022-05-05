@@ -137,6 +137,17 @@ int arr_remove(arr *const me, const size_t idx, int (*item_dtor)(void *const)) {
     return 0;
 }
 
+int arr_append(arr *const me, void *const item) {
+    return arr_insert(me, me->len, item);
+}
+
+int arr_pop(arr *const me, int (*item_dtor)(void *const)) {
+    if (me->len == 0) {
+        return arr_remove(me, me->len - 1, item_dtor);
+    }
+    return -1;
+}
+
 int arr_stderr(const arr *const me, int (*item_stderr)(const void *const)) {
     int err = 0, tmperr = 0;
     size_t i = 0;
