@@ -15,7 +15,7 @@ set(CMAKE_C_STANDARD 99)    # Allow // comments for debugging
 set(CMAKE_C_STANDARD_REQUIRED True)
 
 # Show all warnings, warnings as errors, show where C90-non-compliant, debug
-set(CMAKE_C_FLAGS "-Wall -Werror -pedantic -g")
+set(CMAKE_C_FLAGS "-W -Wall -Werror -pedantic -g")
 
 # Make src public to tests
 include_directories("${CMAKE_SOURCE_DIR}")
