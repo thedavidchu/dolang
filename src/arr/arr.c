@@ -15,7 +15,8 @@
 /* 
 NOTE: A possible addition is to store the `int (*item_dtor)(void *const)` in the
 array. This way, we do not need to add it to the `arr_dtor`, `arr_change`, and
-`arr_remove` calls. I advocate for doing this in an inheriting structure. */
+`arr_remove` calls. I advocate for doing this in an inheriting structure if
+required. This does not allow us to _not_ destroy an item when we delete it. */
 int arr_ctor(arr *const me, const size_t cap, const size_t size) {
     int err = 0;
 
