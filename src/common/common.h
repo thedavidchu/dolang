@@ -1,6 +1,8 @@
 /* A file containing the compatibility differences between compilers. */
 #pragma once
 
+#include <errno.h>
+
 /* Allow use of inline in this file, even if it is not valid. */
 #ifndef __STDC_VERSION__
     /* NOTE: the user should not use either of these words */
@@ -8,7 +10,7 @@
     #define restrict
 #endif
 
-/** A check for function returns.*/
+/** A check for function returns. */
 #define RETURN_IF_ERROR(cond_, err_) do { \
     int _err = 0; /* err_ cannot be '_err'. */ \
     /* We cannot use strerror((err_)) because if err_ is an invalid errno, */ \
@@ -27,6 +29,20 @@
     } \
 } while (0)
 
+/** Private function to be used with RETURN_IF_ERROR macro. This safely prints
+ * the error associated with $errnum. */
 const char *_safe_strerror(const int errnum);
 
+/** Log to the stderr stream. */
 int print_stderr(const char *const restrict format, ...);
+
+typedef enum {
+    /* Unspecified error */
+    ERROR = -1,
+    ERROR_FATAL = -2, /* Should abort */
+    ERROR_UNIMPLEMENTED = -3, /* Should abort */
+
+    /* Specific Errors */
+    ERROR_NULLPTR = -1000,
+    ERROR_OVERFLOW = -1001,
+} ErrorCode;
