@@ -14,8 +14,7 @@ static int noop_dtor(void *const item) {
 
 int tbl_ctor(tbl *const restrict me, size_t cap,
         size_t (*hash_key)(const void *const restrict),
-        int (*key_dtor)(void *const restrict),
-        int (*value_dtor)(void *const restrict)) {
+        int (*key_cmp)(const void *const restrict, const void *const restrict)) {
     int err = 0;
 
     RETURN_IF_ERROR((err = mem_malloc(&me->table, cap, sizeof *me->table)), err);
@@ -23,12 +22,12 @@ int tbl_ctor(tbl *const restrict me, size_t cap,
     me->cap = cap;
 
     me->hash_key = hash_key;
-    me->key_dtor = key_dtor;
-    me->value_dtor = value_dtor;
+    me->key_cmp = key_cmp;
     return 0;
 }
 
-int tbl_dtor(tbl *const restrict me) {
+int tbl_dtor(tbl *const restrict me, int (*key_dtor)(void *const restrict),
+        int (*value_dtor)(void *const restrict)) {
     int err = 0, err_tmp = 0;
     size_t i = 0;
     tbl_kv *item = NULL;
@@ -38,8 +37,8 @@ int tbl_dtor(tbl *const restrict me) {
     /* Delete array keys/values*/
     for (i = 0; i < me->len; ++i) {
         item = (tbl_kv *)arr_search(&me->items, i);
-        me->key_dtor(item->key);
-        me->value_dtor(item->value);
+        key_dtor(item->key);
+        value_dtor(item->value);
     }
 
     /* We want to free as much as we can before returning, so we hold a
@@ -54,6 +53,6 @@ int tbl_dtor(tbl *const restrict me) {
     return 0;
 }
 
-int tbl_insert(tbl *const restrict me, const void *const key, void *const value);
+int tbl_insert(tbl *const restrict me, const void *const key, void *const value, int (*value_dtor)(void *const restrict));
 void *tbl_search(tbl *const restrict me, const void *const key);
-int tbl_remove(tbl *const restrict me, const void *const key);
+int tbl_remove(tbl *const restrict me, const void *const key, int (*key_dtor)(void *const restrict), int (*value_dtor)(void *const restrict));
