@@ -30,6 +30,7 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/mem")
 
 ## Custom Library
 add_subdirectory("${CMAKE_SOURCE_DIR}/arr")
+add_subdirectory("${CMAKE_SOURCE_DIR}/tbl")
 
 # Create executable
 add_executable("main" "${CMAKE_SOURCE_DIR}/main.c")

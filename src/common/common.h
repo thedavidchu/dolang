@@ -45,4 +45,5 @@ typedef enum {
     /* Specific Errors */
     ERROR_NULLPTR = -1000,
     ERROR_OVERFLOW = -1001,
+    ERROR_DIVZERO = -1002,
 } ErrorCode;

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stddef.h>
+
 /** Allocate memory to a pointer (if possible) or return an error value and NULL
 if the allocation cannot be done. */
 int mem_malloc(void **const me, const size_t num, const size_t size);
