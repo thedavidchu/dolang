@@ -5,10 +5,7 @@
 #include "arr/arr.h"
 
 #include "tbl/tbl.h"
-
-
-#define INVALID (-1U)
-#define TOMBSTONE (-2U)
+#include "tbl/tbl_helper.h" /* Define INVALID and TOMBSTONE */
 
 
 static int noop_dtor(void *const item);
@@ -113,11 +110,17 @@ int tbl_insert(tbl *const restrict me, void *const key, void *const value, int (
 }
 
 void *tbl_search(tbl *const restrict me, const void *const key) {
+    size_t table_idx = INVALID, items_idx = INVALID;
+    tbl_kv *item;
     if (me == NULL || key == NULL) {
         return NULL;
     }
     
-    return NULL;
+    RETURN_IF_ERROR((table_idx = tbl_gettableidx(me, key, false)) == INVALID, NULL);
+    items_idx = me->table[table_idx];
+    RETURN_IF_ERROR((item = arr_search(&me->items, items_idx)) == NULL, NULL);
+    
+    return item->value;
 }
 int tbl_remove(tbl *const restrict me, const void *const key, int (*key_dtor)(void *const restrict), int (*value_dtor)(void *const restrict)) {
     if (me == NULL || key == NULL) {
