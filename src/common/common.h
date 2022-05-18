@@ -10,22 +10,32 @@
     #define restrict
 #endif
 
-/** A check for function returns. */
+/** A check for function returns.
+ * Inputs
+ * ------
+ * cond_ : int
+ *     condition that is evaluated; a 'true' result will cause the 'err_' to return.
+ * err_ : int (no side effects)
+ *     error value to be returned if the condition is met.
+ * Notes
+ * -----
+ * * cond_ is evaluated only once; err_ may be evaluated many times.
+ */
 #define RETURN_IF_ERROR(cond_, err_) do { \
     int _err = 0; /* err_ cannot be '_err'. */ \
     /* We cannot use strerror((err_)) because if err_ is an invalid errno, */ \
     /* then strerror may return NULL or may set errno. */ \
-    if ((_err = (cond_))) { \
+    if ((_err = (int)(cond_))) { \
         const int old_errno = errno; \
         errno = 0; /* Reset errno */ \
         /* We use this function so we do not need to include stdio.h. */ \
-        _err = print_stderr("[ERROR] %s:%d: err_ = %d: \"%s\"\n" \
+        _err = print_stderr("[ERROR] %s:%d: err_ = \"%s\" = %d: \"%s\"\n" \
                            "\tcond_ = \"%s\" = %d\n", \
-                           __FILE__, __LINE__, (err_), _safe_strerror((err_)), \
+                           __FILE__, __LINE__, #err_ (int)(err_), _safe_strerror((int)(err_)), \
                            #cond_, _err); \
         assert(_err == 0 && "failed to print error message to stderr"); \
         errno = old_errno; \
-        return (err_); \
+        return (int)(err_); \
     } \
 } while (0)
 
