@@ -64,65 +64,48 @@ int tbl_dtor(tbl *const restrict me, int (*key_dtor)(void *const restrict),
 }
 
 int tbl_insert(tbl *const restrict me, void *const key, void *const value, int (*value_dtor)(void *const restrict)) {
-    size_t hashcode = 0, home = 0, offset = 0;
     int err = 0;
+    size_t table_idx = INVALID, item_idx = INVALID;
 
     /* This would be when C99 would be great. We could error check and then
     declar the hashcode as const below this check. */
-    if (me == NULL || key == NULL || value == NULL) {
-        return (int)ERROR_NULLPTR;
-    }
+    RETURN_IF_ERROR(me == NULL || key == NULL || value == NULL, ERROR_NULLPTR);
+    RETURN_IF_ERROR(me->cap == 0, ERROR_DIVZERO);
     
-    hashcode = me->hash_key(key);   /* const */
-    if (me->cap == 0) {
-        return (int)ERROR_DIVZERO;
-    }
-    home = hashcode % me->cap;  /* const */
-
-    for (offset = 0; offset <= me->cap; ++offset) {
-        const size_t probe = (home + offset) % me->cap;
-        const size_t arr_idx = me->table[probe];
-        tbl_kv *item_p = NULL;
-        if (arr_idx == INVALID || arr_idx == TOMBSTONE) {
-            /* Not found => insert */
-            tbl_kv item = {hashcode, key, value};
-            size_t new_arr_idx = me->items.len;
-
-            /* TODO(dchu): expand if necessary. */
-            me->table[probe] = new_arr_idx;
-            assert(arr_search(&me->items, new_arr_idx) == NULL &&
-                    "item already where we will place new item!");
-            RETURN_IF_ERROR(err = arr_append(&me->items, &item), err);
-            return 0;
-        }
-
-        item_p = (tbl_kv *)arr_search(&me->items, arr_idx);
+    RETURN_IF_ERROR(err = tbl_gettableidx(me, key, /*return_tombstone=*/true, &table_idx), err);
+    item_idx = me->table[table_idx];
+    if (item_idx == INVALID || item_idx == TOMBSTONE) {
+        const size_t hashcode = me->hash_key(key), new_item_idx = me->items.len;
+        tbl_kv item = {hashcode, key, value};
+        
+        /* TODO(dchu): expand/compress items if necessary */
+        me->table[table_idx] = new_item_idx;
+        assert(arr_search(&me->items, new_item_idx) == NULL &&
+                "another item already exists where we will place the new item!");
+        RETURN_IF_ERROR(err = arr_append(&me->items, &item), err);
+        assert(me->items.len == new_item_idx + 1 && "unexpected length of items");
+        return 0;
+    } else {
+        tbl_kv *const item_p = (tbl_kv *)arr_search(&me->items, arr_idx);
         assert(item_p != NULL && "unexpected NULL");
-        if (me->key_cmp(item_p->key, key) != 0) {
-            continue;
-        }
         assert(value_dtor(item_p->value) == 0 && "failed to destroy old value");
         item_p->value = value;
-        return 0;        
+        return 0;
     }
-
-    assert(0 && "no empty space in the hash table");
 }
 
 void *tbl_search(tbl *const restrict me, const void *const key) {
-    size_t table_idx = INVALID, items_idx = INVALID;
     int err = 0;
+    size_t table_idx = INVALID, items_idx = INVALID;
     tbl_kv *item;
-    if (me == NULL || key == NULL) {
-        return NULL;
-    }
     
-    RETURN_IF_ERROR((table_idx = tbl_gettableidx(me, key, false, &err)) == INVALID, NULL);
+    RETURN_IF_ERROR(me == NULL || key == NULL, NULL);
+    RETURN_IF_ERROR(err = tbl_gettableidx(me, key, false, &table_idx), NULL);
     items_idx = me->table[table_idx];
     RETURN_IF_ERROR((item = arr_search(&me->items, items_idx)) == NULL, NULL);
-    
     return item->value;
 }
+
 int tbl_remove(tbl *const restrict me, const void *const key, int (*key_dtor)(void *const restrict), int (*value_dtor)(void *const restrict)) {
     if (me == NULL || key == NULL) {
         return (int)ERROR_NULLPTR;
