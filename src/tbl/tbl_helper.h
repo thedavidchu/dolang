@@ -10,14 +10,16 @@
 #define TOMBSTONE (-2U)
 
 
-static size_t tbl_gettableidx(const tbl *const restrict me, const void *const key, const bool return_tombstone, int *const err) {
+static int tbl_gettableidx(const tbl *const restrict me, const void *const key, const bool return_tombstone, size_t *const table_idx_p) {
+    int err = 0;
     size_t hashcode = 0, table_home = 0, table_offset = 0, table_idx = 0, items_idx = 0;
     
-    RETURN_IF_ERROR(me == NULL ? (*err = (int)ERROR_NULLPTR, true) : false, INVALID);
-    RETURN_IF_ERROR(key == NULL ? (*err = (int)ERROR_NULLPTR, true) : false, INVALID);
+    RETURN_IF_ERROR(me == NULL, (int)ERROR_NULLPTR);
+    RETURN_IF_ERROR(key == NULL, (int)ERROR_NULLPTR);
+    RETURN_IF_ERROR(table_idx_p == NULL, (int)ERROR_NULLPTR);
     
     hashcode = me->hash_key(key);
-    RETURN_IF_ERROR(me->cap == 0 ? (*err = (int)ERROR_DIVZERO, true) : false, INVALID);
+    RETURN_IF_ERROR(me->cap == 0, (int)ERROR_DIVZERO);
     table_home = hashcode % me->cap;
     
     for (table_offset = 0; table_offset < me->cap; ++table_offset) {
@@ -25,10 +27,12 @@ static size_t tbl_gettableidx(const tbl *const restrict me, const void *const ke
         items_idx = me->table[table_idx];
         
         if (items_idx == INVALID) {
-            return table_idx;
+            *table_idx_p = table_idx;
+            return 0;
         } else if (items_idx == TOMBSTONE) {
             if (return_tombstone) {
-                return table_idx;
+                *table_idx_p = table_idx;
+                return 0;
             }
             continue;
         } else {
@@ -37,12 +41,13 @@ static size_t tbl_gettableidx(const tbl *const restrict me, const void *const ke
             if (item->hashcode != hashcode || me->key_cmp(item->key, key) != 0) {
                 continue;
             }
-            return table_idx;
+            *table_idx_p = table_idx;
+            return 0;
         }
         
         assert(0 && "should not get here!");
     }
     
     /* No space and not found */
-    return INVALID;
+    return -1;
 }
