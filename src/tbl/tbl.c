@@ -111,12 +111,13 @@ int tbl_insert(tbl *const restrict me, void *const key, void *const value, int (
 
 void *tbl_search(tbl *const restrict me, const void *const key) {
     size_t table_idx = INVALID, items_idx = INVALID;
+    int err = 0;
     tbl_kv *item;
     if (me == NULL || key == NULL) {
         return NULL;
     }
     
-    RETURN_IF_ERROR((table_idx = tbl_gettableidx(me, key, false)) == INVALID, NULL);
+    RETURN_IF_ERROR((table_idx = tbl_gettableidx(me, key, false, &err)) == INVALID, NULL);
     items_idx = me->table[table_idx];
     RETURN_IF_ERROR((item = arr_search(&me->items, items_idx)) == NULL, NULL);
     
