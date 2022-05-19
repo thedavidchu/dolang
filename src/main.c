@@ -197,8 +197,8 @@ int test_tbl(void) {
     tbl *me = NULL;
 
     assert(mem_malloc((void **)&me, 1, sizeof(tbl)) == 0);
-    tbl_ctor(me, 10, simple_str_hash,
-            (int (*)(const void *const restrict, const void *const restrict))strcmp);
+    assert(tbl_ctor(me, 10, simple_str_hash,
+            (int (*)(const void *const restrict, const void *const restrict))strcmp) == 0);
     tbl_print(me, str_print, int_print);
     tbl_insert(me, "hello", &err, tbl_noop_del);
     tbl_insert(me, "hello2", &err, tbl_noop_del);
@@ -207,6 +207,10 @@ int test_tbl(void) {
     TEST_PTR_EQ(tbl_search(me, "hello2"), &err, err);
     TEST_PTR_EQ(tbl_search(me, "hello3"), NULL, err);
     tbl_remove(me, "hello", tbl_noop_del, tbl_noop_del);
+    TEST_PTR_EQ(tbl_search(me, "hello"), NULL, err);
+    
+    assert(tbl_dtor(me, tbl_noop_del, tbl_noop_del) == 0);
+    assert(mem_free((void **)&me) == 0);
 
     return err;
 }
