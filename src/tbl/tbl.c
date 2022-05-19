@@ -44,8 +44,14 @@ int tbl_dtor(tbl *const restrict me, int (*key_dtor)(void *const restrict),
     /* Ugh C doesn't have closure... so I can't create a function to delete the
     key/value pairs. */
     /* Delete array keys/values*/
-    for (i = 0; i < me->len; ++i) {
+    for (i = 0; i < me->items.len; ++i) {
         item = (tbl_kv *)arr_search(&me->items, i);
+        assert(item != NULL && "unexpected null");
+        if (item->hashcode == 0 || item->key == NULL || item->value == NULL) {
+            assert(item->hashcode == 0 && item->key == NULL &&
+                    item->value == NULL && "expected all to be empty");
+            continue;
+        }
         key_dtor(item->key);
         value_dtor(item->value);
     }
@@ -104,17 +110,19 @@ void *tbl_search(tbl *const restrict me, const void *const key) {
     size_t table_idx = INVALID, items_idx = INVALID;
     tbl_kv *item;
     
+    /* RETURN_IF_ERROR only works on integer returns. */
     if (me == NULL || key == NULL) {
         return NULL;
     }
     if ((err = tbl_gettableidx(me, key, /*return_tombstone=*/false, &table_idx))) {
         return NULL;
     }
-    if (table_idx == INVALID) {
-        return NULL;
-    }
     assert(table_idx < me->cap && "table_idx out of range!");
     items_idx = me->table[table_idx];
+    if (items_idx == INVALID) {
+        return NULL;
+    }
+    assert(items_idx < me->items.cap && "item_idx out of range!");
     if ((item = arr_search(&me->items, items_idx)) == NULL) {
         return NULL;
     }
@@ -135,6 +143,7 @@ int tbl_remove(tbl *const restrict me, const void *const key, int (*key_dtor)(vo
     }
     assert(table_idx < me->cap && "table_idx out of range!");
     item_idx = me->table[table_idx];
+    me->table[table_idx] = TOMBSTONE;
     RETURN_IF_ERROR((item = arr_search(&me->items, item_idx)) == NULL, ERROR);
 
     if ((err = key_dtor(item->key))) {
@@ -180,6 +189,8 @@ int tbl_print(const tbl *const me, int (*key_print)(const void *const), int (*va
         if (item->hashcode == 0 || item->key == NULL || item->value == NULL) {
             assert(item->hashcode == 0 && item->key == NULL &&
                     item->value == NULL && "expected all to be empty");
+            printf("(%zu)%p: %p", item->hashcode, item->key, item->value);
+            printf("%s", i + 1 == me->items.len ? "" : ", ");
             continue;
         }
         printf("(%zu)", item->hashcode);

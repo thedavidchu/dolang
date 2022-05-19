@@ -7,8 +7,8 @@
 #include "tbl/tbl.h"
 
 /* Define here rather than tbl.c */
-#define INVALID (-1U)
-#define TOMBSTONE (-2U)
+#define INVALID ((size_t)(-1))
+#define TOMBSTONE ((size_t)(-2))
 
 
 static int noop_dtor(void *const item);
@@ -33,7 +33,6 @@ static int tbl_gettableidx(const tbl *const restrict me, const void *const key, 
     for (table_offset = 0; table_offset < me->cap; ++table_offset) {
         table_idx = (table_home + table_offset) % me->cap;
         items_idx = me->table[table_idx];
-
         if (items_idx == INVALID) {
             *table_idx_p = table_idx;
             return 0;

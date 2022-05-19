@@ -32,7 +32,7 @@ do {\
     void *_output = (output);\
     void *_oracle = (oracle);\
     if (_output == _oracle) {\
-        fprintf(CHANNEL, #output " == " #oracle ": OK\n");\
+        fprintf(CHANNEL, /*GREEN*/"\033[32m" #output " == " #oracle ": OK\033[0m\n"/*END GREEN*/);\
     } else {\
         fprintf(CHANNEL, /*RED*/"\033[31m" #output "(=%p) != " #oracle "(=%p)"\
             ", expected " #output " == " #oracle\
@@ -48,7 +48,7 @@ do {\
     void *_output = (output);\
     void *_oracle = (oracle);\
     if (_output != _oracle) {\
-        fprintf(CHANNEL, #output " != " #oracle ": OK\n");\
+        fprintf(CHANNEL, /*GREEN*/"\033[32m" #output " != " #oracle ": OK\033[0m\n"/*END GREEN*/);\
     } else {\
         fprintf(CHANNEL, /*RED*/"\033[31m" #output "(=%p) == " #oracle "(=%p)"\
             ", expected " #output " != " #oracle\
@@ -182,33 +182,48 @@ size_t simple_str_hash(const void *const restrict str) {
 }
 
 int str_print(const void *const restrict str) {
-    assert(str && "null str");
-    fputs((const char *const restrict)str, stdout);
+    assert(str != NULL && "null str");
+    printf("\"%s\"", (const char *const restrict)str);
     return 0;
 }
 
 int tbl_noop_del(void *const restrict ptr) {
-    assert(ptr && "pointer is NULL");
+    assert(ptr != NULL && "pointer is NULL");
     return 0;
 }
 
 int test_tbl(void) {
     int err = 0;
+    char *keys[10] = {
+        "a", "bb", "ccc", "dddd", "eeeee", "ffffff", "ggggggg", "hhhhhhhh",
+        "iiiiiiiii", "jjjjjjjjjj"
+    };
+    int values[10] = {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
     tbl *me = NULL;
 
+    /* Setup */
     assert(mem_malloc((void **)&me, 1, sizeof(tbl)) == 0);
     assert(tbl_ctor(me, 10, simple_str_hash,
             (int (*)(const void *const restrict, const void *const restrict))strcmp) == 0);
-    tbl_print(me, str_print, int_print);
-    tbl_insert(me, "hello", &err, tbl_noop_del);
-    tbl_insert(me, "hello2", &err, tbl_noop_del);
-    tbl_print(me, str_print, int_print);
-    TEST_PTR_EQ(tbl_search(me, "hello"), &err, err);
-    TEST_PTR_EQ(tbl_search(me, "hello2"), &err, err);
-    TEST_PTR_EQ(tbl_search(me, "hello3"), NULL, err);
-    tbl_remove(me, "hello", tbl_noop_del, tbl_noop_del);
-    TEST_PTR_EQ(tbl_search(me, "hello"), NULL, err);
     
+    TEST_INT_EQ(tbl_print(me, str_print, int_print), 0, err);
+    TEST_INT_EQ(tbl_insert(me, keys[0], &values[0], tbl_noop_del), 0, err);
+    TEST_INT_EQ(tbl_insert(me, keys[1], &values[1], tbl_noop_del), 0, err);
+    TEST_INT_EQ(tbl_print(me, str_print, int_print), 0, err);
+
+    TEST_PTR_EQ(tbl_search(me, keys[0]), &values[0], err);
+    TEST_PTR_EQ(tbl_search(me, keys[1]), &values[1], err);
+    TEST_PTR_EQ(tbl_search(me, keys[2]), NULL, err);
+
+    TEST_INT_EQ(tbl_remove(me, keys[0], tbl_noop_del, tbl_noop_del), 0, err);
+    TEST_PTR_EQ(tbl_search(me, keys[0]), NULL, err);
+    TEST_INT_EQ(tbl_print(me, str_print, int_print), 0, err);
+
+    TEST_INT_EQ(tbl_insert(me, keys[0], &values[0], tbl_noop_del), 0, err);
+    TEST_PTR_EQ(tbl_search(me, keys[0]), &values[0], err);
+    TEST_INT_EQ(tbl_print(me, str_print, int_print), 0, err);
+    
+    /* Teardown */
     assert(tbl_dtor(me, tbl_noop_del, tbl_noop_del) == 0);
     assert(mem_free((void **)&me) == 0);
 
