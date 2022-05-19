@@ -36,4 +36,4 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/tbl")
 add_executable("main" "${CMAKE_SOURCE_DIR}/main.c")
 
 # Link executable to libraries
-target_link_libraries("main" PUBLIC "mem" "arr")
+target_link_libraries("main" PUBLIC "mem" "arr" "tbl")

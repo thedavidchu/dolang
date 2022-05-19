@@ -27,4 +27,4 @@ int tbl_insert(tbl *const restrict me, void *const key, void *const value, int (
 void *tbl_search(tbl *const restrict me, const void *const key);
 int tbl_remove(tbl *const restrict me, const void *const key, int (*key_dtor)(void *const restrict), int (*value_dtor)(void *const restrict));
 
-int tbl_stderr(const arr *const me, int (*key_stderr)(const void *const), int (*value_stderr)(const void *const));
+int tbl_print(const tbl *const me, int (*key_print)(const void *const), int (*value_print)(const void *const));

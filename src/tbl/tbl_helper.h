@@ -2,6 +2,7 @@
 #include <stddef.h>
 
 #include "common/common.h"
+#include "bool/bool.h"
 #include "arr/arr.h"
 #include "tbl/tbl.h"
 
@@ -10,16 +11,23 @@
 #define TOMBSTONE (-2U)
 
 
+static int noop_dtor(void *const item);
+static int noop_dtor(void *const item) {
+    assert(item != NULL && "item is NULL!");
+    return 0;
+}
+
+
 static int tbl_gettableidx(const tbl *const restrict me, const void *const key, const bool return_tombstone, size_t *const table_idx_p) {
-    int err = 0;
+
     size_t hashcode = 0, table_home = 0, table_offset = 0, table_idx = 0, items_idx = 0;
     
-    RETURN_IF_ERROR(me == NULL, (int)ERROR_NULLPTR);
-    RETURN_IF_ERROR(key == NULL, (int)ERROR_NULLPTR);
-    RETURN_IF_ERROR(table_idx_p == NULL, (int)ERROR_NULLPTR);
+    RETURN_IF_ERROR(me == NULL, ERROR_NULLPTR);
+    RETURN_IF_ERROR(key == NULL, ERROR_NULLPTR);
+    RETURN_IF_ERROR(table_idx_p == NULL, ERROR_NULLPTR);
     
     hashcode = me->hash_key(key);
-    RETURN_IF_ERROR(me->cap == 0, (int)ERROR_DIVZERO);
+    RETURN_IF_ERROR(me->cap == 0, ERROR_DIVZERO);
     table_home = hashcode % me->cap;
     
     for (table_offset = 0; table_offset < me->cap; ++table_offset) {
@@ -49,5 +57,5 @@ static int tbl_gettableidx(const tbl *const restrict me, const void *const key, 
     }
     
     /* No space and not found */
-    return -1;
+    return ERROR;
 }

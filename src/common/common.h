@@ -31,7 +31,7 @@
         /* We use this function so we do not need to include stdio.h. */ \
         _err = print_stderr("[ERROR] %s:%d: err_ = \"%s\" = %d: \"%s\"\n" \
                            "\tcond_ = \"%s\" = %d\n", \
-                           __FILE__, __LINE__, #err_ (int)(err_), _safe_strerror((int)(err_)), \
+                           __FILE__, __LINE__, #err_, (int)(err_), _safe_strerror((int)(err_)), \
                            #cond_, _err); \
         assert(_err == 0 && "failed to print error message to stderr"); \
         errno = old_errno; \
@@ -56,4 +56,6 @@ typedef enum {
     ERROR_NULLPTR = -1000,
     ERROR_OVERFLOW = -1001,
     ERROR_DIVZERO = -1002,
+    ERROR_KEY = -1003,
+    ERROR_VALUE = -1004,
 } ErrorCode;

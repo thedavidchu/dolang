@@ -6,6 +6,7 @@
 #include "bool/bool.h"
 #include "mem/mem.h"
 #include "arr/arr.h"
+#include "tbl/tbl.h"
 
 #define CHANNEL stdout
 
@@ -62,6 +63,8 @@ int test_bool(void) {
     assert((true && !false) && (true == 1 && false == 0));
     return 0;
 }
+
+/******************************************************************************/
 
 int test_mem(void) {
     int err = 0;
@@ -121,12 +124,14 @@ int test_mem(void) {
     return err;
 }
 
-int int_stderr(const void *const ip) {
+/******************************************************************************/
+
+int int_print(const void *const restrict ip) {
     fprintf(stderr, "%d", *(int *)ip);
     return 0;
 }
 
-int int_dtor(void *const ip) {
+int int_dtor(void *const restrict ip) {
     if (ip == NULL) {
         return -1;
     }
@@ -141,31 +146,66 @@ int test_arr(void) {
     TEST_INT_EQ(arr_ctor(&a, 10, sizeof(int)), 0, err);
     TEST_INT_EQ(arr_ctor(&b, 10, sizeof(int)), 0, err);
 
-    arr_stderr(&a, int_stderr);
+    arr_print(&a, int_print);
     for (x = 0; x < 11; ++x) {
         TEST_INT_EQ(arr_insert(&a, 0, &x), 0, err);
         y = (int *)arr_search(&a, 0);
         assert(y != NULL && "null!");
         TEST_INT_EQ(*y == x, 1, err);
     }
-    arr_stderr(&a, int_stderr);
+    arr_print(&a, int_print);
 
     for (x = 11; x < 22; ++x) {
         TEST_INT_EQ(arr_append(&a, &x), 0, err);
     }
-    arr_stderr(&a, int_stderr);
+    arr_print(&a, int_print);
 
     x = 12;
     TEST_INT_EQ(arr_change(&a, 0, &x, int_dtor), 0, err);
-    arr_stderr(&a, int_stderr);
+    arr_print(&a, int_print);
 
     while (a.len > 0) {
         TEST_INT_EQ(arr_remove(&a, 0, int_dtor), 0, err);
     }
-    arr_stderr(&a, int_stderr);
+    arr_print(&a, int_print);
 
     TEST_INT_EQ(arr_dtor(&a, int_dtor), 0, err);
     TEST_INT_EQ(arr_dtor(&b, int_dtor), 0, err);
+
+    return err;
+}
+
+/******************************************************************************/
+
+size_t simple_str_hash(const char *const restrict str) {
+    return strlen(str);
+}
+
+int str_print(const char *const restrict str) {
+    assert(str && "null str");
+    fputs(str, stdout);
+    return 0;
+}
+
+int tbl_noop_del(void *const restrict ptr) {
+    assert(ptr && "pointer is NULL");
+    return 0;
+}
+
+int test_tbl(void) {
+    int err = 0;
+    tbl *me;
+
+    mem_malloc((void **)&me, 1, sizeof(tbl));
+    tbl_ctor(me, 10, (size_t (*)(const void *const restrict))simple_str_hash,
+            (int (*)(const void *const restrict, const void *const restrict))strcmp);
+    tbl_print(me, (int (*)(const void * const restrict))str_print, (int (*)(const void * const restrict))int_print);
+    tbl_insert(me, "hello", &err, (int (*)(void * const restrict))tbl_noop_del);
+    tbl_insert(me, "hello2", &err, tbl_noop_del);
+    tbl_print(me, (int (*)(const void * const restrict))str_print, (int (*)(const void * const restrict))int_print);
+    TEST_PTR_EQ(tbl_search(me, "hello"), &err, err);
+    TEST_PTR_EQ(tbl_search(me, "hello2"), &err, err);
+    tbl_remove(me, "hello", (int (*)(void * const restrict))tbl_noop_del, (int (*)(void * const restrict))tbl_noop_del);
 
     return err;
 }
@@ -177,6 +217,7 @@ int main(void) {
     TEST_INT_EQ(test_bool(), 0, err);
     TEST_INT_EQ(test_mem(), 0, err);
     TEST_INT_EQ(test_arr(), 0, err);
+    TEST_INT_EQ(test_tbl(), 0, err);
 
     return err;
 }

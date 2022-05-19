@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdio.h>
 
 #include "common/common.h"
 #include "mem/mem.h"
@@ -6,13 +7,6 @@
 
 #include "tbl/tbl.h"
 #include "tbl/tbl_helper.h" /* Define INVALID and TOMBSTONE */
-
-
-static int noop_dtor(void *const item);
-static int noop_dtor(void *const item) {
-    assert(item != NULL && "item is NULL!");
-    return 0;
-}
 
 
 int tbl_ctor(tbl *const restrict me, size_t cap,
@@ -83,10 +77,11 @@ int tbl_insert(tbl *const restrict me, void *const key, void *const value, int (
         assert(arr_search(&me->items, new_item_idx) == NULL &&
                 "another item already exists where we will place the new item!");
         RETURN_IF_ERROR(err = arr_append(&me->items, &item), err);
+        ++me->len;
         assert(me->items.len == new_item_idx + 1 && "unexpected length of items");
         return 0;
     } else {
-        tbl_kv *const item_p = (tbl_kv *)arr_search(&me->items, arr_idx);
+        tbl_kv *const item_p = (tbl_kv *)arr_search(&me->items, item_idx);
         assert(item_p != NULL && "unexpected NULL");
         assert(value_dtor(item_p->value) == 0 && "failed to destroy old value");
         item_p->value = value;
@@ -99,21 +94,94 @@ void *tbl_search(tbl *const restrict me, const void *const key) {
     size_t table_idx = INVALID, items_idx = INVALID;
     tbl_kv *item;
     
-    RETURN_IF_ERROR(me == NULL || key == NULL, NULL);
-    RETURN_IF_ERROR(err = tbl_gettableidx(me, key, false, &table_idx), NULL);
+    if (me == NULL || key == NULL) {
+        return NULL;
+    }
+    if ((err = tbl_gettableidx(me, key, false, &table_idx))) {
+        return NULL;
+    }
+    if (table_idx == INVALID) {
+        return NULL;
+    }
+    assert(table_idx < me->cap && "table_idx out of range!");
     items_idx = me->table[table_idx];
-    RETURN_IF_ERROR((item = arr_search(&me->items, items_idx)) == NULL, NULL);
+    if ((item = arr_search(&me->items, items_idx)) == NULL) {
+        return NULL;
+    }
     return item->value;
 }
 
 int tbl_remove(tbl *const restrict me, const void *const key, int (*key_dtor)(void *const restrict), int (*value_dtor)(void *const restrict)) {
-    if (me == NULL || key == NULL) {
-        return (int)ERROR_NULLPTR;
-    }
+    int err = 0;
+    size_t table_idx = INVALID, item_idx = INVALID;
+    tbl_kv *item = NULL;
 
-    /* RETURN_IF_ERROR(item = tbl_gettableidx(me, key), -1); */
-    assert(key_dtor(NULL) == 0 && "key destroy failed");
-    assert(value_dtor(NULL) == 0 && "value destroy failed");
+    RETURN_IF_ERROR(me == NULL || key == NULL, ERROR_NULLPTR);
+
+    RETURN_IF_ERROR(err = tbl_gettableidx(me, key, 
+            /*return_tombstone=*/false, &table_idx), err);
+    if (table_idx == INVALID) {
+        return 0;
+    }
+    assert(table_idx < me->cap && "table_idx out of range!");
+    item_idx = me->table[table_idx];
+    RETURN_IF_ERROR((item = arr_search(&me->items, item_idx)) == NULL, ERROR);
+
+    if ((err = key_dtor(item->key))) {
+        int err_value = value_dtor(item->value);
+        /* Set value to NULL if no error deleting it. */
+        if (!err_value) {
+            item->value = NULL;
+        }
+        return err;
+    }
+    RETURN_IF_ERROR(err = value_dtor(item->value), err);
+    --me->len;
+    item->hashcode = 0;
+    item->key = NULL;
+    item->value = NULL;
+
+    /* TODO(dchu): shrink if necessary. */
+    return 0;
+}
+
+int tbl_print(const tbl *const me, int (*key_print)(const void *const), int (*value_print)(const void *const)) {
+    int err = 0;
+    size_t i = 0;
+    
+    printf("(len = %zu, cap = %zu) [", me->len, me->cap);
+    for (i = 0; i < me->cap; ++i) {
+        if (me->table[i] == INVALID) {
+            printf("INVALID");
+        } else if (me->table[i] == TOMBSTONE) {
+            printf("TOMBSTONE");
+        } else {
+            printf("%zu", me->table[i]);
+        }
+        printf("%s", i + 1 == me->cap ? "" : ", ");
+    }
+    printf("] ");
+
+    printf("(len = %zu, cap = %zu) {", me->items.len, me->items.cap);
+    for (i = 0; i < me->items.cap; ++i) {
+        const tbl_kv *const item = (tbl_kv *)arr_search(&me->items, i);
+        assert(item != NULL && "unexpected NULL");
+
+        if (item->hashcode == 0 || item->key == NULL || item->value == NULL) {
+            assert(item->hashcode == 0 && item->key == NULL &&
+                    item->value == NULL && "expected all to be empty");
+            continue;
+        }
+        printf("(%zu)", item->hashcode);
+        err = key_print(item->key);
+        assert(!err && "error printing key");
+        err = value_print(item->value);
+        assert(!err && "error printing value");
+
+        printf("%s", i + 1 == me->items.cap ? "" : ", ");
+    }
+    printf("}");
 
     return 0;
 }
+
