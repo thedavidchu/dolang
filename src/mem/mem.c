@@ -44,13 +44,19 @@ int mem_malloc(void **const me, size_t num, size_t size) {
     memory leaks if we don't set pointers to NULL willy-nilly). */
     RETURN_IF_ERROR(me == NULL || *me != NULL, -1);
     /* We specifically enumerate the 0 case, because we want to ensure that
-    calls to mem_malloc(ptr, 0, 0) return NULL. */
+    calls to mem_malloc(ptr, 0, 0) return NULL and avoid malloc return NULL
+    without setting an error. */
     if ((num_bytes = num * size) == 0) {
         *me = NULL;
         return 0;
     }
     if ((*me = malloc(num_bytes)) == NULL) {
-        assert(errno && "errno is not set when malloc returned an error!");
+        #ifndef VALGRIND
+            assert(errno != 0 && "errno is not set when malloc returns an error");
+        #else
+            /* Valgrind does not set errno */
+            RETURN_IF_ERROR(errno != 0, ENOMEM);
+        #endif
         return errno;
     }
     assert(errno == 0 && "errno is set when malloc returned valid value!");
@@ -75,7 +81,12 @@ int mem_realloc(void **const me, size_t num, size_t size) {
         }
     }
     if ((new_ptr = realloc(*me, num_bytes)) == NULL) {
-        assert(errno && "errno is not set when malloc returned an error!");
+        #ifndef VALGRIND
+            assert(errno != 0 && "errno is not set when realloc returns an error");
+        #else
+            /* Valgrind does not set errno */
+            RETURN_IF_ERROR(errno != 0, ENOMEM);
+        #endif
         return errno;
     }
     assert(errno == 0 && "errno is set when malloc returned valid value!");
