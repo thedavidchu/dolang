@@ -127,7 +127,7 @@ int test_mem(void) {
 /******************************************************************************/
 
 int int_print(const void *const restrict ip) {
-    fprintf(stderr, "%d", *(int *)ip);
+    printf("%d", *(int *)ip);
     return 0;
 }
 
@@ -177,13 +177,13 @@ int test_arr(void) {
 
 /******************************************************************************/
 
-size_t simple_str_hash(const char *const restrict str) {
-    return strlen(str);
+size_t simple_str_hash(const void *const restrict str) {
+    return strlen((const char *const restrict)str);
 }
 
-int str_print(const char *const restrict str) {
+int str_print(const void *const restrict str) {
     assert(str && "null str");
-    fputs(str, stdout);
+    fputs((const char *const restrict)str, stdout);
     return 0;
 }
 
@@ -194,18 +194,19 @@ int tbl_noop_del(void *const restrict ptr) {
 
 int test_tbl(void) {
     int err = 0;
-    tbl *me;
+    tbl *me = NULL;
 
-    mem_malloc((void **)&me, 1, sizeof(tbl));
-    tbl_ctor(me, 10, (size_t (*)(const void *const restrict))simple_str_hash,
+    assert(mem_malloc((void **)&me, 1, sizeof(tbl)) == 0);
+    tbl_ctor(me, 10, simple_str_hash,
             (int (*)(const void *const restrict, const void *const restrict))strcmp);
-    tbl_print(me, (int (*)(const void * const restrict))str_print, (int (*)(const void * const restrict))int_print);
-    tbl_insert(me, "hello", &err, (int (*)(void * const restrict))tbl_noop_del);
+    tbl_print(me, str_print, int_print);
+    tbl_insert(me, "hello", &err, tbl_noop_del);
     tbl_insert(me, "hello2", &err, tbl_noop_del);
-    tbl_print(me, (int (*)(const void * const restrict))str_print, (int (*)(const void * const restrict))int_print);
+    tbl_print(me, str_print, int_print);
     TEST_PTR_EQ(tbl_search(me, "hello"), &err, err);
     TEST_PTR_EQ(tbl_search(me, "hello2"), &err, err);
-    tbl_remove(me, "hello", (int (*)(void * const restrict))tbl_noop_del, (int (*)(void * const restrict))tbl_noop_del);
+    TEST_PTR_EQ(tbl_search(me, "hello3"), NULL, err);
+    tbl_remove(me, "hello", tbl_noop_del, tbl_noop_del);
 
     return err;
 }

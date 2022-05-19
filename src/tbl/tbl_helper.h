@@ -33,7 +33,7 @@ static int tbl_gettableidx(const tbl *const restrict me, const void *const key, 
     for (table_offset = 0; table_offset < me->cap; ++table_offset) {
         table_idx = (table_home + table_offset) % me->cap;
         items_idx = me->table[table_idx];
-        
+
         if (items_idx == INVALID) {
             *table_idx_p = table_idx;
             return 0;

@@ -13,11 +13,16 @@ int tbl_ctor(tbl *const restrict me, size_t cap,
         size_t (*hash_key)(const void *const restrict),
         int (*key_cmp)(const void *const restrict, const void *const restrict)) {
     int err = 0;
+    size_t table_idx = 0;
 
     if (me == NULL) {
         return (int)ERROR_NULLPTR;
     }
     RETURN_IF_ERROR((err = mem_malloc((void **)&me->table, cap, sizeof *me->table)), err);
+    for (table_idx = 0; table_idx < cap; ++table_idx) {
+        me->table[table_idx] = INVALID;
+    }
+
     RETURN_IF_ERROR((err = arr_ctor(&me->items, cap, sizeof(tbl_kv))), err);
     me->cap = cap;
 
@@ -97,7 +102,7 @@ void *tbl_search(tbl *const restrict me, const void *const key) {
     if (me == NULL || key == NULL) {
         return NULL;
     }
-    if ((err = tbl_gettableidx(me, key, false, &table_idx))) {
+    if ((err = tbl_gettableidx(me, key, /*return_tombstone=*/false, &table_idx))) {
         return NULL;
     }
     if (table_idx == INVALID) {
@@ -163,7 +168,7 @@ int tbl_print(const tbl *const me, int (*key_print)(const void *const), int (*va
     printf("] ");
 
     printf("(len = %zu, cap = %zu) {", me->items.len, me->items.cap);
-    for (i = 0; i < me->items.cap; ++i) {
+    for (i = 0; i < me->items.len; ++i) {
         const tbl_kv *const item = (tbl_kv *)arr_search(&me->items, i);
         assert(item != NULL && "unexpected NULL");
 
@@ -175,12 +180,13 @@ int tbl_print(const tbl *const me, int (*key_print)(const void *const), int (*va
         printf("(%zu)", item->hashcode);
         err = key_print(item->key);
         assert(!err && "error printing key");
+        printf(": ");
         err = value_print(item->value);
         assert(!err && "error printing value");
 
-        printf("%s", i + 1 == me->items.cap ? "" : ", ");
+        printf("%s", i + 1 == me->items.len ? "" : ", ");
     }
-    printf("}");
+    printf("}\n");
 
     return 0;
 }
