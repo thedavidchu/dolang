@@ -239,8 +239,21 @@ int test_tbl(void) {
         TEST_INT_EQ(tbl_print(me, str_print, int_print), 0, err);
         TEST_PTR_EQ(tbl_search(me, keys[i]), &values[i], err);
     }
+    /* Try to shove an extra in (breaks for now) */
     TEST_INT_EQ(tbl_insert(me, "extra", &values[0], tbl_noop_del), ERROR_NOROOM, err);
 
+    for (i = 0; i < 10; ++i) {
+        TEST_INT_EQ(tbl_remove(me, keys[i], tbl_noop_del, tbl_noop_del), 0, err);
+    }
+    TEST_INT_EQ(tbl_remove(me, keys[0], tbl_noop_del, tbl_noop_del), 0, err);
+
+    TEST_INT_EQ(tbl_print(me, str_print, int_print), 0, err);
+    for (i = 0; i < 10; ++i) {
+        TEST_INT_EQ(tbl_insert(me, keys[i], &values[i], tbl_noop_del), 0, err);
+        TEST_INT_EQ(tbl_print(me, str_print, int_print), 0, err);
+        TEST_PTR_EQ(tbl_search(me, keys[i]), &values[i], err);
+    }
+    TEST_INT_EQ(tbl_print(me, str_print, int_print), 0, err);
 
     /* Teardown */
     REQUIRE_NO_ERROR(tbl_dtor(me, tbl_noop_del, tbl_noop_del),
