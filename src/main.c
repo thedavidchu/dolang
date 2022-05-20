@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "common/common.h"
 #include "bool/bool.h"
 #include "mem/mem.h"
 #include "arr/arr.h"
@@ -202,9 +203,11 @@ int test_tbl(void) {
     tbl *me = NULL;
 
     /* Setup */
-    assert(mem_malloc((void **)&me, 1, sizeof(tbl)) == 0);
-    assert(tbl_ctor(me, 10, simple_str_hash,
-            (int (*)(const void *const restrict, const void *const restrict))strcmp) == 0);
+    REQUIRE_NO_ERROR(mem_malloc((void **)&me, 1, sizeof(tbl)),
+            "malloc failed");
+    REQUIRE_NO_ERROR(tbl_ctor(me, 10, simple_str_hash,
+            (int (*)(const void *const restrict, const void *const restrict))strcmp),
+            "tbl_ctor failed");
     
     TEST_INT_EQ(tbl_print(me, str_print, int_print), 0, err);
     TEST_INT_EQ(tbl_insert(me, keys[0], &values[0], tbl_noop_del), 0, err);
@@ -230,20 +233,26 @@ int test_tbl(void) {
     TEST_INT_EQ(tbl_print(me, str_print, int_print), 0, err);
 
     /* Teardown */
-    assert(tbl_dtor(me, tbl_noop_del, tbl_noop_del) == 0);
-    assert(mem_free((void **)&me) == 0);
+    REQUIRE_NO_ERROR(tbl_dtor(me, tbl_noop_del, tbl_noop_del),
+            "tbl_dtor failed");
+    REQUIRE_NO_ERROR(mem_free((void **)&me), "free failed");
 
     return err;
 }
 
 int main(void) {
     int err = 0;
-    
+
     /* Technically, this is sketchy because we are assuming that bool works. */
     TEST_INT_EQ(test_bool(), 0, err);
     TEST_INT_EQ(test_mem(), 0, err);
     TEST_INT_EQ(test_arr(), 0, err);
     TEST_INT_EQ(test_tbl(), 0, err);
+
+    if (err == 0) {
+        fprintf(CHANNEL, /*GREEN*/"\033[32m>>> ALL TESTS PASSED! <<<\033[0m\n"/*END GREEN*/);
+        fflush(CHANNEL);
+    }
 
     return err;
 }

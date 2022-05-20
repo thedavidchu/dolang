@@ -1,6 +1,7 @@
 /* A file containing the compatibility differences between compilers. */
 #pragma once
 
+#include <assert.h>
 #include <errno.h>
 
 /* Allow use of inline in this file, even if it is not valid. */
@@ -39,9 +40,25 @@
     } \
 } while (0)
 
+#define REQUIRE_NO_ERROR(cond_, msg_) do { \
+    int _err = 0; /* err_ cannot be '_err'. */ \
+    if ((_err = (int)(cond_))) { \
+        const int old_errno = errno; \
+        errno = 0; /* Reset errno */ \
+        /* We use this function so we do not need to include stdio.h. */ \
+        _err = print_stderr("[FATAL] %s:%d: %s\n\tcond_ = \"%s\" = %d\n", \
+                           __FILE__, __LINE__, (msg_), #cond_, _err); \
+        assert(_err == 0 && "failed to print error message to stderr"); \
+        errno = old_errno; \
+        _exit_failure(); \
+    } \
+} while (0)
+
 /** Private function to be used with RETURN_IF_ERROR macro. This safely prints
  * the error associated with $errnum. */
 const char *_safe_strerror(const int errnum);
+
+void _exit_failure(void);
 
 /** Log to the stderr stream. */
 int print_stderr(const char *const restrict format, ...);
@@ -58,4 +75,7 @@ typedef enum {
     ERROR_DIVZERO = -1002,
     ERROR_KEY = -1003,
     ERROR_VALUE = -1004,
+    ERROR_STDOUT = -1005,
+    ERROR_STDERR = -1006,
+    ERROR_STDIN = -1007,
 } ErrorCode;

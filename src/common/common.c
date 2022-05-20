@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h> /* exit() */
 #include <string.h> /* strerror, NULL */
 
 #include "common/common.h"
@@ -20,6 +21,12 @@ const char *_safe_strerror(const int errnum) {
 
     return s;
 }
+
+void _exit_failure(void) {
+    exit(EXIT_FAILURE);
+    assert(0 && "failed to exit");
+}
+
 
 int print_stderr(const char *const restrict format, ...) {
     int err = 0;
