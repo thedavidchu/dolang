@@ -149,21 +149,21 @@ int arr_pop(arr *const me, int (*item_dtor)(void *const)) {
     return -1;
 }
 
-int arr_stderr(const arr *const me, int (*item_stderr)(const void *const)) {
+int arr_print(const arr *const me, int (*item_print)(const void *const)) {
     int err = 0, tmperr = 0;
     size_t i = 0;
 
-    if (0 > fprintf(stderr, "(len: %zu, cap: %zu, size: %zu) [", me->len, me->cap, me->size)) {
+    if (0 > printf("(len: %zu, cap: %zu, size: %zu) [", me->len, me->cap, me->size)) {
         assert(errno);
         return errno;
     }
     for (i = 0; i < me->len; ++i) {
-        if ((tmperr = item_stderr(ARR_GETITEM(me, i)))) {
+        if ((tmperr = item_print(ARR_GETITEM(me, i)))) {
             err = tmperr;
-            fprintf(stderr, "?");
+            printf("?");
         }
-        fprintf(stderr, "%s", i == me->len - 1 ? "" : ", ");
+        printf("%s", i == me->len - 1 ? "" : ", ");
     }
-    fprintf(stderr, "]\n");
+    printf("]\n");
     return err;
 }

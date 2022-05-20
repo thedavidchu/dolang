@@ -3,9 +3,11 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "common/common.h"
 #include "bool/bool.h"
 #include "mem/mem.h"
 #include "arr/arr.h"
+#include "tbl/tbl.h"
 
 #define CHANNEL stdout
 
@@ -31,7 +33,7 @@ do {\
     void *_output = (output);\
     void *_oracle = (oracle);\
     if (_output == _oracle) {\
-        fprintf(CHANNEL, #output " == " #oracle ": OK\n");\
+        fprintf(CHANNEL, /*GREEN*/"\033[32m" #output " == " #oracle ": OK\033[0m\n"/*END GREEN*/);\
     } else {\
         fprintf(CHANNEL, /*RED*/"\033[31m" #output "(=%p) != " #oracle "(=%p)"\
             ", expected " #output " == " #oracle\
@@ -47,7 +49,7 @@ do {\
     void *_output = (output);\
     void *_oracle = (oracle);\
     if (_output != _oracle) {\
-        fprintf(CHANNEL, #output " != " #oracle ": OK\n");\
+        fprintf(CHANNEL, /*GREEN*/"\033[32m" #output " != " #oracle ": OK\033[0m\n"/*END GREEN*/);\
     } else {\
         fprintf(CHANNEL, /*RED*/"\033[31m" #output "(=%p) == " #oracle "(=%p)"\
             ", expected " #output " != " #oracle\
@@ -62,6 +64,8 @@ int test_bool(void) {
     assert((true && !false) && (true == 1 && false == 0));
     return 0;
 }
+
+/******************************************************************************/
 
 int test_mem(void) {
     int err = 0;
@@ -121,12 +125,14 @@ int test_mem(void) {
     return err;
 }
 
-int int_stderr(const void *const ip) {
-    fprintf(stderr, "%d", *(int *)ip);
+/******************************************************************************/
+
+int int_print(const void *const restrict ip) {
+    printf("%d", *(int *)ip);
     return 0;
 }
 
-int int_dtor(void *const ip) {
+int int_dtor(void *const restrict ip) {
     if (ip == NULL) {
         return -1;
     }
@@ -141,28 +147,28 @@ int test_arr(void) {
     TEST_INT_EQ(arr_ctor(&a, 10, sizeof(int)), 0, err);
     TEST_INT_EQ(arr_ctor(&b, 10, sizeof(int)), 0, err);
 
-    arr_stderr(&a, int_stderr);
+    arr_print(&a, int_print);
     for (x = 0; x < 11; ++x) {
         TEST_INT_EQ(arr_insert(&a, 0, &x), 0, err);
         y = (int *)arr_search(&a, 0);
         assert(y != NULL && "null!");
         TEST_INT_EQ(*y == x, 1, err);
     }
-    arr_stderr(&a, int_stderr);
+    arr_print(&a, int_print);
 
     for (x = 11; x < 22; ++x) {
         TEST_INT_EQ(arr_append(&a, &x), 0, err);
     }
-    arr_stderr(&a, int_stderr);
+    arr_print(&a, int_print);
 
     x = 12;
     TEST_INT_EQ(arr_change(&a, 0, &x, int_dtor), 0, err);
-    arr_stderr(&a, int_stderr);
+    arr_print(&a, int_print);
 
     while (a.len > 0) {
         TEST_INT_EQ(arr_remove(&a, 0, int_dtor), 0, err);
     }
-    arr_stderr(&a, int_stderr);
+    arr_print(&a, int_print);
 
     TEST_INT_EQ(arr_dtor(&a, int_dtor), 0, err);
     TEST_INT_EQ(arr_dtor(&b, int_dtor), 0, err);
@@ -170,13 +176,106 @@ int test_arr(void) {
     return err;
 }
 
+/******************************************************************************/
+
+size_t simple_str_hash(const void *const restrict str) {
+    return strlen((const char *const restrict)str);
+}
+
+int str_print(const void *const restrict str) {
+    assert(str != NULL && "null str");
+    printf("\"%s\"", (const char *const restrict)str);
+    return 0;
+}
+
+int tbl_noop_del(void *const restrict ptr) {
+    assert(ptr != NULL && "pointer is NULL");
+    return 0;
+}
+
+int test_tbl(void) {
+    int err = 0;
+    size_t i = 0;
+    char *keys[10] = {
+        "a", "bb", "ccc", "dddd", "eeeee", "ffffff", "ggggggg", "hhhhhhhh",
+        "iiiiiiiii", "jjjjjjjjjj"
+    };
+    int values[10] = {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
+    tbl *me = NULL;
+
+    /* Setup */
+    REQUIRE_NO_ERROR(mem_malloc((void **)&me, 1, sizeof(tbl)),
+            "malloc failed");
+    REQUIRE_NO_ERROR(tbl_ctor(me, 10, simple_str_hash,
+            (int (*)(const void *const restrict, const void *const restrict))strcmp),
+            "tbl_ctor failed");
+    
+    TEST_INT_EQ(tbl_print(me, str_print, int_print), 0, err);
+    TEST_INT_EQ(tbl_insert(me, keys[0], &values[0], tbl_noop_del), 0, err);
+    TEST_INT_EQ(tbl_insert(me, keys[1], &values[1], tbl_noop_del), 0, err);
+    TEST_INT_EQ(tbl_print(me, str_print, int_print), 0, err);
+
+    TEST_PTR_EQ(tbl_search(me, keys[0]), &values[0], err);
+    TEST_PTR_EQ(tbl_search(me, keys[1]), &values[1], err);
+    TEST_PTR_EQ(tbl_search(me, keys[2]), NULL, err);
+
+    TEST_INT_EQ(tbl_remove(me, keys[0], tbl_noop_del, tbl_noop_del), 0, err);
+    TEST_INT_EQ(tbl_remove(me, keys[0], tbl_noop_del, tbl_noop_del), 0, err);
+    TEST_PTR_EQ(tbl_search(me, keys[0]), NULL, err);
+    TEST_INT_EQ(tbl_print(me, str_print, int_print), 0, err);
+
+    TEST_INT_EQ(tbl_insert(me, keys[0], &values[0], tbl_noop_del), 0, err);
+    TEST_PTR_EQ(tbl_search(me, keys[0]), &values[0], err);
+    TEST_INT_EQ(tbl_print(me, str_print, int_print), 0, err);
+
+    TEST_INT_EQ(tbl_insert(me, keys[0], &values[1], tbl_noop_del), 0, err);
+    TEST_INT_EQ(tbl_print(me, str_print, int_print), 0, err);
+    TEST_PTR_EQ(tbl_search(me, keys[0]), &values[1], err);
+    TEST_INT_EQ(tbl_insert(me, keys[0], &values[0], tbl_noop_del), 0, err);
+    TEST_INT_EQ(tbl_print(me, str_print, int_print), 0, err);
+
+    for (i = 0; i < 10; ++i) {
+        TEST_INT_EQ(tbl_insert(me, keys[i], &values[i], tbl_noop_del), 0, err);
+        TEST_INT_EQ(tbl_print(me, str_print, int_print), 0, err);
+        TEST_PTR_EQ(tbl_search(me, keys[i]), &values[i], err);
+    }
+    /* Try to shove an extra in (breaks for now) */
+    TEST_INT_EQ(tbl_insert(me, "extra", &values[0], tbl_noop_del), ERROR_NOROOM, err);
+
+    for (i = 0; i < 10; ++i) {
+        TEST_INT_EQ(tbl_remove(me, keys[i], tbl_noop_del, tbl_noop_del), 0, err);
+    }
+    TEST_INT_EQ(tbl_remove(me, keys[0], tbl_noop_del, tbl_noop_del), 0, err);
+
+    TEST_INT_EQ(tbl_print(me, str_print, int_print), 0, err);
+    for (i = 0; i < 10; ++i) {
+        TEST_INT_EQ(tbl_insert(me, keys[i], &values[i], tbl_noop_del), 0, err);
+        TEST_INT_EQ(tbl_print(me, str_print, int_print), 0, err);
+        TEST_PTR_EQ(tbl_search(me, keys[i]), &values[i], err);
+    }
+    TEST_INT_EQ(tbl_print(me, str_print, int_print), 0, err);
+
+    /* Teardown */
+    REQUIRE_NO_ERROR(tbl_dtor(me, tbl_noop_del, tbl_noop_del),
+            "tbl_dtor failed");
+    REQUIRE_NO_ERROR(mem_free((void **)&me), "free failed");
+
+    return err;
+}
+
 int main(void) {
     int err = 0;
-    
+
     /* Technically, this is sketchy because we are assuming that bool works. */
     TEST_INT_EQ(test_bool(), 0, err);
     TEST_INT_EQ(test_mem(), 0, err);
     TEST_INT_EQ(test_arr(), 0, err);
+    TEST_INT_EQ(test_tbl(), 0, err);
+
+    if (err == 0) {
+        fprintf(CHANNEL, /*GREEN*/"\033[32m>>> ALL TESTS PASSED! <<<\033[0m\n"/*END GREEN*/);
+        fflush(CHANNEL);
+    }
 
     return err;
 }

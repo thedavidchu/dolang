@@ -27,4 +27,4 @@ int arr_remove(arr *const me, const size_t idx, int (*item_dtor)(void *const));
 int arr_append(arr *const me, void *const item);
 int arr_pop(arr *const me, int (*item_dtor)(void *const));
 
-int arr_stderr(const arr *const me, int (*item_stderr)(const void *const));
+int arr_print(const arr *const me, int (*item_print)(const void *const));
