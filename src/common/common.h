@@ -78,4 +78,5 @@ typedef enum {
     ERROR_STDOUT = -1005,
     ERROR_STDERR = -1006,
     ERROR_STDIN = -1007,
+    ERROR_NOROOM = -1008,
 } ErrorCode;

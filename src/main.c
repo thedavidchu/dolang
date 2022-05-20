@@ -195,6 +195,7 @@ int tbl_noop_del(void *const restrict ptr) {
 
 int test_tbl(void) {
     int err = 0;
+    size_t i = 0;
     char *keys[10] = {
         "a", "bb", "ccc", "dddd", "eeeee", "ffffff", "ggggggg", "hhhhhhhh",
         "iiiiiiiii", "jjjjjjjjjj"
@@ -219,6 +220,7 @@ int test_tbl(void) {
     TEST_PTR_EQ(tbl_search(me, keys[2]), NULL, err);
 
     TEST_INT_EQ(tbl_remove(me, keys[0], tbl_noop_del, tbl_noop_del), 0, err);
+    TEST_INT_EQ(tbl_remove(me, keys[0], tbl_noop_del, tbl_noop_del), 0, err);
     TEST_PTR_EQ(tbl_search(me, keys[0]), NULL, err);
     TEST_INT_EQ(tbl_print(me, str_print, int_print), 0, err);
 
@@ -231,6 +233,14 @@ int test_tbl(void) {
     TEST_PTR_EQ(tbl_search(me, keys[0]), &values[1], err);
     TEST_INT_EQ(tbl_insert(me, keys[0], &values[0], tbl_noop_del), 0, err);
     TEST_INT_EQ(tbl_print(me, str_print, int_print), 0, err);
+
+    for (i = 0; i < 10; ++i) {
+        TEST_INT_EQ(tbl_insert(me, keys[i], &values[i], tbl_noop_del), 0, err);
+        TEST_INT_EQ(tbl_print(me, str_print, int_print), 0, err);
+        TEST_PTR_EQ(tbl_search(me, keys[i]), &values[i], err);
+    }
+    TEST_INT_EQ(tbl_insert(me, "extra", &values[0], tbl_noop_del), ERROR_NOROOM, err);
+
 
     /* Teardown */
     REQUIRE_NO_ERROR(tbl_dtor(me, tbl_noop_del, tbl_noop_del),

@@ -80,5 +80,5 @@ static int tbl_gettableidx(const tbl *const restrict me, const void *const key,
     }
     
     /* No space and not found */
-    return ERROR;
+    return ERROR_NOROOM;
 }

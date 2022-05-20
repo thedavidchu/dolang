@@ -92,6 +92,8 @@ int tbl_insert(tbl *const restrict me, void *const key, void *const value, int (
         tbl_kv item = {hashcode, key, value};
         
         /* TODO(dchu): expand/compress items if necessary */
+        if (me->len + 1 > me->cap) { return ERROR_NOROOM; }
+
         me->table[table_idx] = new_item_idx;
         assert(arr_search(&me->items, new_item_idx) == NULL &&
                 "another item already exists where we will place the new item!");
@@ -141,11 +143,11 @@ int tbl_remove(tbl *const restrict me, const void *const key, int (*key_dtor)(vo
 
     RETURN_IF_ERROR(err = tbl_gettableidx(me, key, 
             /*return_tombstone=*/false, &table_idx), err);
-    if (table_idx == INVALID) {
-        return 0;
-    }
     assert(table_idx < me->cap && "table_idx out of range!");
     item_idx = me->table[table_idx];
+    if (item_idx == INVALID) {
+        return 0;
+    }
     me->table[table_idx] = TOMBSTONE;
     RETURN_IF_ERROR((item = arr_search(&me->items, item_idx)) == NULL, ERROR);
 
