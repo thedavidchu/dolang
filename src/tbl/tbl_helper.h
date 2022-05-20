@@ -10,13 +10,17 @@
 #define INVALID ((size_t)(-1))
 #define TOMBSTONE ((size_t)(-2))
 
+/** Item destructor for the array in the table. This is a no-op. */
+static int arr_noop_dtor(void *const item);
+/** Print an item_idx (0, ..., TOMBSTONE, INVALID). */
+static inline int item_idx_print(const size_t item_idx);
+static int tbl_gettableidx(const tbl *const restrict me, const void *const key,
+        const bool return_tombstone, size_t *const table_idx_p);
 
-static int noop_dtor(void *const item);
-static int noop_dtor(void *const item) {
+static int arr_noop_dtor(void *const item) {
     assert(item != NULL && "item is NULL!");
     return 0;
 }
-
 
 static inline int item_idx_print(const size_t item_idx) {
     int err = 0;

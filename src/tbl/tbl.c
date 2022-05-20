@@ -59,7 +59,7 @@ int tbl_dtor(tbl *const restrict me, int (*key_dtor)(void *const restrict),
     /* We want to free as much as we can before returning, so we hold a
     temporary error value before checking if the other structure returns an
     error. */
-    err_tmp = arr_dtor(&me->items, noop_dtor);
+    err_tmp = arr_dtor(&me->items, arr_noop_dtor);
     RETURN_IF_ERROR((err = mem_free((void **)&me->table)), err);
     if (err_tmp) {
         return err_tmp;
@@ -79,10 +79,13 @@ int tbl_insert(tbl *const restrict me, void *const key, void *const value, int (
     
     /* We skip over tombstones because we want to see if the key is already in the table. */
     RETURN_IF_ERROR(err = tbl_gettableidx(me, key, /*return_tombstone=*/false, &table_idx), err);
-    if (table_idx == INVALID) {
+    assert(table_idx < me->cap && "table_idx out of range");
+    item_idx = me->table[table_idx];
+    if (item_idx == INVALID) {
         /* Run again because we want the first space where we can put the item. */
         RETURN_IF_ERROR(err = tbl_gettableidx(me, key, /*return_tombstone=*/true, &table_idx), err);
     }
+
     item_idx = me->table[table_idx];
     if (item_idx == INVALID || item_idx == TOMBSTONE) {
         const size_t hashcode = me->hash_key(key), new_item_idx = me->items.len;
