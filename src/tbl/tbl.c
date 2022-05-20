@@ -170,13 +170,7 @@ int tbl_print(const tbl *const me, int (*key_print)(const void *const), int (*va
     
     printf("(len = %zu, cap = %zu) [", me->len, me->cap);
     for (i = 0; i < me->cap; ++i) {
-        if (me->table[i] == INVALID) {
-            printf("INVALID");
-        } else if (me->table[i] == TOMBSTONE) {
-            printf("TOMBSTONE");
-        } else {
-            printf("%zu", me->table[i]);
-        }
+        item_idx_print(me->table[i]);
         printf("%s", i + 1 == me->cap ? "" : ", ");
     }
     printf("] ");

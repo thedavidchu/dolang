@@ -18,8 +18,28 @@ static int noop_dtor(void *const item) {
 }
 
 
-static int tbl_gettableidx(const tbl *const restrict me, const void *const key, const bool return_tombstone, size_t *const table_idx_p) {
+static inline int item_idx_print(const size_t item_idx) {
+    int err = 0;
 
+    switch (item_idx) {
+    case (INVALID):
+        err = fputs("INVALID", stdout);
+        RETURN_IF_ERROR(err == EOF, ERROR_STDOUT);
+        return 0;
+    case (TOMBSTONE):
+        err = fputs("TOMBSTONE", stdout);
+        RETURN_IF_ERROR(err == EOF, ERROR_STDOUT);
+        return 0;
+    default:
+        err = printf("%zu", item_idx);
+        RETURN_IF_ERROR(err < 0, ERROR_STDOUT);
+        return 0;
+    }
+}
+
+
+static int tbl_gettableidx(const tbl *const restrict me, const void *const key,
+        const bool return_tombstone, size_t *const table_idx_p) {
     size_t hashcode = 0, table_home = 0, table_offset = 0, table_idx = 0, items_idx = 0;
     
     RETURN_IF_ERROR(me == NULL, ERROR_NULLPTR);
