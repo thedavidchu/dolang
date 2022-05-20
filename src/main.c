@@ -222,7 +222,13 @@ int test_tbl(void) {
     TEST_INT_EQ(tbl_insert(me, keys[0], &values[0], tbl_noop_del), 0, err);
     TEST_PTR_EQ(tbl_search(me, keys[0]), &values[0], err);
     TEST_INT_EQ(tbl_print(me, str_print, int_print), 0, err);
-    
+
+    TEST_INT_EQ(tbl_insert(me, keys[0], &values[1], tbl_noop_del), 0, err);
+    TEST_INT_EQ(tbl_print(me, str_print, int_print), 0, err);
+    TEST_PTR_EQ(tbl_search(me, keys[0]), &values[1], err);
+    TEST_INT_EQ(tbl_insert(me, keys[0], &values[0], tbl_noop_del), 0, err);
+    TEST_INT_EQ(tbl_print(me, str_print, int_print), 0, err);
+
     /* Teardown */
     assert(tbl_dtor(me, tbl_noop_del, tbl_noop_del) == 0);
     assert(mem_free((void **)&me) == 0);
