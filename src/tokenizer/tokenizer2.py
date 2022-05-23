@@ -8,13 +8,12 @@ EOF: str = None
 
 
 class TokenType(str, Enum):
-    WHITESPACE = "WHITESPACE"	# Indent vs non-indent
-    COMMENT = "COMMENT"	# Multi-line vs non-multiline, nesting
-    STRING = "STRING"	# Multi-quotes, single-vs-double quote
-    LITERAL = "LITERAL"	# Keyword, non-keyword
-    NUMBER = "NUMBER"	# Float, int, complex
-    PUNCTUATION = "PUNCTUATION"	# Stand-alone, non-standalone
-
+    WHITESPACE = "WHITESPACE"  # Indent vs non-indent
+    COMMENT = "COMMENT"  # Multi-line vs non-multiline, nesting
+    STRING = "STRING"  # Multi-quotes, single-vs-double quote
+    LITERAL = "LITERAL"  # Keyword, non-keyword
+    NUMBER = "NUMBER"  # Float, int, complex
+    PUNCTUATION = "PUNCTUATION"  # Stand-alone, non-standalone
 
 
 class Position:
@@ -27,11 +26,12 @@ class Position:
     def __repr__(self) -> str:
         return f"idx: {self._idx}, line: {self._line}, col: {self._col}"
 
-    def new_line(self) -> Self: # Assuming "Self" refers to its own type
+    def new_line(self) -> Self:  # Assuming "Self" refers to its own type
         return Position(idx=self._idx + 1, line=self._line + 1, col=0)
 
     def new_col(self) -> Self:  # Assuming "Self" refers to its own type
         return Position(idx=self._idx + 1, line=self._line, col=self._col + 1)
+
 
 class Text:
     def __init__(self, text: str):
@@ -48,7 +48,7 @@ class Text:
 
     def getoffset(self, idx: int) -> str:
         if len(self.text) > self.position._idx + idx:
-            return self.text[self.position._idx:self.position._idx + idx]
+            return self.text[self.position._idx : self.position._idx + idx]
         else:
             return EOF
 
@@ -57,11 +57,17 @@ class Text:
 
 
 class Token:
-    def __init__(self, strtoken: str, ttype: TokenType, startpos: Position, endpos: Position):
+    def __init__(
+        self,
+        strtoken: str,
+        ttype: TokenType,
+        startpos: Position,
+        endpos: Position,
+    ):
         self.strtoken: str = strtoken
         self.token_type: TokenType = ttype
         self.startpos: Position = startpos
-        self.endpos:Position = endpos
+        self.endpos: Position = endpos
 
     def __repr__(self) -> str:
         start_line, start_col = self.startpos._line, self.startpos._col
@@ -82,7 +88,7 @@ object. Otherwise, we will return None.
 ################################################################################
 ########## START IDENTIFICATION FUNCTIONS ######################################
 ################################################################################
-def is_whitespace_start(text: Text) -> bool:	# [ \n\t\v\r]+
+def is_whitespace_start(text: Text) -> bool:  # [ \n\t\v\r]+
     """Note: the word "_start" in the function name is unnecessary. It is the
     start, the middle, and the end, because all characters fall into the same
     group."""
@@ -106,7 +112,7 @@ def is_string_start(text: Text) -> bool:
     """We will only support strings surrounded by single double quotes for now."""
     c = text.getoffset(0)
     assert c != EOF
-    return c == "\""
+    return c == '"'
 
 
 def is_number_start(text: Text) -> bool:
@@ -118,17 +124,17 @@ def is_number_start(text: Text) -> bool:
         return True
     elif c == "+" or c == "-":
         # Assuming next_c is not EOF... not that it would matter.
-        return next_c.isdecimal()	# [0-9]
+        return next_c.isdecimal()  # [0-9]
     return False
 
 
-def is_literal_start(text: Text) -> bool:
+def is_literal_start(text: Text) -> bool:  # [A-Za-z_][A-Za-z0-9_]*
     c = text.getoffset(0)
     assert c != EOF
     return c.isalpha() or c == "_"
 
 
-def is_standalone_punctuation_start(text: Text) -> bool:	# [()[]{},;]
+def is_standalone_punctuation_start(text: Text) -> bool:  # [()[]{},;]
     """Note: the word "_start" in the function name is unnecessary. It is the
     start, the middle, and the end, because this is only one character."""
     c = text.getoffset(0)
@@ -158,12 +164,17 @@ def capture_whitespace(text: Text) -> "Token | None":
         i += 1
         c = text.getoffset(i)
 
-    strtoken = text.text[text.current_idx:text.current_idx + i]
+    strtoken = text.text[text.current_idx : text.current_idx + i]
     for _ in range(i):
         next(text)
     endpos = text.getpos()
 
-    token = Token(strtoken=strtoken, ttype=TokenType.WHITESPACE, startpos=startpos, endpos=endpos)
+    token = Token(
+        strtoken=strtoken,
+        ttype=TokenType.WHITESPACE,
+        startpos=startpos,
+        endpos=endpos,
+    )
     return token
 
 
@@ -188,7 +199,7 @@ def capture_comment(text: Text) -> "Token | None":
         raise ValueError("unexpected comment starter")
 
     raise NotImplemented()
-    
+
 
 ################################################################################
 ########## MAIN FUNCTIONS ######################################################
@@ -200,7 +211,7 @@ def get_text():
 
     with open(args.input_file) as f:
         text = f.read()
-    
+
     return text
 
 
