@@ -1,0 +1,36 @@
+[project]
+name = "c_lib"
+version = "0.0.0"
+description = "Prototype for an interpreter."
+authors = [
+    "David Chu <thedavidchu@gmail.com>"
+]
+license = "MIT"
+readme = "README.md"
+python = "^3.6"
+homepage = "https://github.com/thedavidchu/c_lib/"
+repository = "https://github.com/thedavidchu/c_lib/"
+documentation = "https://github.com/thedavidchu/c_lib/"
+
+# Requirements
+[dependencies]
+
+[dev-dependencies]
+black = { version = "^22.3.0", python = "^3.6" }
+
+[tool.black]
+line-length = 80
+target_version = ['py36']
+include = '\.pyi?$'
+exclude = '''
+
+(
+    /(
+          \.github
+        | \.git
+        | \.venv
+        | \.vscode
+    )/
+)
+
+'''
