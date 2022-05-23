@@ -1,3 +1,41 @@
+"""
+Tokenizer
+=========
+
+Definitions
+-----------
+
+Let '\n' denote the newline character. To denote the literal string of a single
+backslash followed by an 'n', we will use: '\\n'.  
+
+Limitations
+-----------
+
+### Whitespace
+* Indentation is not stored by the tokenizer (yet). The tokenizer may store
+information about indentation, but it shall not store information about any
+other whitespace (unless we add the ability to add arbitrary operators).
+
+### Comments
+* '#' ends with either '\n' or EOF
+* '//' ends with either '\n' or EOF
+* '/*' ends with '*/'.
+    * It does not nest yet.
+
+### Strings
+* Strings begin and end with '"'. A '\n' (not literal) or EOF before termination
+is an error.
+    * Variables may be inserted into strings with braces, but not yet.
+    * Raw strings (e.g. Python's r"") are not added yet.
+    * Multiline strings are not supported yet (e.g. Python's """ """)
+    * Nesting strings are not supported yet (e.g. 
+    """ "" """Inner string: "Inner Inner String" """ """"")
+
+### Literals
+* 
+"""
+
+
 import argparse
 from enum import Enum
 from typing import List, Tuple
