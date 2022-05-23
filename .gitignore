@@ -1,5 +1,8 @@
 # Ignore VS Code directory
 .vscode/
+# Ignore Python Venv
+.venv/
+venv/
 
 # Ignore CMake's build directory
 build/
