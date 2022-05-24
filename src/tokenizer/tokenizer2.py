@@ -77,6 +77,9 @@ class Text:
         self.position: Position = Position(0, 1, 0)
 
     def __next__(self) -> str:
+        if self.position._idx + 1 >= len(self.text):
+            return EOF
+
         c: str = self.text[self.position._idx]
         if c == "\n":
             self.position = self.position.new_line()
@@ -86,12 +89,19 @@ class Text:
 
     def getoffset(self, idx: int) -> str:
         if len(self.text) > self.position._idx + idx:
-            return self.text[self.position._idx : self.position._idx + idx]
+            return self.text[self.position._idx + idx]
         else:
             return EOF
 
     def getpos(self) -> Position:
         return self.position
+
+    def fastforward(self, num: int) -> None:
+        for i in range(num):
+            next(self)
+
+    def cutouttoken(self, offset: int) -> str:
+        return self.text[self.position._idx : self.position._idx + offset]
 
 
 class Token:
@@ -110,7 +120,9 @@ class Token:
     def __repr__(self) -> str:
         start_line, start_col = self.startpos._line, self.startpos._col
         end_line, end_col = self.endpos._line, self.endpos._col
-        return f"{start_line}:{start_col}-{end_line}:{end_col}:\t{self.token_type}\t{self.strtoken}"
+
+        sanitized_strtoken = repr(self.strtoken)
+        return f"{start_line}:{start_col}-{end_line}:{end_col}:\t{self.token_type}\t{sanitized_strtoken}"
 
 
 """
@@ -132,7 +144,7 @@ def is_whitespace_start(text: Text) -> bool:  # [ \n\t\v\r]+
     group."""
     c = text.getoffset(0)
     assert c != EOF
-    return c.whitespace()
+    return c.isspace()
 
 
 def is_comment_start(text: Text) -> bool:
@@ -154,7 +166,8 @@ def is_string_start(text: Text) -> bool:
 
 
 def is_number_start(text: Text) -> bool:
-    """We will not support 0. or .0 numbers for now. + 10 is also not a single number."""
+    """We will not support 0. or .0 numbers for now. + 10 is also not a single
+    number."""
     c = text.getoffset(0)
     next_c = text.getoffset(1)
     assert c != EOF
@@ -198,13 +211,12 @@ def capture_whitespace(text: Text) -> "Token | None":
 
     startpos = text.getpos()
     i = 0
-    while c.whitespace():
+    while c.isspace():
         i += 1
         c = text.getoffset(i)
 
-    strtoken = text.text[text.current_idx : text.current_idx + i]
-    for _ in range(i):
-        next(text)
+    strtoken = text.cutouttoken(i)
+    text.fastforward(i)
     endpos = text.getpos()
 
     token = Token(
@@ -229,20 +241,110 @@ def capture_comment(text: Text) -> "Token | None":
     startpos = text.getpos()
     if c == "#":
         start_comment = "#"
+        next_idx = 1
     elif c == "/" and next_c == "/":
         start_comment = "//"
+        next_idx = 2
     elif c == "/" and next_c == "*":
         start_comment = "/*"
+        next_idx = 2
     else:
         raise ValueError("unexpected comment starter")
 
-    raise NotImplemented()
+    while True:
+        next_c = text.getoffset(next_idx)
+
+        if next_c == EOF:
+            if start_comment == "#" or start_comment == "//":
+                strtoken = text.cutouttoken(next_idx)
+                text.fastforward(next_idx)
+                endpos = text.getpos()
+                token = Token(
+                    strtoken=strtoken,
+                    ttype=TokenType.COMMENT,
+                    startpos=startpos,
+                    endpos=endpos,
+                )
+                return token
+            raise ValueError("unexpected EOF!")
+        # End-of-line
+        if next_c == "\n" and (start_comment == "#" or start_comment == "//"):
+            strtoken = text.cutouttoken(next_idx)
+            text.fastforward(next_idx)
+            endpos = text.getpos()
+            token = Token(
+                strtoken=strtoken,
+                ttype=TokenType.COMMENT,
+                startpos=startpos,
+                endpos=endpos,
+            )
+            return token
+        # Deal with: */
+        if next_c == "*" and start_comment == "/*":
+            next_next_c = text.getoffset(next_idx + 1)
+            if next_next_c != "/":
+                # Must do at the end
+                next_idx += 1
+                continue
+            next_idx += 1
+            strtoken = text.cutouttoken(next_idx)
+            text.fastforward(next_idx)
+            endpos = text.getpos()
+            token = Token(
+                strtoken=strtoken,
+                ttype=TokenType.COMMENT,
+                startpos=startpos,
+                endpos=endpos,
+            )
+            return token
+
+        # Must do at the end
+        next_idx += 1
+
+
+def capture_string(text: Text) -> "Token | None":
+    c = text.getoffset(0)
+    next_c = text.getoffset(1)
+    assert c != EOF
+
+    startpos = text.getpos()
+    if c != '"':
+        raise ValueError("unexpected starting character")
+
+    next_idx = 1
+    while True:
+        next_c = text.getoffset(next_idx)
+
+        # Skip \"
+        if next_c == "\\":
+            next_idx += 1
+            next_c = text.getoffset(next_idx)
+            if next_c not in {"'", '"', "\\", "n", "r", "t", "b", "f", "v"}:
+                raise ValueError(f"unexpected escaped character {next_c}")
+            next_idx += 1
+            continue
+        if next_c == '"':
+            strtoken = text.cutouttoken(next_idx + 1)
+            text.fastforward(next_idx + 1)
+            endpos = text.getpos()
+            token = Token(
+                strtoken=strtoken,
+                ttype=TokenType.STRING,
+                startpos=startpos,
+                endpos=endpos,
+            )
+            return token
+        if next_c == EOF:
+            raise ValueError("end of string without finishing quote!")
+
+        # Call at the end
+        next_idx += 1
 
 
 ################################################################################
 ########## MAIN FUNCTIONS ######################################################
 ################################################################################
-def get_text():
+def get_text() -> Text:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input-file", type=str, default="./program.txt")
     args = parser.parse_args()
@@ -250,14 +352,14 @@ def get_text():
     with open(args.input_file) as f:
         text = f.read()
 
-    return text
+    return Text(text)
 
 
-def get_tokens(text: str) -> List[Token]:
+def get_tokens(text: Text) -> List[Token]:
     tokens = []
     c = text.getoffset(0)
     while c != EOF:
-        if is_whitespace_start(c):
+        if is_whitespace_start(text):
             t = capture_whitespace(text)
             if t is not None:
                 tokens.append(t)
@@ -265,7 +367,10 @@ def get_tokens(text: str) -> List[Token]:
                 c = next(text)
                 continue
             # Otherwise, failure to capture whitespace
-        if is_comment_start(c):
+            raise ValueError(
+                "failed to capture whitespace, even though I'm sure it was whitespace!"
+            )
+        if is_comment_start(text):
             t = capture_comment(text)
             if t is not None:
                 tokens.append(t)
@@ -273,9 +378,25 @@ def get_tokens(text: str) -> List[Token]:
                 c = next(text)
                 continue
             # Otherwise, failure to capture comment
+            raise ValueError(
+                "failed to capture comment, even though I'm sure it was a comment!"
+            )
+        if is_string_start(text):
+            t = capture_string(text)
+            if t is not None:
+                tokens.append(t)
+                # Run this after every iteration
+                c = next(text)
+                continue
+            # Otherwise, failure to capture comment
+            raise ValueError(
+                "failed to capture string, even though I'm sure it was a string!"
+            )
+
         # Run this after every iteration
         c = next(text)
         continue
+    return tokens
 
 
 def main():
@@ -283,6 +404,8 @@ def main():
     tokens = get_tokens(text)
 
     for i, t in enumerate(tokens):
+        if t.token_type is TokenType.WHITESPACE:
+            continue
         print(f"Token {i}: {t}")
 
 

@@ -15,7 +15,8 @@ function fibo(arg num_iterations: int[0..=100] = 0) -> int[0..=fibo(100)]: pure 
 print("The 10th Fibonacci Number is:", fibo(10));
 _, blah = (10, 11);
 
-
+/* C Style Comment */
+// C++ Style Comment
 # Harder Tokens to Parse
 	# Tab
 ## Multiple Comment Characters

@@ -30,6 +30,7 @@ exclude = '''
         | \.git
         | \.venv
         | \.vscode
+        | _actions
     )/
 )
 
