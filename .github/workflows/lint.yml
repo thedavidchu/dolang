@@ -22,11 +22,12 @@ jobs:
       - name: Install Python dependencies
         run: pip install black
 
-      - name: Run Python Black linter
+      - name: Lint Python (Black)
         uses: wearerequired/lint-action@v2
         with:
           auto_fix: true
           black: true
+          black_dir: ../../ # Run so it can see //pyproject.toml
           black_auto_fix: true
 
       - uses: actions/checkout@v3
@@ -36,6 +37,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           style: file
-      - name: Fail fast?!
+      - name: Lint C (cpplint)
         if: steps.linter.outputs.checks-failed > 0
         run: exit 1
