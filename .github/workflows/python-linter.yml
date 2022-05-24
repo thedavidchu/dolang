@@ -1,0 +1,41 @@
+name: Lint Code Base
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+    types: [opened, reopened]
+jobs:
+  run-lint:
+    runs-on: ubuntu-latest
+    steps:
+      # From https://github.com/marketplace/actions/lint-action#python-example-flake8-and-black
+      - name: Check out Git repository
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.8
+
+      - name: Install Python dependencies
+        run: pip install black
+
+      - name: Run Python Black linter
+        uses: wearerequired/lint-action@v2
+        with:
+          auto_fix: true
+          black: true
+          black_auto_fix: true
+
+      - uses: actions/checkout@v3
+      - uses: cpp-linter/cpp-linter-action@v1
+        id: linter
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          style: file
+      - name: Fail fast?!
+        if: steps.linter.outputs.checks-failed > 0
+        run: exit 1
