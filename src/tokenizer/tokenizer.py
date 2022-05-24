@@ -16,7 +16,7 @@ TODO
 import argparse
 
 
-PUNCTUATION = {c for c in r"~!@#$%^&*-+=|\:<>.?/"} - {"#"} # Remove comment char
+PUNCTUATION = {c for c in r"~!@#$%^&*-+=|\:<>.?/"} - {"#"}  # Remove comment char
 
 
 class Token:
@@ -39,7 +39,7 @@ def is_comment(text: str, i: int):
 def goto_endcomment(text: str, i_0: int):
     """Get the last character belonging to the comment."""
     i = i_0
-    start = text[i_0]   # Doesn't support multi-character comment-starts
+    start = text[i_0]  # Doesn't support multi-character comment-starts
     while i < len(text):
         c = text[i]
         if start == "#" and c == "\n":
@@ -50,13 +50,13 @@ def goto_endcomment(text: str, i_0: int):
 
 
 def is_string(text: str, i: int):
-    return text[i] in {"\"", "\'", "`"}
+    return text[i] in {'"', "'", "`"}
 
 
 def goto_endstring(text: str, i_0: int):
     # TODO(dchu): enable for ' and `
     start = text[i_0]
-    i = i_0 + 1 # Start one after start
+    i = i_0 + 1  # Start one after start
     while i < len(text):
         c = text[i]
         if c == "\\":
@@ -65,15 +65,16 @@ def goto_endstring(text: str, i_0: int):
             # when we validate the tokens.
             i += 2
             continue
-        elif start == "\"" and c == "\"":
+        elif start == '"' and c == '"':
             return i
-        elif start == "\'" and c == "\'":
+        elif start == "'" and c == "'":
             return i
         elif start == "`" and c == "`":
             return i
         # This is at the end
         i += 1
     raise ValueError("no end to string")
+
 
 def is_singlechar(text: str, i: int):
     return text[i] in {"`", "(", ")", "{", "}", "[", "]", ";", ","}
@@ -86,6 +87,7 @@ def is_number(text: str, i: int):
         return True
     else:
         return False
+
 
 def goto_endnumber(text: str, i_0: int):
     """Go to the end of a number.
@@ -131,7 +133,7 @@ def goto_endnumber(text: str, i_0: int):
     * Let FLOAT := any floating point number as defined above
     * Complex     : "(FLOAT)j" (N.B. does not include REAL part)
     """
-    i = i_0 + 1 # Skip the first
+    i = i_0 + 1  # Skip the first
     while i < len(text):
         c = text[i]
         if c in {"e", "E"}:
@@ -170,6 +172,7 @@ def goto_endidentifier(text: str, i_0: int):
 def is_punctuation(text: str, i: int):
     return text[i] in PUNCTUATION
 
+
 def goto_endpunctuation(text: str, i_0: int):
     i = i_0 + 1
     while i < len(text):
@@ -205,40 +208,41 @@ def main():
         elif is_comment(text, i):
             i_end = goto_endcomment(text, i)
             # If it ends in a '\n', it will not print the newline.
-            tokens.append(Token(token=text[i:i_end+1], token_type="Comment"))
+            tokens.append(Token(token=text[i : i_end + 1], token_type="Comment"))
             print(tokens[-1])
             i = i_end
         elif is_string(text, i):
             i_end = goto_endstring(text, i)
-            tokens.append(Token(token=text[i:i_end+1], token_type="String"))
+            tokens.append(Token(token=text[i : i_end + 1], token_type="String"))
             print(tokens[-1])
             i = i_end
         elif is_singlechar(text, i):
-            tokens.append(Token(token=text[i:i+1], token_type="Single-Char"))
+            tokens.append(Token(token=text[i : i + 1], token_type="Single-Char"))
             print(tokens[-1])
         elif is_number(text, i):
             i_end = goto_endnumber(text, i)
-            tokens.append(Token(token=text[i:i_end+1], token_type="Number"))
+            tokens.append(Token(token=text[i : i_end + 1], token_type="Number"))
             print(tokens[-1])
             i = i_end
         elif is_identifier(text, i):
             i_end = goto_endidentifier(text, i)
-            tokens.append(Token(token=text[i:i_end+1], token_type="Identifier"))
+            tokens.append(Token(token=text[i : i_end + 1], token_type="Identifier"))
             print(tokens[-1])
             i = i_end
         elif is_punctuation(text, i):
             i_end = goto_endpunctuation(text, i)
-            tokens.append(Token(token=text[i:i_end+1], token_type="Punctuation"))
+            tokens.append(Token(token=text[i : i_end + 1], token_type="Punctuation"))
             print(tokens[-1])
             i = i_end
         else:
             raise ValueError(f"unrecognized character: {text[i]}")
-        
+
         # This is at the end
         i += 1
 
     for t in tokens:
         print(t)
+
 
 if __name__ == "__main__":
     main()
