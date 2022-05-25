@@ -17,16 +17,12 @@ import argparse
 from enum import Enum
 
 
-PUNCTUATION = {c for c in r"~!@#$%^&*-+=|\:<>.?/"} - {
-    "#"
-}  # Remove comment char
+PUNCTUATION = {c for c in r"~!@#$%^&*-+=|\:<>.?/"} - {"#"}  # Remove comment char
 INVALID_CHAR = None
 
 
 class TokenType(str, enum):
-    PUNCTUATION = (
-        "PUNCTUATION"  # Single punctuation, multi-punctuation, specific type
-    )
+    PUNCTUATION = "PUNCTUATION"  # Single punctuation, multi-punctuation, specific type
     NUMBER = "NUMBER"  # Float, int, complex
     IDENTIFIER = "IDENTIFIER"  # Keyword, identifier
     COMMENT = "COMMENT"  # Block comment (may be nested), line comment
@@ -66,9 +62,7 @@ class Token:
 
 
 def printslice(text: str, start: int, last_minus_one: int):
-    print(
-        f"({start}..{last_minus_one + 1}): {text[start:last_minus_one + 1].strip()}"
-    )
+    print(f"({start}..{last_minus_one + 1}): {text[start:last_minus_one + 1].strip()}")
 
 
 def is_comment(text: str, i: int):
@@ -120,11 +114,7 @@ def is_singlechar(text: str, i: int):
 
 
 def is_number(text: str, i: int):
-    if (
-        text[i] in {"+", "-", "."}
-        and len(text) > i + 1
-        and text[i + 1].isdecimal()
-    ):
+    if text[i] in {"+", "-", "."} and len(text) > i + 1 and text[i + 1].isdecimal():
         return True
     elif text[i].isdecimal():
         return True
@@ -251,9 +241,7 @@ def main():
         elif is_comment(text, i):
             i_end = goto_endcomment(text, i)
             # If it ends in a '\n', it will not print the newline.
-            tokens.append(
-                Token(token=text[i : i_end + 1], token_type="Comment")
-            )
+            tokens.append(Token(token=text[i : i_end + 1], token_type="Comment"))
             print(tokens[-1])
             i = i_end
         elif is_string(text, i):
@@ -262,9 +250,7 @@ def main():
             print(tokens[-1])
             i = i_end
         elif is_singlechar(text, i):
-            tokens.append(
-                Token(token=text[i : i + 1], token_type="Single-Char")
-            )
+            tokens.append(Token(token=text[i : i + 1], token_type="Single-Char"))
             print(tokens[-1])
         elif is_number(text, i):
             i_end = goto_endnumber(text, i)
@@ -273,16 +259,12 @@ def main():
             i = i_end
         elif is_identifier(text, i):
             i_end = goto_endidentifier(text, i)
-            tokens.append(
-                Token(token=text[i : i_end + 1], token_type="Identifier")
-            )
+            tokens.append(Token(token=text[i : i_end + 1], token_type="Identifier"))
             print(tokens[-1])
             i = i_end
         elif is_punctuation(text, i):
             i_end = goto_endpunctuation(text, i)
-            tokens.append(
-                Token(token=text[i : i_end + 1], token_type="Punctuation")
-            )
+            tokens.append(Token(token=text[i : i_end + 1], token_type="Punctuation"))
             print(tokens[-1])
             i = i_end
         else:
