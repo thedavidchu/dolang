@@ -411,9 +411,7 @@ def capture_groupable_punctuation(text: Text) -> "Token | None":
     third_c = text.viewnext(2)
 
     three_char = "=== **= ... ..=".split(" ")
-    two_char = "~= != @= %= ^= &= *= -= += == |= := <= >= ?= ** && || ..".split(
-        " "
-    )
+    two_char = "~= != @= %= ^= &= *= -= += == |= := <= >= ?= ** && || ..".split(" ")
     one_char = "~ ! @ % ^ & * - + = | : < > . ?".split(" ")
 
     # Select greedily
