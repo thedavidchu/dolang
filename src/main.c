@@ -11,6 +11,31 @@
 
 #define CHANNEL stdout
 
+/* >>> PROTOTYPE <<< */
+#define CREATE_TEST_TEMPLATE(testname_, dtype_, cmp_op_, opposite_cmp_op_) \
+int _testfunction_ ## testname_(const char *const output_str, const char *const oracle_str, const dtype_ output, const dtype_ oracle) {\
+    if (output cmp_op_ oracle) {\
+        fprintf(CHANNEL, /*GREEN*/"\033[32mOK: %s(%d) %s %s(%d)\033[0m\n"/*END GREEN*/, #cmp_op_);\
+        return 0;\
+    } else {\
+        fprintf(CHANNEL, /*RED*/"\033[31mFAILURE: " #output "(%d) %s " #oracle "(%d),"\
+            "expected " #output " %s " #oracle\
+            ": FAILURE in %s:%d\033[0m\n"/*END RED*/,\
+            _output, _oracle, __FILE__, __LINE__);\
+        return -1;\
+    }\
+}
+
+CREATE_TEST_TEMPLATE(TEST_INT_NE, int, !=, ==)
+#define TEST_INT_NE(output_, oracle_, err_) \
+    do {int _err = _testfunction_TEST_INT_NE(#output_, #oracle_, output_, oracle_); \
+        if (_err == 0) { \
+            
+        } \
+    } while (0)
+/* >>> END PROTOTYPE <<< */
+    
+    
 /* Print status and set test variable as pass or fail */
 #define TEST_INT_EQ(output, oracle, err) \
 do {\
