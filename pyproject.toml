@@ -19,7 +19,7 @@ documentation = "https://github.com/thedavidchu/c_lib/"
 black = { version = "^22.3.0", python = "^3.6" }
 
 [tool.black]
-line-length = 80
+# line-length = 80 # Uncomment when I have the matching setting on the Github Action linter
 target_version = ['py36']
 include = '\.pyi?$'
 exclude = '''
