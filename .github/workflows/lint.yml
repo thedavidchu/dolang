@@ -5,30 +5,21 @@ on: [push, pull_request]
 jobs:
   run-linter:
     runs-on: ubuntu-latest
-
     steps:
-      # From https://github.com/marketplace/actions/lint-action#python-example-flake8-and-black
       - name: Check out Git repository
         uses: actions/checkout@v2
 
-      - name: Set up Python
-        uses: actions/setup-python@v1
+      - name: Run Black (Python)
+        uses: psf/black@stable
         with:
-          python-version: 3.8
+          options: |
+            --verbose
+            --line-length=80
+            --exclude /(\.github|\.git|\.venv|\.vscode)/
+          src: "."
+          version: "21.5b1"
 
-      - name: Install Python dependencies
-        run: pip install black
-
-      - name: Lint Python (Black)
-        uses: wearerequired/lint-action@v2
-        with:
-          auto_fix: true
-          black: true
-          # black_dir: ../../ # Run so it can see //pyproject.toml
-          black_auto_fix: true
-
-      - uses: actions/checkout@v2
-      - name: Run clang-format
+      - name: Run clang-format (C)
         uses: HorstBaerbel/action-clang-format@1.5
         # These are optional (defaults displayed)
         with:
