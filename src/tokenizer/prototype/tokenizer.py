@@ -38,8 +38,6 @@ is an error.
 
 import argparse
 from enum import Enum
-from lib2to3.pgen2 import token
-from multiprocessing.sharedctypes import Value
 from typing import List
 from typing_extensions import Self
 
@@ -51,9 +49,49 @@ class TokenType(str, Enum):
     WHITESPACE = "WHITESPACE"  # Indent vs non-indent
     COMMENT = "COMMENT"  # Multi-line vs non-multiline, nesting
     STRING = "STRING"  # Multi-quotes, single-vs-double quote
-    IDENTIFIER = "LITERAL"  # Keyword, non-keyword
+    IDENTIFIER = "IDENTIFIER"  # Keyword, non-keyword
     NUMBER = "NUMBER"  # Float, int, complex
     PUNCTUATION = "PUNCTUATION"  # Stand-alone, non-standalone
+
+
+class DetailedTokenType(str, Enum):
+    # White space
+    INDENT = "WHITESPACE_INDENT"
+    NEWLINE = "WHITESPACE_NEWLINE"
+    SPACE = "WHITESPACE_SPACE"  # Separate bits
+    # Comments
+    COMMENT_POUND = "COMMENT_POUND"
+    COMMENT_SLASH_SLASH = "COMMENT_SLASH_SLASH"
+    COMMENT_SLASH_STAR = "COMMENT_SLASH_STAR"
+    # Srings
+    DOUBLEQUOTE = "STRING_DOUBLEQUOTE"
+    # Identifiers
+    KEYWORD = "IDENTIFIER_KEYWORD"
+    NONKEYWORD = "IDENTIFIER_NONKEYWORD"
+    # Numbers
+    NUMBER_FLOAT = "NUMBER_FLOAT"  # Also support 10e-4, 10j+4
+    NUMBER_INT = "NUMBER_INT"
+    # Stand-alone punctuation
+    PUNCTUATION_RPAREN = "PUNCTUATION_RPAREN"
+    PUNCTUATION_LPAREN = "PUNCTUATION_LPAREN"
+    PUNCTUATION_RSQUAREPAREN = "PUNCTUATION_RSQUAREPAREN"
+    PUNCTUATION_LSQUAREPAREN = "PUNCTUATION_LSQUAREPAREN"
+    PUNCTUATION_RBRACE = "PUNCTUATION_RBRACE"
+    PUNCTUATION_LBRACE = "PUNCTUATION_LBRACE"
+    PUNCTUATION_COMMA = "PUNCTUATION_COMMA"
+    PUNCTUATION_SEMICOLON = "PUNCTUATION_SEMICOLON"
+
+    # Groupable punctuation
+    PUNCTUATION_1_PLUS = ""
+    PUNCTUATION_1_MINUS = ""
+    PUNCTUATION_1_STAR = ""
+    PUNCTUATION_1_SLASH = ""
+    PUNCTUATION_1_EQ = ""
+    PUNCTUATION_1_GT = ""
+    PUNCTUATION_1_LT = ""
+    PUNCTUATION_1_DOT = ""
+    PUNCTUATION_1_COLON = ""
+    PUNCTUATION_1_EXCLAM = ""
 
 
 class Position:
@@ -375,7 +413,7 @@ def capture_identifier(text: Text) -> "Token | None":
     assert c != EOF
 
     if not c.isalpha() and c != "_":
-        raise ValueError("Unexpected literal start character!")
+        raise ValueError("Unexpected identifier start character!")
 
     idx = 1
     while True:
