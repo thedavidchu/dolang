@@ -6,6 +6,10 @@ This library is misnamed. It is actually an attempt (number 3 or so) at creating
 
 I am building out my standard library that I will use for the interpreter. I am also interested in building a transpiler.
 
+## Visibility
+
+This repository is public not because I want my half-built code to be visible, but rather so I get unlimited Github Action minutes (not that I am close to using the limit anyways).
+
 ## Prototyping
 
 Prototyping will be done in Python. I am faster at writing Python and its error handling is faster to hack together.
