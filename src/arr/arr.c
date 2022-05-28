@@ -6,13 +6,12 @@
 
 #include "mem/mem.h"
 
+#include "arr/arr.h"
 #include "arr/arr_checks.h"
 #include "arr/arr_helper.h"
 #include "arr/arr_macros.h"
-#include "arr/arr.h"
 
-
-/* 
+/*
 NOTE: A possible addition is to store the `int (*item_dtor)(void *const)` in the
 array. This way, we do not need to add it to the `arr_dtor`, `arr_change`, and
 `arr_remove` calls. I advocate for doing this in an inheriting structure if
@@ -26,7 +25,7 @@ int arr_ctor(arr *const me, const size_t cap, const size_t size) {
     }
 
     me->items = NULL;
-    if ((err = mem_malloc((void **const)&me->items, cap, size))) {
+    if ((err = mem_malloc((void **const) & me->items, cap, size))) {
         return err;
     }
     me->len = 0;
@@ -55,7 +54,7 @@ int arr_dtor(arr *const me, int (*item_dtor)(void *const)) {
     me->cap = 0;
     me->size = 0;
     /* Assumes the items pointer is a valid pointer */
-    if ((err = mem_free((void **const)&me->items))) {
+    if ((err = mem_free((void **const) & me->items))) {
         return err;
     }
     assert(me->items == NULL && "$me->items not set to NULL!");
@@ -66,7 +65,7 @@ int arr_insert(arr *const me, const size_t idx, void *const item) {
     int err = 0;
 
     RETURN_IF_ERROR((err = is_malformed(me)), err);
-    RETURN_IF_ERROR((err = is_outofinsertbounds(me, idx)) , err);
+    RETURN_IF_ERROR((err = is_outofinsertbounds(me, idx)), err);
 
     /* Grow if necessary. */
     if (SHOULD_GROW(me)) {
@@ -99,9 +98,10 @@ void *arr_search(const arr *const me, const size_t idx) {
     return ARR_GETITEM(me, idx);
 }
 
-int arr_change(const arr *const me, const size_t idx, void *const restrict item, int (*item_dtor)(void *const)) {
+int arr_change(const arr *const me, const size_t idx, void *const restrict item,
+               int (*item_dtor)(void *const)) {
     int err = 0;
-    
+
     if ((err = is_malformed(me)) || (err = is_outofbounds(me, idx))) {
         return err;
     }
@@ -153,7 +153,8 @@ int arr_print(const arr *const me, int (*item_print)(const void *const)) {
     int err = 0, tmperr = 0;
     size_t i = 0;
 
-    if (0 > printf("(len: %zu, cap: %zu, size: %zu) [", me->len, me->cap, me->size)) {
+    if (0 > printf("(len: %zu, cap: %zu, size: %zu) [", me->len, me->cap,
+                   me->size)) {
         assert(errno);
         return errno;
     }

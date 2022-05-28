@@ -8,6 +8,7 @@
 #include "mem/mem.h"
 #include "arr/arr.h"
 #include "tbl/tbl.h"
+#include "rstr/rstr.h"
 
 #define CHANNEL stdout
 
@@ -263,6 +264,46 @@ int test_tbl(void) {
     return err;
 }
 
+/******************************************************************************/
+int rstr_noop_dtor(char *const str) {
+    assert(str && "found NULL string");
+    return 0;
+}
+
+int test_rstr(void) {
+    int err = 0;
+    rstr full, a, b;
+    const char *const str = "Lorem ipsum dolor sit amet, consectetur adipiscing elit";
+
+    REQUIRE_NO_ERROR(rstr_ctor(&full, str, strlen(str)), "failure to construct");
+    REQUIRE_NO_ERROR(rstr_debug(&full), "failure to print");
+    REQUIRE_NO_ERROR(rstr_print(&full), "failure to print");
+
+    TEST_INT_EQ(rstr_debug(NULL), ERROR_NULLPTR, err);
+    a.str = NULL;
+    TEST_INT_EQ(rstr_debug(&a), ERROR_NULLPTR, err);
+
+    TEST_INT_EQ(rstr_ctor(&a, str, 10U), 0, err);
+    TEST_INT_EQ(a.len, 10U, err);
+    TEST_INT_EQ(rstr_debug(&a), 0, err);
+
+    TEST_INT_EQ(rstr_slice(&full, 0, 10, &b), 0, err);
+    TEST_INT_EQ(rstr_debug(&b), 0, err);
+
+    TEST_INT_EQ(rstr_cmp(&a, &b), 0, err);
+
+    TEST_INT_EQ(rstr_slice(&b, 0, 5, &b), 0, err);
+    TEST_INT_EQ(rstr_debug(&b), 0, err);
+
+
+    /* Cleanup */
+    TEST_INT_EQ(rstr_dtor(&full, rstr_noop_dtor), 0, err);
+    TEST_INT_EQ(rstr_dtor(&a, rstr_noop_dtor), 0, err);
+    TEST_INT_EQ(rstr_dtor(&b, rstr_noop_dtor), 0, err);
+
+    return err;
+}
+
 int main(void) {
     int err = 0;
 
@@ -271,6 +312,7 @@ int main(void) {
     TEST_INT_EQ(test_mem(), 0, err);
     TEST_INT_EQ(test_arr(), 0, err);
     TEST_INT_EQ(test_tbl(), 0, err);
+    TEST_INT_EQ(test_rstr(), 0, err);
 
     if (err == 0) {
         fprintf(CHANNEL, /*GREEN*/"\033[32m>>> ALL TESTS PASSED! <<<\033[0m\n"/*END GREEN*/);
