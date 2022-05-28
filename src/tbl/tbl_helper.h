@@ -1,9 +1,9 @@
 #include <assert.h>
 #include <stddef.h>
 
-#include "common/common.h"
-#include "bool/bool.h"
 #include "arr/arr.h"
+#include "bool/bool.h"
+#include "common/common.h"
 #include "tbl/tbl.h"
 
 /* Define here rather than tbl.c */
@@ -15,7 +15,8 @@ static int arr_noop_dtor(void *const item);
 /** Print an item_idx (0, ..., TOMBSTONE, INVALID). */
 static inline int item_idx_print(const size_t item_idx);
 static int tbl_gettableidx(const tbl *const restrict me, const void *const key,
-        const bool return_tombstone, size_t *const table_idx_p);
+                           const bool return_tombstone,
+                           size_t *const table_idx_p);
 
 static int arr_noop_dtor(void *const item) {
     assert(item != NULL && "item is NULL!");
@@ -49,23 +50,24 @@ static inline int item_idx_print(const size_t item_idx) {
  * the key is not an error.
  * 3. Remove: search for the key as if it is already in the array. Not finding
  * the key is not an error.
- * 
- * We can approximate this by 
+ *
+ * We can approximate this by
  */
 static int tbl_gettableidx(const tbl *const restrict me, const void *const key,
-        const bool return_tombstone, size_t *const table_idx_p) {
+                           const bool return_tombstone,
+                           size_t *const table_idx_p) {
     size_t first_tombstone = INVALID;
     size_t hashcode = 0, table_home = 0, table_offset = 0, table_idx = 0,
-            items_idx = 0;
-    
+           items_idx = 0;
+
     RETURN_IF_ERROR(me == NULL, ERROR_NULLPTR);
     RETURN_IF_ERROR(key == NULL, ERROR_NULLPTR);
     RETURN_IF_ERROR(table_idx_p == NULL, ERROR_NULLPTR);
     RETURN_IF_ERROR(me->cap == 0, ERROR_DIVZERO);
-    
+
     hashcode = me->hash_key(key);
     table_home = hashcode % me->cap;
-    
+
     for (table_offset = 0; table_offset < me->cap; ++table_offset) {
         table_idx = (table_home + table_offset) % me->cap;
         items_idx = me->table[table_idx];
@@ -84,7 +86,8 @@ static int tbl_gettableidx(const tbl *const restrict me, const void *const key,
         } else {
             const tbl_kv *const item = arr_search(&me->items, items_idx);
             assert(item != NULL && "unexpected NULL item");
-            if (item->hashcode != hashcode || me->key_cmp(item->key, key) != 0) {
+            if (item->hashcode != hashcode ||
+                me->key_cmp(item->key, key) != 0) {
                 continue;
             }
             *table_idx_p = table_idx;
@@ -92,7 +95,7 @@ static int tbl_gettableidx(const tbl *const restrict me, const void *const key,
         }
         assert(0 && "should not get here because all returns or continues!");
     }
-    
+
     /* Account for very weird corner case. If have no INVALID or matching items
     but we have tombstones, we will have space to insert. */
     if (return_tombstone && first_tombstone == INVALID) {
@@ -105,6 +108,4 @@ static int tbl_gettableidx(const tbl *const restrict me, const void *const key,
         *table_idx_p = INVALID;
         return 0;
     }
-
-    
 }

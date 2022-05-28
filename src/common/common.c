@@ -13,7 +13,8 @@ const char *_safe_strerror(const int errnum) {
     const int old_errno = errno;
 
     errno = 0; /* Reset errno */
-    /* This standardizes unknown errors. Unknown errors that return a valid string but set errno are changed to a standard error. */
+    /* This standardizes unknown errors. Unknown errors that return a valid
+     * string but set errno are changed to a standard error. */
     if ((s = strerror(errnum)) == NULL || errno) {
         s = UNKNOWN_ERROR;
     }
@@ -26,7 +27,6 @@ void _exit_failure(void) {
     exit(EXIT_FAILURE);
     assert(0 && "failed to exit");
 }
-
 
 int print_stderr(const char *const restrict format, ...) {
     int err = 0;

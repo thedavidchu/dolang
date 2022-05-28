@@ -13,14 +13,12 @@
 #include "common/common.h"
 #include "mem/mem.h"
 
-
 /*! Check that $num * $size is valid. */
 static inline int is_overflow(const size_t num, const size_t size);
 
-
 static inline int is_overflow(const size_t num, const size_t size) {
     size_t num_bytes = 0;
-    
+
     /* Check if either $num or $size are zero. If so, then we know that the
     number of bytes will be in the valid range, because it will be zero. We also
     do this check to ensure that we don't divide be zero in the next step. */
@@ -51,12 +49,12 @@ int mem_malloc(void **const me, size_t num, size_t size) {
         return 0;
     }
     if ((*me = malloc(num_bytes)) == NULL) {
-        #ifndef VALGRIND
-            assert(errno != 0 && "errno is not set when malloc returns an error");
-        #else
-            /* Valgrind does not set errno */
-            RETURN_IF_ERROR(errno != 0, ENOMEM);
-        #endif
+#ifndef VALGRIND
+        assert(errno != 0 && "errno is not set when malloc returns an error");
+#else
+        /* Valgrind does not set errno */
+        RETURN_IF_ERROR(errno != 0, ENOMEM);
+#endif
         return errno;
     }
     assert(errno == 0 && "errno is set when malloc returned valid value!");
@@ -81,12 +79,12 @@ int mem_realloc(void **const me, size_t num, size_t size) {
         }
     }
     if ((new_ptr = realloc(*me, num_bytes)) == NULL) {
-        #ifndef VALGRIND
-            assert(errno != 0 && "errno is not set when realloc returns an error");
-        #else
-            /* Valgrind does not set errno */
-            RETURN_IF_ERROR(errno != 0, ENOMEM);
-        #endif
+#ifndef VALGRIND
+        assert(errno != 0 && "errno is not set when realloc returns an error");
+#else
+        /* Valgrind does not set errno */
+        RETURN_IF_ERROR(errno != 0, ENOMEM);
+#endif
         return errno;
     }
     assert(errno == 0 && "errno is set when malloc returned valid value!");
@@ -105,8 +103,8 @@ int mem_free(void **const me) {
     return 0;
 }
 
-
-int mem_memcpy(const void *const restrict src, void *const restrict dst, const size_t num, const size_t size) {
+int mem_memcpy(const void *const restrict src, void *const restrict dst,
+               const size_t num, const size_t size) {
     int err = 0;
     const void *dst_ = NULL;
 
@@ -117,18 +115,19 @@ int mem_memcpy(const void *const restrict src, void *const restrict dst, const s
     }
     if ((dst_ = memcpy(dst, src, num * size)) == NULL || errno) {
         assert(dst_ == NULL && errno &&
-            "error return and error code are mismatched!");
+               "error return and error code are mismatched!");
         return errno;
     }
     assert(dst_ != NULL && errno == 0 &&
-        "no error returned but error code claims error!");
+           "no error returned but error code claims error!");
     return 0;
 }
 
-int mem_memmove(const void *const src, void *const dst, const size_t num, const size_t size) {
+int mem_memmove(const void *const src, void *const dst, const size_t num,
+                const size_t size) {
     int err = 0;
     const void *dst_ = NULL;
-    
+
     if ((err = errno) || (err = is_overflow(num, size))) {
         return err;
     } else if (src == NULL || dst == NULL) {
@@ -136,11 +135,10 @@ int mem_memmove(const void *const src, void *const dst, const size_t num, const 
     }
     if ((dst_ = memmove(dst, src, num * size)) == NULL || errno) {
         assert(dst_ == NULL && errno &&
-            "error return and error code are mismatched!");
+               "error return and error code are mismatched!");
         return errno;
     }
     assert(dst_ != NULL && errno == 0 &&
-        "no error returned but error code claims error!");
+           "no error returned but error code claims error!");
     return 0;
 }
-

@@ -7,8 +7,8 @@
 
 #include "rstr/rstr.h"
 
-
-int rstr_ctor(rstr *const restrict me, const char *const str, const size_t len) {
+int rstr_ctor(rstr *const restrict me, const char *const str,
+              const size_t len) {
     RETURN_IF_ERROR(me == NULL, ERROR_NULLPTR);
     me->str = str;
     me->len = len;
@@ -24,7 +24,8 @@ int rstr_dtor(rstr *const restrict me, int (*str_dtor)(char *const)) {
     return 0;
 }
 
-int rstr_slice(const rstr *const me, const size_t start, const size_t end, rstr *const result) {
+int rstr_slice(const rstr *const me, const size_t start, const size_t end,
+               rstr *const result) {
     RETURN_IF_ERROR(me == NULL, ERROR_NULLPTR);
     RETURN_IF_ERROR(me->str == NULL, ERROR_NULLPTR);
     RETURN_IF_ERROR(start > end, ERROR_OUTOFBOUNDS);
@@ -42,11 +43,12 @@ int rstr_cmp(const rstr *const me, const rstr *const other) {
     if (me == NULL && other != NULL) {
         return -1;
     }
-    /* If me is not expected to be NULL, then flipping this may yield speed ups */
+    /* If me is not expected to be NULL, then flipping this may yield speed ups
+     */
     if (me != NULL && other == NULL) {
         return 1;
     }
-    
+
     if (me->len < other->len) {
         return -1;
     }
@@ -71,7 +73,6 @@ int rstr_debug(const rstr *const restrict me) {
 
     r = printf("(len=%d)'%.*s'\n", (int)me->len, (int)me->len, me->str);
     return (r < 0) ? ERROR : 0;
-
 }
 
 int rstr_print(const rstr *const restrict me) {
