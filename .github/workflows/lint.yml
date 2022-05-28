@@ -17,7 +17,7 @@ jobs:
             --line-length=80
             --exclude /(\.github|\.git|\.venv|\.vscode)/
           src: "."
-          version: "21.5b1"
+          version: "22.3.0"
 
       - name: Run clang-format (C)
         uses: HorstBaerbel/action-clang-format@1.5
