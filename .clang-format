@@ -1,0 +1,18 @@
+# We'll use defaults from the LLVM style, but with 4 columns indentation.
+BasedOnStyle: LLVM
+IndentWidth: 4
+
+Language: Cpp # Note: 'C' is invalid, so I'm using C++ even though I have no C++ files
+
+# Force pointers to the type for C
+DerivePointerAlignment: false
+PointerAlignment: Right
+
+# Formatting Labels
+IndentCaseLabels: false
+IndentGotoLabels: false
+
+# Preprocessing
+IndentPPDirectives: BeforeHash
+
+ColumnLimit: 80
