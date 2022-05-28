@@ -1,14 +1,11 @@
 name: Lint Code Base
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-    types: [opened, reopened]
+on: [push, pull_request]
+
 jobs:
-  run-lint:
+  run-linter:
     runs-on: ubuntu-latest
+
     steps:
       # From https://github.com/marketplace/actions/lint-action#python-example-flake8-and-black
       - name: Check out Git repository
@@ -27,16 +24,15 @@ jobs:
         with:
           auto_fix: true
           black: true
-          black_dir: ../../ # Run so it can see //pyproject.toml
+          # black_dir: ../../ # Run so it can see //pyproject.toml
           black_auto_fix: true
 
-      - uses: actions/checkout@v3
-      - uses: cpp-linter/cpp-linter-action@v1
-        id: linter
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v2
+      - name: Run clang-format
+        uses: HorstBaerbel/action-clang-format@1.5
+        # These are optional (defaults displayed)
         with:
-          style: file
-      - name: Lint C (cpplint)
-        if: steps.linter.outputs.checks-failed > 0
-        run: exit 1
+          scandir: '.'
+          excludedirs: 'build'
+          extensions: 'c,h,C,H,cpp,hpp,cc,hh,c++,h++,cxx,hxx'
+          style: 'file'
