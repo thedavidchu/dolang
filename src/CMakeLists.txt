@@ -31,9 +31,10 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/mem")
 ## Custom Library
 add_subdirectory("${CMAKE_SOURCE_DIR}/arr")
 add_subdirectory("${CMAKE_SOURCE_DIR}/tbl")
+add_subdirectory("${CMAKE_SOURCE_DIR}/rstr")
 
 # Create executable
 add_executable("main" "${CMAKE_SOURCE_DIR}/main.c")
 
 # Link executable to libraries
-target_link_libraries("main" PUBLIC "common" "mem" "arr" "tbl")
+target_link_libraries("main" PUBLIC "common" "mem" "arr" "tbl" "rstr")

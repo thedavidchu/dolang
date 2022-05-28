@@ -1,3 +1,7 @@
+/** TODO(dchu): 
+ * 1. Make print functions print non-printable characters nicely.
+*/
+
 #pragma once
 
 #include <stddef.h>
@@ -12,7 +16,7 @@ typedef struct {
  * string in the rstr. */
 int rstr_ctor(rstr *const restrict me, const char *const str, const size_t len);
 int rstr_dtor(rstr *const restrict me, int (*str_dtor)(char *const));
-int restr_slice(const rstr *const me, const size_t start, const size_t end, rstr *const result);
+int rstr_slice(const rstr *const me, const size_t start, const size_t end, rstr *const result);
 
 /** Sort the rstr in order.
  * 
