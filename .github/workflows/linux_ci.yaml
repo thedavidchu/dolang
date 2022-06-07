@@ -4,7 +4,7 @@ name: Linux CI Code Base
 on: [push, pull_request]
 
 jobs:
-  run-linter:
+  run-linux-cmake:
     runs-on: ubuntu-latest
     steps:
       - name: Check out Git repository
@@ -12,14 +12,10 @@ jobs:
 
       - name: Download cmake
         uses: lukka/get-cmake@latest
-        
-      - name: mkdir cmake
-        run: mkdir cmake
-      - name: cd ./cmake
-        run: cd ./cmake
-      - name: cmake ./cmake
-        run: cmake ../src
-      - name: cmake --build cmake
+
+      - name: Make ./cmake
+        run: mkdir cmake; cd ./cmake; cmake ../src; cd ..
+      - name: Compile tests
         run: cmake --build cmake
       - name: run tests
         run: ./cmake/main
