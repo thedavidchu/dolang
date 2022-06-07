@@ -43,7 +43,7 @@ static inline int item_idx_print(const size_t item_idx) {
 }
 
 /** Get the table index that the key has (or would have if it is not present).
- * 
+ *
  * This has two different modes.
  * 1. Insert: search for the key as if it is already in the array. Stop when we
  * have searched the entire table. If it is not in the array, then return the
@@ -72,21 +72,22 @@ static int tbl_gettableidx(const tbl *const restrict me, const void *const key,
     for (table_offset = 0; table_offset < me->cap; ++table_offset) {
         const size_t table_idx = (table_home + table_offset) % me->cap;
         const size_t items_idx = me->table[table_idx];
-      
-        switch (items_idx) {
-        case INVALID:   /* key not present */
+
+        if (items_idx == INVALID) { /* key not present */
             *table_idx_p = table_idx;
             return 0;
-        case TOMBSTONE:
-            /* Record first instance of tombstone in table. We will fall back
-            to this if necessary. */
+        } else if (items_idx == TOMBSTONE) {
+            /* Record first instance of tombstone in table. We will fall
+            back to this if necessary. */
             if (return_tombstone && first_tombstone == INVALID) {
                 first_tombstone = table_idx;
             }
             /* Otherwise, treat it like an item not equal to the key we're
             searching for. */
-            break;
-        default:
+            continue;
+        } else {
+            /* We use an if-else ladder because we wish to declare a variable
+            within the else-clause. */
             const tbl_kv *const item = arr_search(&me->items, items_idx);
 
             assert(item != NULL && "unexpected NULL item");
@@ -95,7 +96,7 @@ static int tbl_gettableidx(const tbl *const restrict me, const void *const key,
                 *table_idx_p = table_idx;
                 return 0;
             }
-            break;
+            continue;
         }
     }
 
