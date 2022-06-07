@@ -15,8 +15,10 @@ jobs:
         
       - name: mkdir cmake
         run: mkdir cmake
-      - name: cmake cmake
-        run: cmake ./cmake
+      - name: cd ./cmake
+        run: cd ./cmake
+      - name: cmake ./cmake
+        run: cmake ../src
       - name: cmake --build cmake
         run: cmake --build cmake
       - name: run tests
