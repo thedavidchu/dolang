@@ -1,0 +1,23 @@
+# Untested!
+name: Linux CI Code Base
+
+on: [push, pull_request]
+
+jobs:
+  run-linter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v2
+
+      - name: Download cmake
+        uses: lukka/get-cmake@latest
+        
+      - name: mkdir cmake
+        run: mkdir cmake
+      - name: cmake cmake
+        run: cmake ./cmake
+      - name: cmake --build cmake
+        run: cmake --build cmake
+      - name: run tests
+        run: ./cmake/main
