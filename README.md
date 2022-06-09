@@ -1,4 +1,4 @@
-# c_lib
+# Light Object Language
 
 **Successor of "Object Zero" repo (private) for my "Light Object Language".**
 
