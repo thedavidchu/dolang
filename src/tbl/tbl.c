@@ -48,7 +48,7 @@ int tbl_dtor(tbl *const restrict me, int (*key_dtor)(void *const restrict),
     for (i = 0; i < me->items.len; ++i) {
         item = (tbl_kv *)arr_search(&me->items, i);
         assert(item != NULL && "unexpected null");
-        if (item->hashcode == 0 || item->key == NULL || item->value == NULL) {
+        if (item->hashcode == 0 && (item->key == NULL || item->value == NULL)) {
             assert(item->hashcode == 0 && item->key == NULL &&
                    item->value == NULL && "expected all to be empty");
             continue;
@@ -199,7 +199,7 @@ int tbl_print(const tbl *const me, int (*key_print)(const void *const),
         const tbl_kv *const item = (tbl_kv *)arr_search(&me->items, i);
         assert(item != NULL && "unexpected NULL");
 
-        if (item->hashcode == 0 || item->key == NULL || item->value == NULL) {
+        if (item->hashcode == 0 && (item->key == NULL || item->value == NULL)) {
             assert(item->hashcode == 0 && item->key == NULL &&
                    item->value == NULL && "expected all to be empty");
             printf("(%zu)%p: %p", item->hashcode, item->key, item->value);

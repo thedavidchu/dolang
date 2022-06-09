@@ -19,7 +19,8 @@ static void tbl_erasetable_nocheck(tbl *const me) {
 }
 
 /* Try finding an empty table index. This should probably be introduced to the
- * other functions to cut out redundancy. */
+ * other functions to cut out redundancy. Actually, this may not be the best
+ * idea because we can only guarantee that there are no tombstones here. */
 static size_t tbl_getemptytableidx_nocheck(tbl *const me,
                                            const tbl_kv *const item) {
     size_t home = item->hashcode % me->cap, offset = 0;
@@ -54,8 +55,8 @@ static int tbl_compressitems(tbl *const me) {
             continue;
         }
         /* Skip empty items */
-        if (tbl_item->hashcode == 0 || tbl_item->key == NULL ||
-            tbl_item->value == NULL) {
+        if (tbl_item->hashcode == 0 && (tbl_item->key == NULL ||
+            tbl_item->value == NULL)) {
             assert(tbl_item->hashcode == 0 &&
                    tbl_item->key == NULL & tbl_item->value == NULL);
             continue;

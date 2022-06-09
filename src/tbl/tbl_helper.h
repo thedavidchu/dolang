@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <stddef.h>
+#include <stdio.h>
 
 #include "arr/arr.h"
 #include "bool/bool.h"
@@ -88,7 +89,7 @@ static int tbl_gettableidx(const tbl *const restrict me, const void *const key,
         } else {
             /* We use an if-else ladder because we wish to declare a variable
             within the else-clause. */
-            const tbl_kv *const item = arr_search(&me->items, items_idx);
+            const tbl_kv *const item = (const tbl_kv *const)arr_search(&me->items, items_idx);
 
             assert(item != NULL && "unexpected NULL item");
             if (item->hashcode == hashcode &&
