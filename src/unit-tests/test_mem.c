@@ -1,5 +1,4 @@
 #include "unity.h"
-#include "file_to_test.h"
 
 void setUp(void) {
     // set stuff up here
