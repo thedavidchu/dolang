@@ -18,4 +18,4 @@ jobs:
       - name: Compile tests
         run: cmake --build cmake
       - name: run tests
-        run: ./cmake/main
+        run: ./cmake/src/main && ./cmake/test/test
