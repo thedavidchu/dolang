@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # This file is to test and run the 
-rm ./cmake/main;
+rm ./cmake/src/main ./cmake/test/test;
 cmake --build ./cmake;
 
-./cmake/main #>./test/output/stdout.log 2>./test/output/stderr.log;
+./cmake/src/main;
+./cmake/test/test;
