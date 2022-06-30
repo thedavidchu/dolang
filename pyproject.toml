@@ -29,6 +29,7 @@ exclude = '''
         | \.venv
         | \.vscode
         | _actions
+        | third-party
     )/
 )
 '''
