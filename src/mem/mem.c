@@ -10,8 +10,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "common/common.h"
-#include "mem/mem.h"
+#include "src/common/common.h"
+#include "src/mem/mem.h"
 
 /*! Check that $num * $size is valid. */
 static inline int is_overflow(const size_t num, const size_t size);

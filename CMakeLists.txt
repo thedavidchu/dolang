@@ -9,8 +9,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(CLib VERSION 0.0.0 LANGUAGES C)
 
-set(C_COMPILER_VERSION c99 CACHE STRING "Group to build")
-set(TARGET_GROUP test CACHE STRING "Group to build")
+set(C_COMPILER_VERSION c99 CACHE STRING "Compiler version")
 
 if(C_COMPILER_VERSION STREQUAL c90)
     # Set ISO C90 standard
@@ -27,17 +26,7 @@ set(CMAKE_C_STANDARD_REQUIRED True)
 # Show all warnings, warnings as errors, show where C90-non-compliant, debug
 set(CMAKE_C_FLAGS "-W -Wall -Werror -pedantic -g")
 
-# Test or Production
-if(TARGET_GROUP STREQUAL production)
-    # create main
-elseif(TARGET_GROUP STREQUAL test)
-    # TODO(dchu) - make a format cmake testing framework
-    add_subdirectory(third-party)   # what if we use other third-party stuff in production?
-else()
-    message(FATAL_ERROR "Given TARGET_GROUP unknown")
-endif()
-
-# Make src public to tests
+# Make this directory public to tests
 include_directories("${CMAKE_SOURCE_DIR}")
 
 # Add libraries

@@ -3,11 +3,11 @@
 #include <assert.h>
 #include <stddef.h>
 
-#include "mem/mem.h"
+#include "src/mem/mem.h"
 
-#include "arr/arr.h" /* arr */
-#include "arr/arr_checks.h"
-#include "arr/arr_macros.h"
+#include "src/arr/arr.h" /* arr */
+#include "src/arr/arr_checks.h"
+#include "src/arr/arr_macros.h"
 
 static inline int arr_dtoritem_nocheck(const arr *const me, const size_t idx,
                                        int (*item_dtor)(void *const));

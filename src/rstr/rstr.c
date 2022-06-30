@@ -3,9 +3,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <common/common.h>
+#include "src/common/common.h"
 
-#include "rstr/rstr.h"
+#include "src/rstr/rstr.h"
 
 int rstr_ctor(rstr *const restrict me, const char *const str,
               const size_t len) {

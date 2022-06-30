@@ -4,12 +4,12 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "mem/mem.h"
+#include "src/mem/mem.h"
 
-#include "arr/arr.h"
-#include "arr/arr_checks.h"
-#include "arr/arr_helper.h"
-#include "arr/arr_macros.h"
+#include "src/arr/arr.h"
+#include "src/arr/arr_checks.h"
+#include "src/arr/arr_helper.h"
+#include "src/arr/arr_macros.h"
 
 /*
 NOTE: A possible addition is to store the `int (*item_dtor)(void *const)` in the

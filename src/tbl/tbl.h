@@ -2,7 +2,7 @@
 
 #include <stddef.h>
 
-#include "arr/arr.h"
+#include "src/arr/arr.h"
 
 typedef struct {
     size_t *table;
