@@ -1,10 +1,10 @@
 #include <assert.h>
 #include <stddef.h>
 
-#include "arr/arr.h"
-#include "bool/bool.h"
-#include "common/common.h"
-#include "tbl/tbl.h"
+#include "src/arr/arr.h"
+#include "src/bool/bool.h"
+#include "src/common/common.h"
+#include "src/tbl/tbl.h"
 
 /* Define here rather than tbl.c */
 #define INVALID ((size_t)(-1))

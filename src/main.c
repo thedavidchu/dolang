@@ -3,12 +3,12 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "arr/arr.h"
-#include "bool/bool.h"
-#include "common/common.h"
-#include "mem/mem.h"
-#include "rstr/rstr.h"
-#include "tbl/tbl.h"
+#include "src/arr/arr.h"
+#include "src/bool/bool.h"
+#include "src/common/common.h"
+#include "src/mem/mem.h"
+#include "src/rstr/rstr.h"
+#include "src/tbl/tbl.h"
 
 #define CHANNEL stdout
 

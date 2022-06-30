@@ -5,7 +5,7 @@
 #include <stdlib.h> /* exit() */
 #include <string.h> /* strerror, NULL */
 
-#include "common/common.h"
+#include "src/common/common.h"
 
 const char *_safe_strerror(const int errnum) {
     static const char *const UNKNOWN_ERROR = "unknown error";

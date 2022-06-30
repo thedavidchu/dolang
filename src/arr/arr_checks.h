@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <stddef.h>
 
-#include "arr/arr.h" /* arr */
+#include "src/arr/arr.h" /* arr */
 
 /** Check if the array is malformed. This means
     (1) $me == NULL,

@@ -24,6 +24,6 @@ jobs:
         # These are optional (defaults displayed)
         with:
           scandir: '.'
-          excludedirs: 'build'
+          excludedirs: 'build,cmake,third-party'
           extensions: 'c,h,C,H,cpp,hpp,cc,hh,c++,h++,cxx,hxx'
           style: 'file'

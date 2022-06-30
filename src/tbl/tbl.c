@@ -1,12 +1,12 @@
 #include <assert.h>
 #include <stdio.h>
 
-#include "arr/arr.h"
-#include "common/common.h"
-#include "mem/mem.h"
+#include "src/arr/arr.h"
+#include "src/common/common.h"
+#include "src/mem/mem.h"
 
-#include "tbl/tbl.h"
-#include "tbl/tbl_helper.h" /* Define INVALID and TOMBSTONE */
+#include "src/tbl/tbl.h"
+#include "src/tbl/tbl_helper.h" /* Define INVALID and TOMBSTONE */
 
 int tbl_ctor(tbl *const restrict me, size_t cap,
              size_t (*hash_key)(const void *const restrict),

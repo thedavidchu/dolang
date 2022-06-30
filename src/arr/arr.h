@@ -2,7 +2,7 @@
 
 #include <stddef.h>
 
-#include "common/common.h"
+#include "src/common/common.h"
 
 typedef struct {
     void *items; /* Pointer to the items. This is a void* so that it is
