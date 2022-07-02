@@ -12,25 +12,8 @@
 
 #include "src/common/common.h"
 #include "src/mem/mem.h"
+#include "src/mem/mem_overflow.h"
 
-/*! Check that $num * $size is valid. */
-static inline int is_overflow(const size_t num, const size_t size);
-
-static inline int is_overflow(const size_t num, const size_t size) {
-    size_t num_bytes = 0;
-
-    /* Check if either $num or $size are zero. If so, then we know that the
-    number of bytes will be in the valid range, because it will be zero. We also
-    do this check to ensure that we don't divide be zero in the next step. */
-    if ((num_bytes = num * size) == 0) {
-        return 0;
-    } else if (num != num_bytes / size) {
-        return -1;
-    }
-    return 0;
-}
-
-/******************************************************************************/
 
 int mem_malloc(void **const me, size_t num, size_t size) {
     int err = 0;
@@ -49,12 +32,13 @@ int mem_malloc(void **const me, size_t num, size_t size) {
         return 0;
     }
     if ((*me = malloc(num_bytes)) == NULL) {
-#ifndef VALGRIND
-        assert(errno != 0 && "errno is not set when malloc returns an error");
-#else
-        /* Valgrind does not set errno */
-        RETURN_IF_ERROR(errno != 0, ENOMEM);
-#endif
+        #ifndef VALGRIND
+            assert(errno != 0 && "errno is not set when malloc returns an error");
+        #else
+            /* Valgrind does not set errno */
+            assert(errno == 0 && "valgrind does not set errno!");
+            errno = ENOMEM;
+        #endif
         return errno;
     }
     assert(errno == 0 && "errno is set when malloc returned valid value!");
@@ -67,7 +51,6 @@ int mem_realloc(void **const me, size_t num, size_t size) {
     void *new_ptr = NULL;
 
     RETURN_IF_ERROR((err = errno) || (err = is_overflow(num, size)), err);
-    RETURN_IF_ERROR(0, err);
     RETURN_IF_ERROR(me == NULL, -1);
     if ((num_bytes = num * size) == 0) {
         if (*me == NULL) {
@@ -79,12 +62,13 @@ int mem_realloc(void **const me, size_t num, size_t size) {
         }
     }
     if ((new_ptr = realloc(*me, num_bytes)) == NULL) {
-#ifndef VALGRIND
-        assert(errno != 0 && "errno is not set when realloc returns an error");
-#else
-        /* Valgrind does not set errno */
-        RETURN_IF_ERROR(errno != 0, ENOMEM);
-#endif
+        #ifndef VALGRIND
+            assert(errno != 0 && "errno is not set when realloc returns an error");
+        #else
+            /* Valgrind does not set errno */
+            assert(errno == 0 && "valgrind does not set errno!");
+            errno = ENOMEM;
+        #endif
         return errno;
     }
     assert(errno == 0 && "errno is set when malloc returned valid value!");
