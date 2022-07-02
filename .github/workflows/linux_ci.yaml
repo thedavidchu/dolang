@@ -1,7 +1,7 @@
 # Untested!
 name: Linux CI Code Base
 
-on: [push, pull_request]
+on: [push]
 
 jobs:
   run-linux-cmake:
