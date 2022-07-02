@@ -14,7 +14,6 @@
 #include "src/mem/mem.h"
 #include "src/mem/mem_overflow.h"
 
-
 int mem_malloc(void **const me, size_t num, size_t size) {
     int err = 0;
     size_t num_bytes = 0;
@@ -32,13 +31,13 @@ int mem_malloc(void **const me, size_t num, size_t size) {
         return 0;
     }
     if ((*me = malloc(num_bytes)) == NULL) {
-        #ifndef VALGRIND
-            assert(errno != 0 && "errno is not set when malloc returns an error");
-        #else
-            /* Valgrind does not set errno */
-            assert(errno == 0 && "valgrind does not set errno!");
-            errno = ENOMEM;
-        #endif
+#ifndef VALGRIND
+        assert(errno != 0 && "errno is not set when malloc returns an error");
+#else
+        /* Valgrind does not set errno */
+        assert(errno == 0 && "valgrind does not set errno!");
+        errno = ENOMEM;
+#endif
         return errno;
     }
     assert(errno == 0 && "errno is set when malloc returned valid value!");
@@ -62,13 +61,13 @@ int mem_realloc(void **const me, size_t num, size_t size) {
         }
     }
     if ((new_ptr = realloc(*me, num_bytes)) == NULL) {
-        #ifndef VALGRIND
-            assert(errno != 0 && "errno is not set when realloc returns an error");
-        #else
-            /* Valgrind does not set errno */
-            assert(errno == 0 && "valgrind does not set errno!");
-            errno = ENOMEM;
-        #endif
+#ifndef VALGRIND
+        assert(errno != 0 && "errno is not set when realloc returns an error");
+#else
+        /* Valgrind does not set errno */
+        assert(errno == 0 && "valgrind does not set errno!");
+        errno = ENOMEM;
+#endif
         return errno;
     }
     assert(errno == 0 && "errno is set when malloc returned valid value!");

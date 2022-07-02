@@ -7,23 +7,22 @@
 #include "src/mem/mem.h"
 #include "src/mem/mem_overflow.h"
 
+#define RESET_FREE(ptr)                                                        \
+    do {                                                                       \
+        errno = 0;                                                             \
+        free(ptr);                                                             \
+        ptr = NULL;                                                            \
+    } while (0)
 
-#define RESET_FREE(ptr) do { \
-    errno = 0; \
-    free(ptr); \
-    ptr = NULL; \
-} while (0)
+#define RESET_MALLOC(ptr)                                                      \
+    do {                                                                       \
+        errno = 0;                                                             \
+        assert(ptr == NULL && "non-null ptr");                                 \
+        ptr = malloc(1);                                                       \
+        assert(ptr != NULL && "failed to alloc");                              \
+    } while (0)
 
-#define RESET_MALLOC(ptr) do { \
-    errno = 0; \
-    assert(ptr == NULL && "non-null ptr"); \
-    ptr = malloc(1); \
-    assert(ptr != NULL && "failed to alloc"); \
-} while (0)
-
-
-int valid_ptr[1] = { 0 };
-
+int valid_ptr[1] = {0};
 
 void setUp(void) {
     // set stuff up here
@@ -32,7 +31,6 @@ void setUp(void) {
 void tearDown(void) {
     // clean stuff up here
 }
-
 
 void test_is_overflow(void) {
     /* Any zeros */
@@ -51,7 +49,6 @@ void test_is_overflow(void) {
     TEST_ASSERT_EQUAL_INT(-1, is_overflow(-1, -1));
 }
 
-
 void test_mem_malloc(void) {
     void *p = NULL;
 
@@ -67,7 +64,7 @@ void test_mem_malloc(void) {
     TEST_ASSERT_EQUAL_INT(-1, mem_malloc(&p, -1, -1));
     TEST_ASSERT_EQUAL_INT(0, errno);
     TEST_ASSERT_NULL(p);
-    
+
     RESET_FREE(p);
 
     /* Pass NULL */
@@ -83,8 +80,8 @@ void test_mem_malloc(void) {
     TEST_ASSERT_EQUAL_INT(0, errno);
     TEST_ASSERT(p == (void *)valid_ptr);
 
-    p = NULL;   /* we need to manually reset it here so we don't try freeing the
-    valid pointer. */
+    p = NULL; /* we need to manually reset it here so we don't try freeing the
+  valid pointer. */
     RESET_FREE(p);
 
     /* Return NULL when zero size */
@@ -100,13 +97,13 @@ void test_mem_malloc(void) {
     TEST_ASSERT_NULL(p);
 
     RESET_FREE(p);
-    
+
     /* Test valid size */
     TEST_ASSERT_EQUAL_INT(0, mem_malloc(&p, 1, 1));
     TEST_ASSERT_EQUAL_INT(0, errno);
     TEST_ASSERT_NOT_NULL(p);
 
-    RESET_FREE(p);    /* final free */
+    RESET_FREE(p); /* final free */
 }
 
 void test_mem_realloc(void) {
@@ -125,7 +122,7 @@ void test_mem_realloc(void) {
     TEST_ASSERT_EQUAL_INT(-1, mem_realloc(&p, -1, -1));
     TEST_ASSERT_EQUAL_INT(0, errno);
     TEST_ASSERT_NULL(p);
-    
+
     RESET_FREE(p);
 
     /* Pass NULL */
@@ -185,16 +182,16 @@ void test_mem_free(void) {
     TEST_ASSERT_EQUAL_INT(ENOMEM, errno);
     TEST_ASSERT_NOT_NULL(p);
 
-    RESET_FREE(p);  /* free p */
-    RESET_MALLOC(p);    /* alloc p */
+    RESET_FREE(p);   /* free p */
+    RESET_MALLOC(p); /* alloc p */
 
     /* Pass NULL */
     TEST_ASSERT_EQUAL_INT(-1, mem_free(NULL));
     TEST_ASSERT_EQUAL_INT(0, errno);
     TEST_ASSERT_NOT_NULL(p);
 
-    RESET_FREE(p);  /* free p */
-    RESET_MALLOC(p);    /* alloc p */
+    RESET_FREE(p);   /* free p */
+    RESET_MALLOC(p); /* alloc p */
 
     /* Valid (p != NULL)*/
     TEST_ASSERT_EQUAL_INT(0, mem_free(&p));
@@ -218,6 +215,4 @@ int main(void) {
     RUN_TEST(test_mem_free);
 
     return UNITY_END();
-
 }
-

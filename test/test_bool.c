@@ -20,4 +20,3 @@ int main(void) {
     RUN_TEST(test_bool);
     return UNITY_END();
 }
-
