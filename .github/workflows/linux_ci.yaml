@@ -14,9 +14,15 @@ jobs:
         uses: lukka/get-cmake@latest
 
       - name: Make ./cmake
-        run: mkdir cmake; cd ./cmake; cmake ..; cd ..;
+        run: |
+          mkdir cmake;
+          cd ./cmake;
+          cmake ..;
+          cd ..;
       - name: Compile tests
         run: cmake --build cmake;
       - name: run tests
-        run: cd ./cmake; make *; cd ..;
-      - 
+        run: |
+          cd ./cmake;
+          make *;
+          cd ..;
