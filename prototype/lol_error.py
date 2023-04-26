@@ -1,5 +1,5 @@
 from lol_lexer_types import Token
-from lol_parser_helper import TokenStream
+from lol_parser_token_stream import TokenStream
 
 
 def print_error(text: str, line_number: int, column_number: int):

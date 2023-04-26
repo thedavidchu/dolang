@@ -14,8 +14,8 @@ TODO
 from typing import List, Union
 
 from lol_lexer import Token, TokenType, tokenize
-from lol_parser_helper import TokenStream
-from lol_ast_types import (
+from lol_parser_token_stream import TokenStream
+from lol_parser_types import (
     DecimalLeaf,
     StringLeaf,
     IdentifierLeaf,
