@@ -217,7 +217,8 @@ int test_tbl(void) {
     // tbl *me = NULL;
 
     // /* Setup */
-    // REQUIRE_NO_ERROR(mem_malloc((void **)&me, 1, sizeof(tbl)), "malloc failed");
+    // REQUIRE_NO_ERROR(mem_malloc((void **)&me, 1, sizeof(tbl)),
+    //         "malloc failed");
     // REQUIRE_NO_ERROR(tbl_ctor(me, 10, simple_str_hash,
     //                           (int (*)(const void *const restrict,
     //                                    const void *const restrict))strcmp),
@@ -248,13 +249,14 @@ int test_tbl(void) {
     // TEST_INT_EQ(tbl_print(me, str_print, int_print), 0, err);
 
     // for (i = 0; i < 10; ++i) {
-    //     TEST_INT_EQ(tbl_insert(me, keys[i], &values[i], tbl_noop_del), 0, err);
+    //     TEST_INT_EQ(tbl_insert(me, keys[i], &values[i], tbl_noop_del), 0,
+    //             err);
     //     TEST_INT_EQ(tbl_print(me, str_print, int_print), 0, err);
     //     TEST_PTR_EQ(tbl_search(me, keys[i]), &values[i], err);
     // }
     // /* Try to shove an extra in (breaks for now) */
-    // TEST_INT_EQ(tbl_insert(me, "extra", &values[0], tbl_noop_del), ERROR_NOROOM,
-    //             err);
+    // TEST_INT_EQ(tbl_insert(me, "extra", &values[0], tbl_noop_del),
+    //             ERROR_NOROOM, err);
 
     // for (i = 0; i < 10; ++i) {
     //     TEST_INT_EQ(tbl_remove(me, keys[i], tbl_noop_del, tbl_noop_del), 0,
@@ -264,7 +266,8 @@ int test_tbl(void) {
 
     // TEST_INT_EQ(tbl_print(me, str_print, int_print), 0, err);
     // for (i = 0; i < 10; ++i) {
-    //     TEST_INT_EQ(tbl_insert(me, keys[i], &values[i], tbl_noop_del), 0, err);
+    //     TEST_INT_EQ(tbl_insert(me, keys[i], &values[i], tbl_noop_del), 0,
+    //             err);
     //     TEST_INT_EQ(tbl_print(me, str_print, int_print), 0, err);
     //     TEST_PTR_EQ(tbl_search(me, keys[i]), &values[i], err);
     // }
