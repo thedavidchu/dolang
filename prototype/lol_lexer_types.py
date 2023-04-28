@@ -66,6 +66,7 @@ class TokenType(Enum):
     FUNCTION = auto()
     RETURN = auto()
     LET = auto()
+    NAMESPACE = auto()
 
 
 class Token:

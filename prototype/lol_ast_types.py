@@ -146,3 +146,15 @@ class ReturnNode(ASTNode):
             type=self.__class__.__name__,
             expression=self.expression.to_dict(),
         )
+
+
+class NamespaceNode(ASTNode):
+    def __init__(self, expression: ASTNode) -> None:
+        super().__init__()
+        self.expression = expression
+
+    def to_dict(self):
+        return dict(
+            type=self.__class__.__name__,
+            expression=self.expression.to_dict(),
+        )
