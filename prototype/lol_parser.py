@@ -11,7 +11,7 @@ TODO
     - Leaf: literal (decimal, string, variable, op)
 2. Handle errors instead of `assert`
 """
-from typing import List, Union
+from typing import List, Tuple, Union
 
 from lol_lexer import Token, TokenType, tokenize
 from lol_parser_token_stream import TokenStream
@@ -63,7 +63,7 @@ def parse_paren(stream: TokenStream) -> ASTNode:
     return ret
 
 
-def parse_identifier(
+def parse_identifier_or_call_or_access(
     stream: TokenStream,
 ) -> Union[IdentifierLeaf, FunctionCallNode]:
     """Parse both variables and function calls.
@@ -103,7 +103,7 @@ def parse_primary(stream: TokenStream) -> ASTNode:
     """Helper functions for parsing identifiers, literals, and parenthetic expressions."""
     token = stream.get_token()
     if token.type() == TokenType.IDENTIFIER:
-        return parse_identifier(stream)
+        return parse_identifier_or_call_or_access(stream)
     elif token.type() in {TokenType.DEC, TokenType.STRING}:
         return parse_literal(stream)
     elif token.type() == TokenType.LPAREN:
@@ -256,25 +256,38 @@ def parse_function_def(stream: TokenStream) -> FunctionDefNode:
     return FunctionDefNode(proto, body)
 
 
-def parse_let(stream: TokenStream) -> ASTNode:
+def parse_definition(stream: TokenStream) -> Tuple[IdentifierLeaf, ASTNode]:
+    name_token = eat_token(stream, TokenType.IDENTIFIER)
+    name = IdentifierLeaf(name_token)
+    comma_precedence = get_binop_precedence(
+        Token(-1, -1, -1, TokenType.COMMA, ",")
+    )
+    # This is more general than it needs to be. This should parse the token
+    # expression: "[: <type>]? = <expression>"
+    expr = parse_binop_rhs(stream, comma_precedence + 1, name)
+    return name, expr
+
+
+def parse_let_statement(stream: TokenStream) -> ASTNode:
     """Parse 'let' statement outside of a function."""
     eat_token(stream, TokenType.LET)
-    return LetNode(parse_statement(stream))
+    result = LetNode(*parse_definition(stream))
+    eat_token(stream, TokenType.SEMICOLON)
+    return result
 
 
-def parse_namespace(stream: TokenStream) -> ASTNode:
+def parse_namespace_statement(stream: TokenStream) -> ASTNode:
     """Parse 'namespace' statement outside of a function."""
     eat_token(stream, TokenType.NAMESPACE)
-    return NamespaceNode(parse_statement(stream))
+    result = NamespaceNode(*parse_definition(stream))
+    eat_token(stream, TokenType.SEMICOLON)
+    return result
 
 
 def parse_statement(stream: TokenStream) -> ASTNode:
     token = stream.get_token()
     if token.type() == TokenType.LET:
-        eat_token(stream, TokenType.LET)
-        result = parse_expr(stream)
-        eat_token(stream, TokenType.SEMICOLON)
-        return LetNode(result)
+        return parse_let_statement(stream)
     elif token.type() == TokenType.RETURN:
         eat_token(stream, TokenType.RETURN)
         result = parse_expr(stream)
@@ -294,9 +307,9 @@ def parse(stream: TokenStream) -> List[ASTNode]:
         if token.type() == TokenType.FUNCTION:
             result.append(parse_function_def(stream))
         elif token.type() == TokenType.NAMESPACE:
-            result.append(parse_namespace(stream))
+            result.append(parse_namespace_statement(stream))
         elif token.type() == TokenType.LET:
-            result.append(parse_let(stream))
+            result.append(parse_let_statement(stream))
         else:
             raise ValueError(f"Unexpected token: {token}")
     return result
@@ -307,8 +320,8 @@ if __name__ == "__main__":
         text = f.read()
     tokens = tokenize(text=text)
     stream = TokenStream(tokens, text=text)
-    ast = parse(stream)
+    asts = parse(stream)
     import json
 
-    for a in ast:
+    for a in asts:
         print(json.dumps(a.to_dict(), indent=4))

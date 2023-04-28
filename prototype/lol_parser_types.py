@@ -125,8 +125,9 @@ class FunctionCallNode(ASTNode):
 
 
 class LetNode(ASTNode):
-    def __init__(self, expression: ASTNode) -> None:
+    def __init__(self, name: IdentifierLeaf, expression: ASTNode) -> None:
         super().__init__()
+        self.name = name
         self.expression = expression
 
     def to_dict(self):
@@ -149,8 +150,9 @@ class ReturnNode(ASTNode):
 
 
 class NamespaceNode(ASTNode):
-    def __init__(self, expression: ASTNode) -> None:
+    def __init__(self, name: IdentifierLeaf, expression: ASTNode) -> None:
         super().__init__()
+        self.name = name
         self.expression = expression
 
     def to_dict(self):
