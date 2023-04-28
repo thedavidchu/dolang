@@ -17,7 +17,7 @@ We use white-space as the delimiter because CSVs are well formed.
 The accepted tokens are (ASCII):
 
 1. identifiers : [A-Za-z_][A-Za-z0-9_]*
-    - Keywords: if, else, while, function, return, let
+    - Keywords: if, else, while, function, return, let, namespace
 2. decimal integers : [1-9][0-9]*
 3. strings : ["](\"|[^"])*["]
 4. parentheses : "(" or ")"
@@ -121,6 +121,8 @@ class Tokenizer:
             return Token(*pos, TokenType.RETURN, ident)
         elif ident == "let":
             return Token(*pos, TokenType.LET, ident)
+        elif ident == "namespace":
+            return Token(*pos, TokenType.NAMESPACE, ident)
         else:
             return Token(*pos, TokenType.IDENTIFIER, ident)
 

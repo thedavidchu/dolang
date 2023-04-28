@@ -26,6 +26,7 @@ from lol_ast_types import (
     FunctionCallNode,
     LetNode,
     ReturnNode,
+    NamespaceNode,
     # Abstract Types
     LiteralLeaf,
     ASTNode,
@@ -225,14 +226,15 @@ def parse_function_def(stream: TokenStream) -> FunctionDefNode:
 
 
 def parse_let(stream: TokenStream) -> ASTNode:
+    """Parse 'let' statement outside of a function."""
     eat_token(stream, TokenType.LET)
-
     return LetNode(parse_statement(stream))
 
 
-def parse_return(stream: TokenStream) -> ASTNode:
-    eat_token(stream, TokenType.RETURN)
-    return ReturnNode(parse_statement(stream))
+def parse_namespace(stream: TokenStream) -> ASTNode:
+    """Parse 'namespace' statement outside of a function."""
+    eat_token(stream, TokenType.NAMESPACE)
+    return NamespaceNode(parse_statement(stream))
 
 
 def parse_statement(stream: TokenStream) -> ASTNode:
@@ -260,6 +262,8 @@ def parse(stream: TokenStream) -> List[ASTNode]:
         token = stream.get_token()
         if token.type() == TokenType.FUNCTION:
             result.append(parse_function_def(stream))
+        elif token.type() == TokenType.NAMESPACE:
+            result.append(parse_namespace(stream))
         elif token.type() == TokenType.LET:
             result.append(parse_let(stream))
         else:
