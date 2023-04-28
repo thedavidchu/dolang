@@ -190,6 +190,9 @@ class Tokenizer:
         elif c == "=":
             return Token(*pos, TokenType.EQUAL, c)
         elif c == ":":
+            if stream.get_char() == ":":
+                stream.next_char()
+                return Token(*pos, TokenType.COLON_COLON, "::")
             return Token(*pos, TokenType.COLON, c)
         elif c == ";":
             return Token(*pos, TokenType.SEMICOLON, c)

@@ -2,6 +2,6 @@
 namespace io = import("io");
 
 function main() -> int32 {
-    io.stdout("Hello, World!\n");
+    io::stdout("Hello, World!\n");
     return 0;
 }

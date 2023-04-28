@@ -118,10 +118,34 @@ def parse_primary(stream: TokenStream) -> ASTNode:
 # precedence somewhere smarter.
 def get_binop_precedence(op: Token) -> int:
     precedence = {
-        TokenType.DOT: 1000,  # Highest
-        TokenType.COLON: 990,
-        TokenType.EQUAL: 10,
-        TokenType.COMMA: 0,  # Weakest
+        # The '::' operator should always be on the left of any '.' operators,
+        # so it has precedence due to left-associativity anyways.
+        TokenType.COLON_COLON: 1500,  # Highest
+        TokenType.DOT: 1400,
+        TokenType.ARROW: 1400,
+        # Prefix operators have precedence of 1300
+        TokenType.STAR: 1200,
+        TokenType.SLASH: 1200,  # TODO(dchu): Is this real divide?
+        TokenType.SLASH_SLASH: 1200,  # Not in C
+        TokenType.PERCENT: 1200,  # TODO(dchu): Is this same semantics as in C?
+        TokenType.PLUS: 1100,
+        TokenType.MINUS: 1100,
+        TokenType.LSHIFT: 1000,
+        TokenType.RSHIFT: 1000,
+        TokenType.AMPERSAND: 900,  # In C, this is lower than comparison ops
+        TokenType.CIRCUMFLEX: 800,  # In C, this is lower than comparison ops
+        TokenType.VBAR: 700,  # In C, this is lower than comparison ops
+        TokenType.COLON: 600,  # Not in C
+        TokenType.LESSER: 500,
+        TokenType.LESSER_EQUAL: 500,
+        TokenType.GREATER: 500,
+        TokenType.GREATER_EQUAL: 500,
+        TokenType.EQUAL_EQUAL: 500,  # In C, this is lower than other comparison ops
+        TokenType.NOT_EQUAL: 500,  # In C, this is lower than other comparison ops
+        # The '&&'/'and' operator is 400
+        # The '||'/'or' operator is 300
+        TokenType.EQUAL: 200,
+        TokenType.COMMA: 100,  # Weakest
     }
     return precedence.get(op.type(), -1)
 
