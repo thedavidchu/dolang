@@ -196,16 +196,13 @@ class Tokenizer:
             return Token(*pos, TokenType.COLON, c)
         elif c == ";":
             return Token(*pos, TokenType.SEMICOLON, c)
+        elif c == "+":
+            return Token(*pos, TokenType.PLUS, c)
         elif c == "-":
             if stream.get_char() == ">":
                 stream.next_char()
                 return Token(*pos, TokenType.ARROW, "->")
-            token = Token(*pos, TokenType.MINUS, "-")
-            print_token_error(
-                stream.get_text(), token, "MINUS not supported yet!"
-            )
-            raise NotImplementedError("MINUS not supported yet")
-            return Token(*pos, TokenType.MINUS, "-")
+            return Token(*pos, TokenType.MINUS, c)
         else:
             raise ValueError(f"character '{c}' not supported!")
 
@@ -233,7 +230,7 @@ class Tokenizer:
                 # TODO(dchu): re-enable this once the AST supports comments.
                 # Right now, we skip comments.
                 # self.tokens.append(token)
-            elif c in "()[]{}.,=:;-":
+            elif c in "()[]{}.,=:;-+":
                 # TODO(dchu): '-' does not necessarily imply a punctuation mark.
                 # It can also be the start of a negative number, e.g. -10.3
                 token = self.get_symbol(self.stream)

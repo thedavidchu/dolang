@@ -209,15 +209,22 @@ def parse_function_prototype(stream: TokenStream) -> FunctionPrototypeNode:
     args = []
     while True:
         token = stream.get_token()
-        # TODO(dchu): support expressions here
         if token.type() == TokenType.IDENTIFIER:
-            args.append(IdentifierLeaf(token))
+            # NOTE: we explicitly accept only an identifier. Refactor this out
+            # because we'll use this in the 'let' statements and 'namespace'
+            # statements too!
+            lhs = IdentifierLeaf(token)
             stream.next_token()
-            token = stream.get_token()
-            assert token.type() == TokenType.COMMA
-            stream.next_token()
+            comma_precedence = get_binop_precedence(
+                Token(-1, -1, -1, TokenType.COMMA, ",")
+            )
+            expr = parse_binop_rhs(stream, comma_precedence + 1, lhs)
+            args.append(expr)
+        elif token.type() == TokenType.COMMA:
+            eat_token(stream, TokenType.COMMA)
+            continue
         elif token.type() == TokenType.RPAREN:
-            stream.next_token()
+            eat_token(stream, TokenType.RPAREN)
             break
         else:
             print_parser_error(
@@ -296,7 +303,7 @@ def parse(stream: TokenStream) -> List[ASTNode]:
 
 
 if __name__ == "__main__":
-    with open("prototype/examples/helloworld.lol") as f:
+    with open("prototype/examples/fibonacci.lol") as f:
         text = f.read()
     tokens = tokenize(text=text)
     stream = TokenStream(tokens, text=text)
