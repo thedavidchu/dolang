@@ -86,11 +86,9 @@ io . stdout ( a_str )
 io . stdout ( b_str )
 """
 
-from typing import Dict, Tuple, List
-from enum import Enum, auto, unique
+from typing import List
 
 from lol_lexer_types import TokenType, Token, CharacterStream
-from lol_error import print_token_error
 
 
 class Tokenizer:
@@ -249,5 +247,3 @@ if __name__ == "__main__":
     tokens = tokenize()
     for token in tokens:
         print(repr(token))
-    for token in tokens:
-        token.to_yaml()

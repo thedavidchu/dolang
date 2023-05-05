@@ -1,4 +1,4 @@
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, Union
 from enum import Enum, auto, unique
 
 
@@ -99,13 +99,15 @@ class Token:
         token type should be an integer id so that it's easier to parse."""
         return f"{self.idx},{self.line_number},{self.column_number},{self.token_type},{self.lexeme}"
 
-    def to_yaml(self):
-        print(f"- Token: {self.token_type}")
-        print(f"  Position: {self.idx}")
-        print(f"  LineNumber: {self.line_number}")
-        print(f"  ColumnNumber: {self.column_number}")
-        print(f"  Length: {len(self.lexeme)}")
-        print(f"  Lexeme: {self.lexeme}")
+    def to_dict(self) -> Dict[str, Union[TokenType, int, str]]:
+        return dict(
+            TokenType=self.token_type.name,
+            StartPosition=self.idx,
+            LineNumber=self.line_number,
+            ColumnNumber=self.column_number,
+            LexemeLength=len(self.lexeme),
+            Lexeme=self.lexeme,
+        )
 
 
 class CharacterStream:
