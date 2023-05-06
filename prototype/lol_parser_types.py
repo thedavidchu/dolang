@@ -1,7 +1,12 @@
 from abc import ABCMeta, abstractmethod
-from typing import List
+from typing import List, Union
+from warnings import warn
 
 from lol_lexer import Token
+
+################################################################################
+### AST ABSTRACT CLASSES
+################################################################################
 
 # Might have to be an Abstract Base Class?
 class ASTNode(metaclass=ABCMeta):
@@ -22,6 +27,10 @@ class LiteralLeaf(ASTLeaf, metaclass=ABCMeta):
     def __init__(self, token: Token):
         super().__init__(token)
         self.value = None
+
+################################################################################
+### AST LEAFS
+################################################################################
 
 
 class DecimalLeaf(LiteralLeaf):
@@ -60,6 +69,10 @@ class OperatorLeaf(ASTLeaf):
         return dict(type=self.__class__.__name__, op=self.token.lexeme)
 
 
+################################################################################
+### AST NODES
+################################################################################
+
 class BinOpNode(ASTNode):
     """A binary op with a lhs and rhs."""
 
@@ -77,11 +90,37 @@ class BinOpNode(ASTNode):
         )
 
 
+# NOTE: we don't really need this class; it could be replaced by a more general
+# expression node; however, specializing early helps keep the code cleaner in
+# later stages.
+class DefinitionNode(ASTNode):
+    def __init__(
+        self,
+        identifier: IdentifierLeaf,
+        type: Union[ASTNode, None],
+        value: Union[ASTNode, None],
+    ):
+        self._identifier = identifier
+        self._type = type
+        self._value = value
+
+    def to_dict(self):
+        to_dict_or_none = lambda x: x.to_dict() if x is not None else None
+        return dict(
+            type=self.__class__.__name__,
+            identifier=self._identifier.to_dict(),
+            type_annotation=to_dict_or_none(self._type),
+            value=to_dict_or_none(self._value),
+        )
+
+# NOTE: I thought about wrapping this into the FunctionDefNode, but it is nice
+# to have separate prototypes, because external C functions may only be known by
+# their prototypes.
 class FunctionPrototypeNode(ASTNode):
     def __init__(
         self,
         name: IdentifierLeaf,
-        parameters: List[ASTNode],
+        parameters: List[DefinitionNode],
         return_type: ASTNode,
     ):
         self.name = name
@@ -112,14 +151,14 @@ class FunctionDefNode(ASTNode):
 
 class FunctionCallNode(ASTNode):
     # Include generics in function call?
-    def __init__(self, name: IdentifierLeaf, arguments: List[ASTNode]):
-        self.name = name
+    def __init__(self, identifier: IdentifierLeaf, arguments: List[ASTNode]):
+        self.identifier = identifier
         self.arguments = arguments
 
     def to_dict(self):
         return dict(
             type=self.__class__.__name__,
-            name=self.name.to_dict(),
+            name=self.identifier.to_dict(),
             arguments=[a.to_dict() for a in self.arguments],
         )
 
@@ -127,6 +166,7 @@ class FunctionCallNode(ASTNode):
 class LetNode(ASTNode):
     def __init__(self, name: IdentifierLeaf, expression: ASTNode) -> None:
         super().__init__()
+        warn("LetNode is deprecated")
         self.name = name
         self.expression = expression
 

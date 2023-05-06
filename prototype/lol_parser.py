@@ -27,6 +27,7 @@ from lol_parser_types import (
     LetNode,
     ReturnNode,
     NamespaceNode,
+    DefinitionNode,
     # Abstract Types
     LiteralLeaf,
     ASTNode,
@@ -63,6 +64,33 @@ def parse_paren(stream: TokenStream) -> ASTNode:
     return ret
 
 
+def parse_func_call_args(
+    stream: TokenStream,
+    identifier_leaf: IdentifierLeaf
+) -> FunctionCallNode:
+    eat_token(stream, TokenType.LPAREN)
+    args = []
+    while True:
+        token = stream.get_token()
+        if token.type() == TokenType.RPAREN:
+            eat_token(stream, TokenType.RPAREN)
+            break
+        args.append(parse_expr(stream))
+        if stream.get_token().type() == TokenType.RPAREN:
+            eat_token(stream, TokenType.RPAREN)
+            break
+        elif stream.get_token().type() == TokenType.COMMA:
+            eat_token(stream, TokenType.COMMA)
+            continue
+        else:
+            print_parser_error(
+                stream,
+                error_msg=f"Expected COMMA or RPAREN, got {stream.get_token().type()}",
+            )
+            raise ValueError("Expected COMMA or RPAREN")
+    return FunctionCallNode(identifier_leaf, args)
+
+
 def parse_identifier_or_call_or_access(
     stream: TokenStream,
 ) -> Union[IdentifierLeaf, FunctionCallNode]:
@@ -73,29 +101,12 @@ def parse_identifier_or_call_or_access(
 
     In the future, it may be an array thing too array[100]."""
     token = eat_token(stream, TokenType.IDENTIFIER)
+    identifier_leaf = IdentifierLeaf(token)
 
-    if stream.get_token().type() != TokenType.LPAREN:
-        return IdentifierLeaf(token)
-
-    # Call
-    eat_token(stream, TokenType.LPAREN)
-    args = []
-    # TODO(dchu): fix the bug where this will exceed the array limits of the
-    # token stream if it doesn't find anything.
-    while stream.get_token().type() != TokenType.RPAREN:
-        args.append(parse_expr(stream))
-        if stream.get_token().type() == TokenType.RPAREN:
-            break
-        elif stream.get_token().type() == TokenType.COMMA:
-            continue
-        else:
-            print_parser_error(
-                stream,
-                error_msg=f"Expected COMMA or RPAREN, got {stream.get_token().type()}",
-            )
-            raise ValueError("Expected COMMA or RPAREN")
-    eat_token(stream, TokenType.RPAREN)
-    return FunctionCallNode(IdentifierLeaf(token), args)
+    if stream.get_token().type() == TokenType.LPAREN:
+        return parse_func_call_args(stream, identifier_leaf)
+    else:
+        return identifier_leaf
 
 
 # TODO(dchu): figure out why this is called "primary"
@@ -144,8 +155,9 @@ def get_binop_precedence(op: Token) -> int:
         TokenType.NOT_EQUAL: 500,  # In C, this is lower than other comparison ops
         # The '&&'/'and' operator is 400
         # The '||'/'or' operator is 300
-        TokenType.EQUAL: 200,
-        TokenType.COMMA: 100,  # Weakest
+        # NOTE(dchu): I remove the ability to parse the '=' and ',' as operators since this would be confusing!
+        # TokenType.EQUAL: 200,
+        # TokenType.COMMA: 100,  # Weakest
     }
     return precedence.get(op.type(), -1)
 
@@ -193,7 +205,7 @@ def parse_binop_rhs(
         lhs = BinOpNode(binop, lhs, rhs)
 
 
-def parse_function_prototype(stream: TokenStream) -> FunctionPrototypeNode:
+def parse_func_prototype(stream: TokenStream) -> FunctionPrototypeNode:
     """Parse function definition."""
     eat_token(stream, TokenType.FUNCTION)
 
@@ -210,17 +222,15 @@ def parse_function_prototype(stream: TokenStream) -> FunctionPrototypeNode:
     while True:
         token = stream.get_token()
         if token.type() == TokenType.IDENTIFIER:
-            # NOTE: we explicitly accept only an identifier. Refactor this out
-            # because we'll use this in the 'let' statements and 'namespace'
-            # statements too!
-            lhs = IdentifierLeaf(token)
-            stream.next_token()
-            comma_precedence = get_binop_precedence(
-                Token(-1, -1, -1, TokenType.COMMA, ",")
-            )
-            expr = parse_binop_rhs(stream, comma_precedence + 1, lhs)
-            args.append(expr)
-        elif token.type() == TokenType.COMMA:
+            args.append(parse_definition(stream))
+        else:
+            # NOTE: this is somewhat redundant. It is only useful to check for a
+            # ')' immediately after the opening '('; on all other iterations, it
+            # servers no purpose.
+            eat_token(stream, TokenType.RPAREN)
+            break
+        token = stream.get_token()
+        if token.type() == TokenType.COMMA:
             eat_token(stream, TokenType.COMMA)
             continue
         elif token.type() == TokenType.RPAREN:
@@ -228,7 +238,7 @@ def parse_function_prototype(stream: TokenStream) -> FunctionPrototypeNode:
             break
         else:
             print_parser_error(
-                stream.get_text(), stream.get_token(), error_msg=f"error!"
+                stream, error_msg=f"error!"
             )
             raise ValueError(f"unexpected token type: {repr(token)}")
 
@@ -240,8 +250,8 @@ def parse_function_prototype(stream: TokenStream) -> FunctionPrototypeNode:
     return FunctionPrototypeNode(name, args, ret)
 
 
-def parse_function_def(stream: TokenStream) -> FunctionDefNode:
-    proto = parse_function_prototype(stream)
+def parse_func_def(stream: TokenStream) -> FunctionDefNode:
+    proto = parse_func_prototype(stream)
     eat_token(stream, TokenType.LBRACE)
 
     # Parse body
@@ -250,43 +260,48 @@ def parse_function_def(stream: TokenStream) -> FunctionDefNode:
     while True:
         if stream.get_token().type() == TokenType.RBRACE:
             break
-        body.append(parse_statement(stream))
+        body.append(parse_statement_in_block(stream))
     eat_token(stream, TokenType.RBRACE)
 
     return FunctionDefNode(proto, body)
 
 
-def parse_definition(stream: TokenStream) -> Tuple[IdentifierLeaf, ASTNode]:
+def parse_definition(stream: TokenStream) -> DefinitionNode:
+    """Parse "<identifier> [: <type>] [= <value>]" expression."""
     name_token = eat_token(stream, TokenType.IDENTIFIER)
-    name = IdentifierLeaf(name_token)
-    comma_precedence = get_binop_precedence(
-        Token(-1, -1, -1, TokenType.COMMA, ",")
-    )
-    # This is more general than it needs to be. This should parse the token
-    # expression: "[: <type>]? = <expression>"
-    expr = parse_binop_rhs(stream, comma_precedence + 1, name)
-    return name, expr
+    identifier = IdentifierLeaf(name_token)
+    type_annotation: ASTNode = None
+    value: ASTNode = None
+    if stream.get_token().type() == TokenType.COLON:
+        eat_token(stream, TokenType.COLON)
+        type_annotation = parse_expr(stream)
+    if stream.get_token().type() == TokenType.EQUAL:
+        eat_token(stream, TokenType.EQUAL)
+        value = parse_expr(stream)
+    return DefinitionNode(identifier, type_annotation, value)
 
 
-def parse_let_statement(stream: TokenStream) -> ASTNode:
+def parse_let_statement(stream: TokenStream) -> DefinitionNode:
     """Parse 'let' statement outside of a function."""
     eat_token(stream, TokenType.LET)
-    result = LetNode(*parse_definition(stream))
+    result = parse_definition(stream)
     eat_token(stream, TokenType.SEMICOLON)
     return result
 
 
-def parse_namespace_statement(stream: TokenStream) -> ASTNode:
+def parse_namespace_statement(stream: TokenStream) -> DefinitionNode:
     """Parse 'namespace' statement outside of a function."""
+    # TODO(dchu): this is deprecated because eventually we will have namespaces
+    # and let statements all be one thing.
     eat_token(stream, TokenType.NAMESPACE)
-    result = NamespaceNode(*parse_definition(stream))
+    result = parse_definition(stream)
     eat_token(stream, TokenType.SEMICOLON)
     return result
 
 
-def parse_statement(stream: TokenStream) -> ASTNode:
+def parse_statement_in_block(stream: TokenStream) -> ASTNode:
     token = stream.get_token()
-    if token.type() == TokenType.LET:
+    if token.type() == TokenType.LET:   # Local variable
         return parse_let_statement(stream)
     elif token.type() == TokenType.RETURN:
         eat_token(stream, TokenType.RETURN)
@@ -305,10 +320,10 @@ def parse(stream: TokenStream) -> List[ASTNode]:
     while stream.get_token() is not None:
         token = stream.get_token()
         if token.type() == TokenType.FUNCTION:
-            result.append(parse_function_def(stream))
+            result.append(parse_func_def(stream))
         elif token.type() == TokenType.NAMESPACE:
             result.append(parse_namespace_statement(stream))
-        elif token.type() == TokenType.LET:
+        elif token.type() == TokenType.LET:  # Global variable
             result.append(parse_let_statement(stream))
         else:
             raise ValueError(f"Unexpected token: {token}")
