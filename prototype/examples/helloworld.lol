@@ -1,7 +1,7 @@
 ### Basic hello world
-namespace io = import("io");
+namespace io = import("stdio.h");
 
 function main() -> int32 {
-    io::stdout("Hello, World!\n");
+    print("Hello, World!\n");
     return 0;
 }

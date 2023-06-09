@@ -11,11 +11,11 @@ TODO
     - Leaf: literal (decimal, string, variable, op)
 2. Handle errors instead of `assert`
 """
-from typing import List, Tuple, Union
+from typing import List, Union
 
-from lol_lexer import Token, TokenType, tokenize
-from lol_parser_token_stream import TokenStream
-from lol_parser_types import (
+from lexer.lol_lexer import Token, TokenType
+from parser.lol_parser_token_stream import TokenStream
+from parser.lol_parser_types import (
     DecimalLeaf,
     StringLeaf,
     IdentifierLeaf,
@@ -24,15 +24,14 @@ from lol_parser_types import (
     FunctionPrototypeNode,
     FunctionDefNode,
     FunctionCallNode,
-    LetNode,
     ReturnNode,
-    NamespaceNode,
+    ImportNode,
     DefinitionNode,
     # Abstract Types
     LiteralLeaf,
     ASTNode,
 )
-from lol_error import print_parser_error
+from error.lol_error import print_parser_error
 
 
 def eat_token(stream: TokenStream, expected_type: TokenType) -> Token:
@@ -294,9 +293,14 @@ def parse_namespace_statement(stream: TokenStream) -> DefinitionNode:
     # TODO(dchu): this is deprecated because eventually we will have namespaces
     # and let statements all be one thing.
     eat_token(stream, TokenType.NAMESPACE)
-    result = parse_definition(stream)
+    name = eat_token(stream, TokenType.IDENTIFIER)
+    eat_token(stream, TokenType.EQUAL)
+    eat_token(stream, TokenType.IMPORT)
+    eat_token(stream, TokenType.LPAREN)
+    library = eat_token(stream, TokenType.STRING)
+    eat_token(stream, TokenType.RPAREN)
     eat_token(stream, TokenType.SEMICOLON)
-    return result
+    return ImportNode(IdentifierLeaf(name), StringLeaf(library))
 
 
 def parse_statement_in_block(stream: TokenStream) -> ASTNode:
@@ -328,15 +332,3 @@ def parse(stream: TokenStream) -> List[ASTNode]:
         else:
             raise ValueError(f"Unexpected token: {token}")
     return result
-
-
-if __name__ == "__main__":
-    with open("prototype/examples/fibonacci.lol") as f:
-        text = f.read()
-    tokens = tokenize(text=text)
-    stream = TokenStream(tokens, text=text)
-    asts = parse(stream)
-    import json
-
-    for a in asts:
-        print(json.dumps(a.to_dict(), indent=4))

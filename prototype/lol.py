@@ -2,27 +2,29 @@ import argparse
 import json
 import os
 import time
-from typing import List
+from typing import Any, List
 
-from lol_lexer_types import Token
-from lol_parser_token_stream import TokenStream
-from lol_parser_types import ASTNode
+from lexer.lol_lexer_types import Token
+from parser.lol_parser_token_stream import TokenStream
+from parser.lol_parser_types import ASTNode
 
 
 def run_lexer(text: str) -> List[Token]:
-    from lol_lexer import tokenize
+    from lexer.lol_lexer import tokenize
 
     return tokenize(text)
 
 
 def run_parser(stream: TokenStream) -> List[ASTNode]:
-    from lol_parser import parse
+    from parser.lol_parser import parse
 
     return parse(stream)
 
 
-def run_analyzer() -> str:
-    pass
+def run_analyzer(nodes: List[ASTNode], raw_text: str) -> Any:
+    from analyzer.lol_analyzer import analyze
+
+    return analyze(nodes, raw_text)
 
 
 def run_emitter() -> str:
@@ -56,14 +58,20 @@ def main() -> None:
     # Get timestamp to prepend to all output files
     timestamp = time.time()
 
+    # SAVE LEXER
     tokens = run_lexer(text=text)
     with open(os.path.join(output_dir, f"{timestamp}-lexer.out"), "w") as f:
         json.dump({"lexer": [token.to_dict() for token in tokens]}, f, indent=4)
 
+    # SAVE PARSER
     stream = TokenStream(tokens, text=text)
     asts = run_parser(stream)
     with open(os.path.join(output_dir, f"{timestamp}-parser.out"), "w") as f:
         json.dump({"parser": [ast.to_dict() for ast in asts]}, f, indent=4)
+
+    # SAVE ANALYSIS
+    symbol_table = run_analyzer(asts, text)
+    print(symbol_table)
 
 
 if __name__ == "__main__":
