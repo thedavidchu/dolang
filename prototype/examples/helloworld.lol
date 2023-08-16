@@ -1,7 +1,7 @@
 ### Basic hello world
-namespace io = import("stdio.h");
+module io = import("stdio.h");
 
 function main() -> int32 {
-    print("Hello, World!\n");
+    printf("Hello, World!\n");
     return 0;
 }

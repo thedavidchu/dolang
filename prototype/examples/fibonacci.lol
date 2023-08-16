@@ -1,5 +1,5 @@
 ### Recursive Fibonacci Sequence
-namespace io = import("stdio.h");
+module io = import("stdio.h");
 
 function fibonacci(n: int64) -> int64 {
     return fibonacci(n - 1) + fibonacci(n - 2);

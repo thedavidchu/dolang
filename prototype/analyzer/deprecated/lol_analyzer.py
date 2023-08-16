@@ -29,7 +29,7 @@ from typing import Any, Dict, List, Set
 from lol_lexer import Token
 from lol_parser_types import (
     ASTNode,
-    FunctionDefNode,
+    FunctionDefinitionNode,
     ImportNode,
     DefinitionNode,
     FunctionPrototypeNode,
@@ -99,7 +99,7 @@ def get_function_names(
     """Get function names and ensure they are unique."""
     result = {}
     for ast in asts:
-        if not isinstance(ast, FunctionDefNode):
+        if not isinstance(ast, FunctionDefinitionNode):
             continue
         name_token = ast.prototype.identifier
         name = name_token.token.lexeme
@@ -127,7 +127,7 @@ def analyze_function(
     functions: Dict[str, FunctionPrototypeNode],
     namespaces: Dict[str, ASTNode],
     global_var: Dict[str, ASTNode],
-    func_def: FunctionDefNode,
+    func_def: FunctionDefinitionNode,
 ) -> None:
     body = func_def.body
     local_var: Dict[str, ASTNode] = {}
@@ -203,6 +203,6 @@ def analyze_module(text: str, asts: List[ASTNode]) -> None:
             # Assume global variable is unique since we checked for it above.
             assert name not in global_var
             global_var[name] = expr
-        elif isinstance(ast, FunctionDefNode):
+        elif isinstance(ast, FunctionDefinitionNode):
             analyze_function(text, functions, namespaces, global_var, ast)
 

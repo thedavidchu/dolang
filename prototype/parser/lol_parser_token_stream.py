@@ -15,13 +15,17 @@ class TokenStream:
         return self.text
 
     def get_token(self) -> Token:
-        """Get the current token or return None"""
+        """
+        Get the current token or return None if at the end.
+
+        N.B. Does NOT advance the token!
+        """
         if self.idx >= len(self.src):
             return None
         return self.src[self.idx]
 
     def next_token(self):
-        """Advance to the next token"""
+        """Advance to the next token."""
         t = self.get_token()
         if t is None:
             return

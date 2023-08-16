@@ -87,22 +87,29 @@ class Token:
         self.token_type = token_type
         self.lexeme = lexeme
 
+    def is_type(self, token_type: TokenType) -> bool:
+        return self.token_type == token_type
+
     def type(self):
         return self.token_type
 
     def type_name(self):
         return self.token_type.name
 
-    def __str__(self):
-        """Serialize the token."""
-        return f"{self.idx},{self.line_number},{self.column_number},{self.token_type.value},{self.lexeme}"
-
     def __repr__(self):
         """Pretty print the token. This is NOT for serialization, because the
         token type should be an integer id so that it's easier to parse."""
-        return f"{self.idx},{self.line_number},{self.column_number},{self.token_type},{self.lexeme}"
+        return (
+            f"`{self.lexeme}`: {self.token_type.name} at position {self.idx} "
+            f"(line {self.line_number}:col {self.column_number})"
+        )
 
     def to_dict(self) -> Dict[str, Union[TokenType, int, str]]:
+        """
+        Pretty print the serialized token.
+
+        To make this purely functional, we would print the token type ID,
+        the start position, and the lexeme. Everything else is superfluous."""
         return dict(
             TokenType=self.token_type.name,
             StartPosition=self.idx,
