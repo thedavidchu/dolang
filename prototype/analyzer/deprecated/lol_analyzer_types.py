@@ -48,11 +48,12 @@ class AnalysisObj(metaclass=ABCMeta):
 @unique
 class DataTypeType(Enum):
     """The type of a type."""
+
     PRIMITIVE = auto()
     STRUCT = auto()
     ENUM = auto()
     MONAD = auto()
-    if False:   # NOT IMPLEMENTED
+    if False:  # NOT IMPLEMENTED
         GENERIC_STRUCT = auto()
         GENERIC_ENUM = auto()
         GENERIC_MONAD = auto()
@@ -64,6 +65,7 @@ class DataTypeType(Enum):
 @unique
 class OpType(Enum):
     """The type of an operator."""
+
     PREFIX = auto()
     INFIX = auto()
     SUFFIX = auto()
@@ -91,6 +93,7 @@ class DataTypeObj(AnalysisObj):
     * <type> - <type>   : Type difference
     * <type>[<args>]    : Type refinement
     """
+
     def __init__(
         self,
         name: str,
@@ -147,7 +150,6 @@ class OpObj(AnalysisObj):
         self.return_type = return_type
 
 
-
 class FuncObj(AnalysisObj):
     def __init__(
         self,
@@ -168,7 +170,9 @@ class FuncObj(AnalysisObj):
 
     def emit_c_def(self, indentation_level: int = 0) -> str:
         prototype = f"{self.return_type.emit_c_ref()} {self.name}"
-        params = "(" + ", ".join([f"{t} {name}" for name, t in self.arguments]) + ")"
+        params = (
+            "(" + ", ".join([f"{t} {name}" for name, t in self.arguments]) + ")"
+        )
         return prototype + params + self.body
 
 
@@ -176,13 +180,17 @@ class NamespaceObj:
     def __init__(
         self,
         name: str,
-        namespace: Dict[str, Union["DataTypeObj", "NamespaceObj", "VarObj", FuncObj]],
+        namespace: Dict[
+            str, Union["DataTypeObj", "NamespaceObj", "VarObj", FuncObj]
+        ],
     ) -> None:
         self.name = name
         self.namespace = namespace
 
     def add_to_namespace(
-        self, name: str, var: Union["DataTypeObj", "NamespaceObj", "VarObj", FuncObj]
+        self,
+        name: str,
+        var: Union["DataTypeObj", "NamespaceObj", "VarObj", FuncObj],
     ) -> None:
         if name in self.namespace:
             raise ValueError(f"this namespace already contains value {var}")
@@ -200,6 +208,7 @@ class VarObj(AnalysisObj):
     ----
     1.
     """
+
     def __init__(self, name: str, type: DataTypeObj, value: Any = None) -> None:
         self.name = name
         self.type = type
@@ -233,14 +242,11 @@ class FuncDef:
     #     return f"{self._return_type.emit_c_ref()} {self._name}({','.join()})"
 
 
-
 ################################################################################
 ### BUILTIN THINGS
 ################################################################################
 
 global_namespace = NamespaceObj(
     "global",
-    {
-        "int64": DataTypeObj("int64", DataTypeType.PRIMITIVE, {"+": None})
-    },
+    {"int64": DataTypeObj("int64", DataTypeType.PRIMITIVE, {"+": None})},
 )

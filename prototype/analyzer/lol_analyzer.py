@@ -1,20 +1,14 @@
-from typing import Dict, List, Set
-from enum import auto, Enum, unique
+from typing import Dict, List
 
-from prototype.error.lol_error import print_analyzer_error
-from prototype.lexer.lol_lexer_types import Token
+from prototype.analyzer.lol_analyzer_types import (
+    LolAnalysisObj,
+    LolModule,
+)
 from prototype.parser.lol_parser import (
     ASTNode,
     FunctionDefinitionNode,
     ImportModuleNode,
     VariableDefinitionNode,
-)
-from prototype.analyzer.lol_analyzer_types import (
-    LolAnalysisObj,
-    LolDataType,
-    LolDataVariable,
-    LolFunction,
-    LolModule,
 )
 
 
@@ -48,11 +42,12 @@ def extract_names_in_module(
 
 
 def get_prototypes(module: LolModule, ast_nodes: List[ASTNode], raw_text: str):
+    """Get function and variable prototypes."""
     for i, node in enumerate(ast_nodes):
         if isinstance(node, FunctionDefinitionNode):
-            module.add_func_proto(node)
+            module.add_function_prototype(node)
         elif isinstance(node, VariableDefinitionNode):
-            module.add_defn_proto(node)
+            module.add_variable_definition_prototype(node)
         elif isinstance(node, ImportModuleNode):
             pass
         else:

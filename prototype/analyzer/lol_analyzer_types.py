@@ -16,7 +16,7 @@ class COpType(Enum):
 
 
 ################################################################################
-### BUILTINS
+### BUILDING BLOCKS
 ################################################################################
 class LolAnalysisObj(metaclass=ABCMeta):
     def __init__(self, name: str, alt_c_name: Union[str, None]):
@@ -36,6 +36,7 @@ class LolDataType(LolAnalysisObj):
         ast_node: parser_types.ASTNode = None,
     ):
         super().__init__(name, alt_c_name)
+        self._ast_node = ast_node
         self.functions: Dict[str, "LolFunction"] = {}
 
     def __repr__(self):
@@ -49,6 +50,7 @@ class LolDataVariable(LolAnalysisObj):
     def __init__(
         self,
         name: str,
+        ast_node: parser_types.ASTNode = None,
         data_type: LolDataType = None,  # Is unknown at instantiation
         init_value: Any = None,
         *,
@@ -58,6 +60,7 @@ class LolDataVariable(LolAnalysisObj):
         is_volatile: bool = False,  # Equivalent to C's volatile
     ):
         super().__init__(name, alt_c_name)
+        self._ast_node = ast_node
         self.data_type = data_type
         self.init_value = init_value
 
@@ -73,6 +76,9 @@ class LolDataVariable(LolAnalysisObj):
 
     def add_init_value(self, init_value: Any):
         self.init_value = init_value
+
+    def get_return_type(self):
+        return self.data_type
 
 
 class LolFunction(LolAnalysisObj):
@@ -149,6 +155,134 @@ class LolOperator(LolAnalysisObj):
         return self._return_type
 
 
+################################################################################
+### VALUE EXPRESSIONS
+################################################################################
+class ValueExpression(metaclass=ABCMeta):
+    """
+    Abstract class for expressions with side effects.
+
+    N.B. Expressions without side-effects may be safely removed.
+    """
+
+    pass
+
+
+class FunctionCallExpression(ValueExpression):
+    def __init__(self, function: LolFunction, arguments: List[ValueExpression]):
+        super().__init__()
+        self._function = function
+        self._arguments = arguments
+
+    def get_return_type(self) -> LolDataType:
+        return self._function.return_type
+
+
+class OperatorValueExpression(ValueExpression):
+    def __init__(
+        self,
+        operator: LolOperator,
+        arguments: List[ValueExpression],
+    ):
+        super().__init__()
+        self._operator = operator
+        self._arguments = arguments
+
+    def get_return_type(self) -> LolDataType:
+        return self._operator.get_return_type()
+
+
+class LiteralExpression(ValueExpression):
+    """
+    Assign a literal to a variable for easier debugging.
+
+    N.B. corner case: if we are already assigning a literal to a named variable,
+    the we do not need to assign it to an unnamed variable.
+
+    E.g. `named_var: int = 10;` does not need
+        `unnamed_var: int = 10; named_var: int = unnamed_var;`
+    """
+
+    def __init__(
+        self,
+        literal: parser_types.Literal,
+        data_type: LolDataType,
+    ):
+        super().__init__()
+        self._literal = literal
+        self._data_type = data_type
+
+    def get_return_type(self) -> LolDataType:
+        return self._data_type
+
+
+class VariableCallExpression(ValueExpression):
+    def __init__(self, data_variable: LolDataVariable):
+        self._data_variable = data_variable
+
+    def get_return_type(self) -> LolDataType:
+        return self._data_variable.get_return_type()
+
+
+
+################################################################################
+### STATEMENTS
+################################################################################
+class Statement(metaclass=ABCMeta):
+    def __init__(self):
+        pass
+
+    # @abstractmethod
+    # def emit(self):
+    #     pass
+
+
+class VariableDefinitionStatement(Statement):
+    """<lvalue> = <expr>"""
+
+    def __init__(
+        self,
+        data_type: LolDataType,
+        lvalue: LolDataVariable,
+        expression: ValueExpression,
+    ):
+        super().__init__()
+        self._data_type = data_type
+        self._lvalue = lvalue
+        self._expression = expression
+
+
+class VariableModificationStatement(Statement):
+    def __init__(
+        self,
+        lvalue: LolDataVariable,
+        expression: ValueExpression,
+    ):
+        super().__init__()
+        self._lvalue = lvalue
+        self._expression = expression
+
+
+class ExpressionWithSideEffectStatement(Statement):
+    """Expression with side-effects."""
+
+    def __init__(
+        self,
+        expression: ValueExpression,
+    ):
+        super().__init__()
+        self._expression = expression
+
+
+class ReturnStatement(Statement):
+    def __init__(self, expr: ValueExpression):
+        super().__init__()
+        self.expr = expr
+
+
+################################################################################
+### MODULE
+################################################################################
 class LolModule(LolAnalysisObj):
     """
     NOTES
@@ -246,7 +380,7 @@ class LolModule(LolAnalysisObj):
     ############################################################################
     def add_function_name(
         self, function_node: parser_types.FunctionDefinitionNode
-        ):
+    ):
         name = function_node.get_name_as_str()
         if name in self.c_namespace:
             raise ValueError(
@@ -261,7 +395,7 @@ class LolModule(LolAnalysisObj):
 
     def add_variable_definition_name(
         self, var_def_node: parser_types.VariableDefinitionNode
-        ):
+    ):
         name = var_def_node.get_name_as_str()
         if name in self.c_namespace:
             raise ValueError(
@@ -274,16 +408,16 @@ class LolModule(LolAnalysisObj):
         self.c_namespace[name] = SymbolSource.USER
         self.symbol_table[name] = LolDataVariable(name, ast_node=var_def_node)
 
-    def add_submodule(self, submod_node: parser_types.ImportModuleNode):
+    def add_submodule(self, submodule_node: parser_types.ImportModuleNode):
         # TODO - this should just import all recursively!
-        name = submod_node.name.token.lexeme
-        submod_name = submod_node.expression.value
+        name = submodule_node.get_name_as_str()
+        submodule_name = submodule_node.get_library_as_str()
         if name in self.symbol_table:
             raise ValueError(
                 f"name '{name}' already in "
                 f"symbol table '{self.symbol_table}'"
             )
-        if submod_name == "stdio.h":
+        if submodule_name == "stdio.h":
             self.include_stdio(name)
         else:
             # self.symbol_table[name] = Module(name, "")
@@ -292,47 +426,102 @@ class LolModule(LolAnalysisObj):
     ############################################################################
     ### Add prototypes to module
     ############################################################################
-    def _parse_type_expr(self, type_expr: parser_types.ASTNode):
-        if isinstance(type_expr, parser_types.Identifier):
-            name = type_expr.token.lexeme
+    def _parse_type_expression(
+        self, type_expression: parser_types.TypeExpression
+    ) -> LolDataType:
+        if isinstance(type_expression, parser_types.Identifier):
+            name = type_expression.token.lexeme
             if name not in self.symbol_table:
                 raise ValueError(
                     f"type '{name}' not in symbol table '{self.symbol_table}'"
                 )
             result = self.symbol_table[name]
             assert isinstance(result, LolDataType)
+            return result
         else:
-            raise ValueError(f"type '{type(type_expr)}' is unsupported")
+            raise ValueError(f"type '{type(type_expression)}' is unsupported")
 
-    def add_func_proto(self, func_node: parser_types.FunctionDefinitionNode):
-        name = func_node.name.token.lexeme
-        assert name in self.symbol_table and isinstance(
-            self.symbol_table[name], LolFunction
-        )
-        func: LolFunction = self.symbol_table[name]
+    def _parse_value_expression(
+        self, value_expression: parser_types.ValueExpression
+    ) -> ValueExpression:
+        if isinstance(value_expression, parser_types.Literal):
+            data_type = {
+                parser_types.StringLiteral: self.symbol_table["str"],
+                parser_types.DecimalLiteral: self.symbol_table["int32"],
+            }.get(type(value_expression))
+            assert data_type is not None
+            return LiteralExpression(value_expression.value, data_type)
+        elif isinstance(value_expression, parser_types.VariableCallNode):
+            data_var_name = value_expression.get_name_as_str()
+            data_var = self.symbol_table[data_var_name]
+            assert isinstance(data_var, LolDataVariable)
+            return VariableCallExpression(data_var)
+        elif isinstance(value_expression, parser_types.OperatorValueExpression):
+            # Get operator
+            op_str = value_expression.get_operator_as_str()
+            # NOTE: operators for int/float are overloaded. How do we decide
+            # which one to get?
+            operator = self.symbol_table[op_str]
+            assert isinstance(operator, LolOperator)
+            # Get operands
+            analysis_args = []
+            for parser_args in value_expression.get_operands():
+                arg = self._parse_value_expression(parser_args)
+                analysis_args.append(arg)
+            return OperatorValueExpression(operator, analysis_args)
+        elif isinstance(value_expression, parser_types.FunctionCallNode):
+            # Get function
+            func_name = value_expression.get_name_as_str()
+            func = self.symbol_table[func_name]
+            assert isinstance(func, LolFunction)
+            # Get operands
+            analysis_args = []
+            for parser_args in value_expression.get_arguments():
+                arg = self._parse_value_expression(parser_args)
+                analysis_args.append(arg)
+            return FunctionCallExpression(func, analysis_args)
+
+    def add_function_prototype(
+        self, func_node: parser_types.FunctionDefinitionNode
+    ):
+        name = func_node.get_name_as_str()
+        assert name in self.symbol_table
+        func = self.symbol_table[name]
+        assert isinstance(func, LolFunction)
         func.add_params(
             [
                 LolDataVariable(
-                    name=defn_node.get_identifier().token.lexeme,
-                    # TODO(dchu) - parse these values somehow
-                    data_type=self._parse_type_expr(defn_node.get_type()),
+                    name=var_def_node.get_name_as_str(),
+                    data_type=self._parse_type_expression(
+                        var_def_node.get_data_type()
+                    ),
+                    init_value=None,  # We don't support default val functions
                 )
-                for defn_node in func_node.parameters
+                for var_def_node in func_node.get_parameters()
             ]
         )
-        func.add_return_type(self._parse_type_expr(func_node.return_type))
+        func.add_return_type(
+            self._parse_type_expression(func_node.get_return_type())
+            )
 
-    def add_defn_proto(self, defn_node: parser_types.VariableDefinitionNode):
-        name = defn_node.get_identifier().token.lexeme
-        assert name in self.symbol_table and isinstance(
-            self.symbol_table[name], LolFunction
+    def add_variable_definition_prototype(
+        self, variable_definition_node: parser_types.VariableDefinitionNode
+    ):
+        name = variable_definition_node.get_name_as_str()
+        assert name in self.symbol_table
+        var_def = self.symbol_table[name]
+        assert isinstance(var_def, LolDataVariable)
+        var_def.add_data_type(
+            self._parse_type_expression(
+                variable_definition_node.get_data_type()
+                )
         )
-        func: LolFunction = self.symbol_table[name]
+        var_def.add_init_value(variable_definition_node.get_value())
 
     ############################################################################
     # Add bodies
     ############################################################################
-    def add_func_body(self, func_node: parser_types.FunctionDefinitionNode):
+    def add_function_body(self, func_node: parser_types.FunctionDefinitionNode):
         # TODO - check func_node's name exists in symbol table. Add body statements to function
         name = func_node.name.token.lexeme
         assert name in self.symbol_table and isinstance(
@@ -344,9 +533,7 @@ class LolModule(LolAnalysisObj):
         var_counter = 0
         for i, statement in func_node.body:
             if isinstance(statement, parser_types.DefinitionNode):
-                body.append(
-                    Statement()
-                )
+                body.append(Statement())
             elif isinstance(statement, parser_types.OperatorValueExpression):
                 pass
             elif isinstance(statement, parser_types.FunctionCallNode):
@@ -355,123 +542,6 @@ class LolModule(LolAnalysisObj):
                 body.append(ReturnStatement())
             else:
                 raise ValueError(f"unsupported statement {statement}")
-
-
-################################################################################
-### EXPRESSIONS
-################################################################################
-class ValueExpression(metaclass=ABCMeta):
-    """
-    Abstract class for expressions with side effects.
-
-    N.B. Expressions without side-effects may be safely removed.
-    """
-    pass
-
-
-class FunctionCallExpression(ValueExpression):
-    def __init__(
-        self,
-        function: LolFunction,
-        arguments: List[ValueExpression]
-    ):
-        super().__init__()
-        self._function = function
-        self._arguments = arguments
-
-    def get_return_type(self) -> LolDataType:
-        return self._function.return_type
-
-
-class OperatorValueExpression(ValueExpression):
-    def __init__(
-        self,
-        operator: LolOperator,
-        arguments: List[ValueExpression],
-    ):
-        super().__init__()
-        self._operator = operator
-        self._arguments = arguments
-
-    def get_return_type(self) -> LolDataType:
-        return self._operator.get_return_type()
-
-
-class LiteralExpression(ValueExpression):
-    """
-    Assign a literal to a variable for easier debugging.
-
-    N.B. corner case: if we are already assigning a literal to a named variable,
-    the we do not need to assign it to an unnamed variable.
-
-    E.g. `named_var: int = 10;` does not need
-        `unnamed_var: int = 10; named_var: int = unnamed_var;`
-    """
-
-    def __init__(
-        self,
-        literal: parser_types.Literal,
-        data_type: LolDataType,
-    ):
-        super().__init__()
-        self._literal = literal
-        self._data_type = data_type
-
-    def get_return_type(self) -> LolDataType:
-        return self._data_type
-
-
-################################################################################
-class Statement(metaclass=ABCMeta):
-    def __init__(self):
-        pass
-
-    # @abstractmethod
-    # def emit(self):
-    #     pass
-
-
-class VariableDefinitionStatement(Statement):
-    """<lvalue> = <expr>"""
-
-    def __init__(
-        self,
-        data_type: LolDataType,
-        lvalue: LolDataVariable,
-        expression: ValueExpression,
-    ):
-        super().__init__()
-        self._data_type = data_type
-        self._lvalue = lvalue
-        self._expression = expression
-
-
-class VariableModificationStatement(Statement):
-    def __init__(
-        self,
-        lvalue: LolDataVariable,
-        expression: ValueExpression,
-    ):
-        super().__init__()
-        self._lvalue = lvalue
-        self._expression = expression
-
-
-class ExpressionWithSideEffectStatement(Statement):
-    """Expression with side-effects."""
-
-    def __init__(
-        self,
-        expression: ValueExpression,
-    ):
-        super().__init__()
-        self._expression = expression
-
-
-class ReturnStatement(Statement):
-    def __init__(self, expr: ValueExpression):
-        super().__init__()
-        self.expr = expr
 
 
 ################################################################################
@@ -507,19 +577,25 @@ builtins: Dict[str, Any] = {
     "bool": lol_bool,
 }
 
-includes: Set[str] = {
-    "stdio.h"
-}
+includes: Set[str] = {"stdio.h"}
 
 lol_int32.add_function(
     LolFunction(
-        "+", [unnamed_lol_int32, unnamed_lol_int32], lol_int32, alt_c_name="+",
-        is_builtin_c=True, c_op_type=COpType.INFIX
+        "+",
+        [unnamed_lol_int32, unnamed_lol_int32],
+        lol_int32,
+        alt_c_name="+",
+        is_builtin_c=True,
+        c_op_type=COpType.INFIX,
     )
 )
 lol_int32.add_function(
     LolFunction(
-        "-", [unnamed_lol_int32, unnamed_lol_int32], lol_int32, alt_c_name="-",
-        is_builtin_c=True, c_op_type=COpType.INFIX
+        "-",
+        [unnamed_lol_int32, unnamed_lol_int32],
+        lol_int32,
+        alt_c_name="-",
+        is_builtin_c=True,
+        c_op_type=COpType.INFIX,
     )
 )

@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from enum import Enum, auto, unique
-from typing import List, Union
+from typing import List, Tuple, Union
 
 from lexer.lol_lexer import Token
 
@@ -64,6 +64,9 @@ class OperatorLiteral(ASTLeaf):
         super().__init__(token)
         self._operator_type = operator_type
 
+    def get_operator_type_as_str(self):
+        return self._operator_type.name
+
     def to_dict(self):
         return dict(
             type=self.__class__.__name__,
@@ -88,10 +91,19 @@ class OperatorValueExpression(ValueExpression):
     def __init__(
         self,
         operator: OperatorLiteral,
-        *operands: ValueExpression,
+        *operands: ValueExpression,  # i.e. each argument is a ValueExpression
     ):
         self._operator = operator
         self._operands = operands
+
+    def get_operator_as_str(self) -> str:
+        return self._operator.token.lexeme
+
+    def get_operator_type_as_str(self) -> str:
+        return self._operator.get_operator_type_as_str()
+
+    def get_operands(self) -> Tuple[ValueExpression]:
+        return self._operands
 
     def to_dict(self):
         return dict(
@@ -134,7 +146,7 @@ class OperatorTypeExpression(TypeExpression):
 ################################################################################
 ### LITERALS
 ################################################################################
-class DecimalLiteral(Literal, ValueExpression):
+class DecimalLiteral(Literal):
     def __init__(self, token: Token):
         super().__init__(token)
         self.value = int(token.lexeme)
@@ -143,7 +155,7 @@ class DecimalLiteral(Literal, ValueExpression):
         return dict(type=__class__.__name__, value=self.value)
 
 
-class StringLiteral(Literal, ValueExpression):
+class StringLiteral(Literal):
     def __init__(self, token: Token):
         super().__init__(token)
         # TODO(dchu): Parse string such that "hello, world\n" has the characters
@@ -154,7 +166,7 @@ class StringLiteral(Literal, ValueExpression):
         return dict(type=self.__class__.__name__, value=self.value)
 
 
-class Identifier(ASTLeaf, ValueExpression, TypeExpression):
+class Identifier(ASTLeaf, TypeExpression):
     def __init__(self, token: Token):
         super().__init__(token)
 
@@ -229,6 +241,9 @@ class VariableCallNode(VariableNode, ValueExpression):
     def __init__(self, name: Identifier):
         self._name = name
 
+    def get_name_as_str(self):
+        return self._name.token.lexeme
+
     def to_dict(self):
         return dict(
             type=self.__class__.__name__,
@@ -259,6 +274,12 @@ class FunctionDefinitionNode(FunctionNode):
     def get_name_as_str(self):
         return self._name.token.lexeme
 
+    def get_parameters(self):
+        return self._parameters
+
+    def get_return_type(self):
+        return self._return_type
+
     def to_dict(self):
         return dict(
             type=self.__class__.__name__,
@@ -274,6 +295,12 @@ class FunctionCallNode(FunctionNode, ValueExpression):
     def __init__(self, name: Identifier, arguments: List[ValueExpression]):
         self._name = name
         self._arguments = arguments
+
+    def get_name_as_str(self):
+        return self._name.token.lexeme
+
+    def get_arguments(self):
+        return self._arguments
 
     def to_dict(self):
         return dict(
@@ -292,6 +319,14 @@ class ImportModuleNode(ASTNode):
         self._name = name
         self._library = library
 
+    def get_name_as_str(self):
+        return self._name.token.lexeme
+
+    def get_library_as_str(self):
+        # N.B. this may be a raw string value. Injection attacks? Or just plain
+        # ugly messes.
+        return self._library.value
+
     def to_dict(self):
         return dict(
             type=self.__class__.__name__,
@@ -304,6 +339,7 @@ class ImportModuleNode(ASTNode):
 ### FUNCTION BODY NODES
 ################################################################################
 # TODO(dchu): if-else, while, for, etc.
+
 
 class ReturnNode(ASTNode):
     def __init__(self, expression: ValueExpression) -> None:

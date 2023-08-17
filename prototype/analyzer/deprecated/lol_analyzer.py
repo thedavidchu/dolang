@@ -205,4 +205,3 @@ def analyze_module(text: str, asts: List[ASTNode]) -> None:
             global_var[name] = expr
         elif isinstance(ast, FunctionDefinitionNode):
             analyze_function(text, functions, namespaces, global_var, ast)
-

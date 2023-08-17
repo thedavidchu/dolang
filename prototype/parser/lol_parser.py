@@ -20,13 +20,13 @@ from parser.lol_parser_types import (
     # AST Nodes
     ASTNode,
     # Literals and Identifiers
-    Literal,    # Abstract data type
+    Literal,  # Abstract data type
     DecimalLiteral,
     StringLiteral,
     OperatorLiteral,
     Identifier,
     # Value Expressions
-    Expression,    # Abstract data type
+    Expression,  # Abstract data type
     ValueExpression,
     OperatorValueExpression,
     # Type Expressions
@@ -51,15 +51,16 @@ from error.lol_error import print_parser_error
 LITERAL_TOKENS: Set[TokenType] = {TokenType.DEC, TokenType.STRING}
 FUNCTION_STATEMENTS = Union[
     ValueExpression,
-    TypeExpression,             # Only if we allow isolated type statements in
-                                # functions
+    TypeExpression,  # Only if we allow isolated type statements in
+    # functions
     VariableDefinitionNode,
     VariableModificationNode,
     ReturnNode,
-    FunctionDefinitionNode,     # Only if we allow function defintions within
-                                # other functions
-    ImportModuleNode,       # Only if we allow module imports within functions
+    FunctionDefinitionNode,  # Only if we allow function defintions within
+    # other functions
+    ImportModuleNode,  # Only if we allow module imports within functions
 ]
+
 
 ################################################################################
 ### HELPER FUNCTIONS
@@ -128,15 +129,14 @@ def parse_literal(stream: TokenStream) -> Literal:
 
 
 def parse_parenthetic_expression(stream: TokenStream) -> ValueExpression:
-    eat_token(stream, TokenType.LPAREN)     # Eat '('
+    eat_token(stream, TokenType.LPAREN)  # Eat '('
     ret = parse_value_expression(stream)
-    eat_token(stream, TokenType.RPAREN)     # Eat ')'
+    eat_token(stream, TokenType.RPAREN)  # Eat ')'
     return ret
 
 
 def parse_func_call_args(
-    stream: TokenStream,
-    identifier_leaf: Identifier
+    stream: TokenStream, identifier_leaf: Identifier
 ) -> FunctionCallNode:
     eat_token(stream, TokenType.LPAREN)
     args = []
@@ -267,10 +267,10 @@ def parse_type_expression(stream: TokenStream) -> TypeExpression:
 ### FUNCTION DEFINITION
 ################################################################################
 def parse_statement_in_function_body(
-    stream: TokenStream
+    stream: TokenStream,
 ) -> FUNCTION_STATEMENTS:
     token = stream.get_token()
-    if token.is_type(TokenType.LET):   # Local variable
+    if token.is_type(TokenType.LET):  # Local variable
         return parse_let_statement(stream)
     elif token.is_type(TokenType.RETURN):
         eat_token(stream, TokenType.RETURN)
@@ -290,12 +290,12 @@ def parse_function_definition(stream: TokenStream) -> FunctionDefinitionNode:
 
     E.g. `function func_name(param: type) {...}`
     """
-    eat_token(stream, TokenType.FUNCTION)       # Eat 'function'
+    eat_token(stream, TokenType.FUNCTION)  # Eat 'function'
     # TODO(dchu): Optional for anonymous functions.
     name = eat_token(stream, TokenType.IDENTIFIER)  # Eat function name
     name = Identifier(name)
     # TODO(dchu): add generics parsing here!
-    pass        # Eat generics
+    pass  # Eat generics
 
     # Parameters
     params = []
@@ -318,9 +318,7 @@ def parse_function_definition(stream: TokenStream) -> FunctionDefinitionNode:
             eat_token(stream, TokenType.RPAREN)
             break
         else:
-            print_parser_error(
-                stream, error_msg=f"error!"
-            )
+            print_parser_error(stream, error_msg=f"error!")
             raise ValueError(f"unexpected token type: {repr(token)}")
 
     # Return type. Supports single word type for now.

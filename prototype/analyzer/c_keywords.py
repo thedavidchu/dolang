@@ -14,6 +14,7 @@ TODO
 from enum import Enum, auto, unique
 from typing import Dict
 
+
 @unique
 class SymbolSource(Enum):
     # C Language
