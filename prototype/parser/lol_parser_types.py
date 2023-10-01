@@ -220,8 +220,8 @@ class VariableModificationNode(VariableNode):
         self._name = name
         self._value = value
 
-    def get_name(self):
-        return self._name
+    def get_name_as_str(self) -> str:
+        return self._name.token.lexeme
 
     def get_value(self):
         return self._value
@@ -279,6 +279,9 @@ class FunctionDefinitionNode(FunctionNode):
 
     def get_return_type(self):
         return self._return_type
+
+    def get_body(self):
+        return self._body
 
     def to_dict(self):
         return dict(
@@ -339,12 +342,13 @@ class ImportModuleNode(ASTNode):
 ### FUNCTION BODY NODES
 ################################################################################
 # TODO(dchu): if-else, while, for, etc.
-
-
 class ReturnNode(ASTNode):
     def __init__(self, expression: ValueExpression) -> None:
         super().__init__()
         self._expression = expression
+
+    def get_expression(self):
+        return self._expression
 
     def to_dict(self):
         return dict(

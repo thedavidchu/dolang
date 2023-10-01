@@ -58,9 +58,9 @@ def get_prototypes(module: LolModule, ast_nodes: List[ASTNode], raw_text: str):
 def get_bodies(module: LolModule, ast_nodes: List[ASTNode], raw_text: str):
     for i, node in enumerate(ast_nodes):
         if isinstance(node, FunctionDefinitionNode):
-            module.add_func_body(node)
+            module.add_function_body(node)
         elif isinstance(node, VariableDefinitionNode):
-            module.add_defn_body(node)
+            module.add_variable_definition_body(node)
         elif isinstance(node, ImportModuleNode):
             pass
         else:

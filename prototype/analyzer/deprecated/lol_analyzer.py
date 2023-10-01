@@ -129,7 +129,7 @@ def analyze_function(
     global_var: Dict[str, ASTNode],
     func_def: FunctionDefinitionNode,
 ) -> None:
-    body = func_def.body
+    body = func_def._body
     local_var: Dict[str, ASTNode] = {}
     for j, statement in enumerate(body):
         if isinstance(statement, DefinitionNode):
