@@ -1,4 +1,4 @@
-from typing import Dict, Tuple, Union
+from typing import Dict, Tuple, Union, Optional
 from enum import Enum, auto, unique
 
 
@@ -90,6 +90,9 @@ class Token:
     def is_type(self, token_type: TokenType) -> bool:
         return self.token_type == token_type
 
+    def as_str(self):
+        return self.lexeme
+
     def type(self):
         return self.token_type
 
@@ -130,7 +133,7 @@ class CharacterStream:
     def get_text(self) -> str:
         return self.text
 
-    def get_char(self) -> str:
+    def get_char(self) -> Optional[str]:
         """Get the current character or return None"""
         if self.idx >= len(self.text):
             return None
@@ -148,7 +151,7 @@ class CharacterStream:
         else:
             self.column_number += 1
 
-    def get_pos(self) -> Tuple[int, int, int]:
+    def get_pos(self) -> int:
         """Get the current character position in a (absolute_index, line_number,
         column_number) tuple"""
         return (self.idx, self.line_number, self.column_number)

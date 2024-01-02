@@ -13,9 +13,9 @@ TODO
 """
 from typing import List, Set, Union
 
-from lexer.lol_lexer import Token, TokenType
-from parser.lol_parser_token_stream import TokenStream
-from parser.lol_parser_types import (
+from prototype.lexer.lol_lexer import Token, TokenType
+from prototype.parser.lol_parser_token_stream import TokenStream
+from prototype.parser.lol_parser_types import (
     OperatorType,
     # AST Nodes
     ASTNode,
@@ -45,7 +45,7 @@ from parser.lol_parser_types import (
     # Inner Function Expressions
     ReturnNode,
 )
-from error.lol_error import print_parser_error
+from prototype.error.lol_error import print_parser_error
 
 
 LITERAL_TOKENS: Set[TokenType] = {TokenType.DEC, TokenType.STRING}
@@ -165,9 +165,23 @@ def parse_func_call_args(
     return FunctionCallNode(identifier_leaf, args)
 
 
+def parse_namespace(stream: TokenStream, identifier_leaf: Identifier) -> Identifier:
+    namespaces = [identifier_leaf]
+    while True:
+        next_separator_token = stream.get_token()
+        if next_separator_token.is_type(TokenType.COLON_COLON):
+            eat_token(stream, TokenType.COLON_COLON)
+            identifier_leaf = Identifier(eat_token(stream, TokenType.IDENTIFIER))
+            namespaces.append(identifier_leaf)
+        else:
+            break
+    hacky_token = Token(0, 0, 0, TokenType.IDENTIFIER, "::".join(n.get_name_as_str() for n in namespaces))
+    return Identifier(hacky_token)
+
+
 def parse_identifier_or_call_or_access(
     stream: TokenStream,
-) -> Union[Identifier, FunctionCallNode, OperatorValueExpression]:
+) -> Union[Identifier, FunctionCallNode, OperatorValueExpression, VariableCallNode]:
     """
     Parse both variables and function calls.
 
@@ -181,8 +195,12 @@ def parse_identifier_or_call_or_access(
 
     In the future, it may be an array thing too array[100].
     """
-    token = eat_token(stream, TokenType.IDENTIFIER)
-    identifier_leaf = Identifier(token)
+    id_token = eat_token(stream, TokenType.IDENTIFIER)
+    identifier_leaf = Identifier(id_token)
+
+    token = stream.get_token()
+    if token.is_type(TokenType.COLON_COLON):
+        identifier_leaf = parse_namespace(stream, identifier_leaf)
 
     token = stream.get_token()
     if token.is_type(TokenType.LPAREN):
@@ -190,7 +208,7 @@ def parse_identifier_or_call_or_access(
     elif token.is_type(TokenType.LSQB):
         raise ValueError("accesses not supported yet... i.e. `x[100]`")
     else:
-        return VariableDefinitionNode(identifier_leaf)
+        return VariableCallNode(identifier_leaf)
 
 
 # TODO(dchu): figure out why this is called "primary"

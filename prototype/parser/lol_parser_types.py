@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 from enum import Enum, auto, unique
 from typing import List, Tuple, Union
 
-from lexer.lol_lexer import Token
+from prototype.lexer.lol_lexer import Token
 
 
 @unique
@@ -152,7 +152,7 @@ class DecimalLiteral(Literal):
         self.value = int(token.lexeme)
 
     def to_dict(self):
-        return dict(type=__class__.__name__, value=self.value)
+        return dict(type=self.__class__.__name__, value=self.value)
 
 
 class StringLiteral(Literal):
@@ -169,6 +169,9 @@ class StringLiteral(Literal):
 class Identifier(ASTLeaf, TypeExpression):
     def __init__(self, token: Token):
         super().__init__(token)
+
+    def get_name_as_str(self):
+        return self.token.as_str()
 
     def to_dict(self):
         return dict(type=self.__class__.__name__, name=self.token.lexeme)
@@ -192,7 +195,7 @@ class VariableDefinitionNode(VariableNode):
         self._data_type = data_type
         self._value = value
 
-    def get_name_as_str(self):
+    def get_name_as_str(self) -> List[str]:
         return self._name.token.lexeme
 
     def get_data_type(self):
@@ -252,7 +255,7 @@ class VariableCallNode(VariableNode, ValueExpression):
 
 
 ################################################################################
-### VARIABLE NODES
+### FUNCTION NODES
 ################################################################################
 class FunctionNode(ASTNode, metaclass=ABCMeta):
     pass

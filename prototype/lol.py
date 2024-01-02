@@ -2,33 +2,97 @@ import argparse
 import json
 import os
 import time
-from typing import Any, List
+from typing import Any, Dict, List
 
-from lexer.lol_lexer_types import Token
-from parser.lol_parser_token_stream import TokenStream
-from parser.lol_parser_types import ASTNode
+from prototype.lexer.lol_lexer_types import Token
+from prototype.parser.lol_parser_token_stream import TokenStream
+from prototype.parser.lol_parser_types import ASTNode
 
-
-def run_lexer(text: str) -> List[Token]:
-    from lexer.lol_lexer import tokenize
-
-    return tokenize(text)
-
-
-def run_parser(stream: TokenStream) -> List[ASTNode]:
-    from parser.lol_parser import parse
-
-    return parse(stream)
+from prototype.lexer.lol_lexer import tokenize
+from prototype.parser.lol_parser import parse
+from prototype.analyzer.new_lol_analyzer import analyze
+from prototype.emitter.lol_emitter import emit_c
 
 
-def run_analyzer(nodes: List[ASTNode], raw_text: str) -> Any:
-    from analyzer.lol_analyzer import analyze
+class LolSymbol:
+    def __init__(self):
+        self.type: Any = None
+        self.definition: Any = None
 
-    return analyze(nodes, raw_text)
+    def to_dict(self) -> Dict[str, Any]:
+        return {"type": self.type, }
 
 
-def run_emitter() -> str:
-    pass
+class LolModule:
+    def __init__(self):
+        # Metadata
+        self.init_timestamp = time.time()
+
+        self.text: str = ""
+        self.tokens: List[Token] = []
+        self.ast: List[ASTNode] = []
+        self.symbol_table: Dict[str, LolSymbol] = {}
+
+    def read_file(self, file_name: str):
+        assert isinstance(file_name, str)
+        with open(file_name) as f:
+            self.text = f.read()
+
+    ############################################################################
+    ### LEXER
+    ############################################################################
+
+    def run_lexer(self):
+        assert self.text != "", "LolModule"
+        assert self.tokens == []
+
+        self.tokens = tokenize(self.text)
+
+    def save_lexer_output_only(self, output_dir: str):
+        file_name: str = f"{output_dir}/{self.init_timestamp}-lexer-output-only.json"
+        with open(file_name, "w") as f:
+            json.dump({"lexer-output": [x.to_dict() for x in self.tokens]}, f, indent=4)
+
+    ############################################################################
+    ### PARSER
+    ############################################################################
+
+    def run_parser(self):
+        assert self.tokens != []
+
+        stream = TokenStream(self.tokens, self.text)
+        self.ast = parse(stream)
+
+    def save_parser_output_only(self, output_dir: str):
+        file_name: str = f"{output_dir}/{self.init_timestamp}-parser-output-only.json"
+        with open(file_name, "w") as f:
+            json.dump({"parser-output": [x.to_dict() for x in self.ast]}, f, indent=4)
+
+    ############################################################################
+    ### ANALYZER
+    ############################################################################
+
+    def run_analyzer(self):
+        self.symbol_table = analyze(self.ast, self.text)
+
+    def save_analyzer_output_only(self, output_dir: str):
+        file_name: str = f"{output_dir}/{self.init_timestamp}-analyzer-output-only.json"
+        with open(file_name, "w") as f:
+            json.dump({"analyzer-output": {x: y.to_dict() for x, y in self.symbol_table.module_symbol_table.items()}}, f, indent=4)
+
+    ############################################################################
+    ### EMITTER
+    ############################################################################
+
+    def run_emitter(self):
+        # TODO: Make this in the __init__function
+        self.code = emit_c(self.symbol_table)
+
+    def save_emitter_output_only(self, output_dir: str):
+        file_name: str = f"{output_dir}/{self.init_timestamp}-emitter-output-only.json"
+        with open(file_name, "w") as f:
+            json.dump({"emitter-output": self.code}, f, indent=4)
+
 
 
 def main() -> None:
@@ -48,30 +112,21 @@ def main() -> None:
     input_file = args.input
     output_dir = args.output
 
+    module = LolModule()
     # Assume input_file is not None because it is required
-    with open(input_file) as f:
-        text = f.read()
+    module.read_file(input_file)
     # Make empty output dir if it doesn't exist
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
 
-    # Get timestamp to prepend to all output files
-    timestamp = time.time()
-
-    # SAVE LEXER
-    tokens = run_lexer(text=text)
-    with open(os.path.join(output_dir, f"{timestamp}-lexer.out"), "w") as f:
-        json.dump({"lexer": [token.to_dict() for token in tokens]}, f, indent=4)
-
-    # SAVE PARSER
-    stream = TokenStream(tokens, text=text)
-    asts = run_parser(stream)
-    with open(os.path.join(output_dir, f"{timestamp}-parser.out"), "w") as f:
-        json.dump({"parser": [ast.to_dict() for ast in asts]}, f, indent=4)
-
-    # SAVE ANALYSIS
-    symbol_table = run_analyzer(asts, text)
-    print(symbol_table)
+    module.run_lexer()
+    module.save_lexer_output_only(output_dir)
+    module.run_parser()
+    module.save_parser_output_only(output_dir)
+    module.run_analyzer()
+    module.save_analyzer_output_only(output_dir)
+    module.run_emitter()
+    module.save_emitter_output_only(output_dir)
 
 
 if __name__ == "__main__":
