@@ -1,8 +1,13 @@
-# Ignore VS Code directory
+# Ignore PyCharm and VS Code directory
+.idea
 .vscode/
 # Ignore Python Venv
 .venv/
 venv/
+
+# Ignore Python Caches
+compiler/results
+__pycache__/
 
 # Ignore CMake's build directory
 build/

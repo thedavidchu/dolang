@@ -1,4 +1,4 @@
-from prototype.analyzer.lol_analyzer_types import LolModule
+from compiler.analyzer.lol_analyzer_types import LolModule
 
 
 class LolUserModule(LolModule):
@@ -32,7 +32,7 @@ class LolUserModule(LolModule):
         self.symbol_table[name] = LolFunction(name, is_builtin_c=True)
 
     def include_stdio(self, lol_alias: str):
-        from prototype.analyzer.lol_analyzer_reserved_names import STDIO_H_NAMES
+        from compiler.analyzer.lol_analyzer_reserved_names import STDIO_H_NAMES
 
         lib_name = "<stdio.h>"
         if lib_name in self.c_includes:

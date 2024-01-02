@@ -1,6 +1,6 @@
 from typing import List
 
-from prototype.lexer.lol_lexer import Token
+from compiler.lexer.lol_lexer import Token
 
 
 class TokenStream:

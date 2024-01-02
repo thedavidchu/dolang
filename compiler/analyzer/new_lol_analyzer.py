@@ -1,14 +1,14 @@
 from typing import Any, Dict, Tuple, List, Optional, Union
 from enum import Enum, auto, unique
 
-from prototype.parser.lol_parser import (
+from compiler.parser.lol_parser import (
     ASTNode,
     FunctionDefinitionNode,
     ImportModuleNode,
     VariableDefinitionNode,
 )
-import prototype.parser.lol_parser_types as parser_types
-import prototype.lexer.lol_lexer_types as lexer_types
+import compiler.parser.lol_parser_types as parser_types
+import compiler.lexer.lol_lexer_types as lexer_types
 
 
 ################################################################################
