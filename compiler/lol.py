@@ -10,7 +10,7 @@ from compiler.parser.lol_parser_types import ASTNode
 
 from compiler.lexer.lol_lexer import tokenize
 from compiler.parser.lol_parser import parse
-from compiler.analyzer.new_lol_analyzer import analyze
+from compiler.analyzer.lol_analyzer import analyze
 from compiler.emitter.lol_emitter import emit_c
 
 

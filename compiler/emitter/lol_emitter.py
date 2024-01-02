@@ -7,7 +7,7 @@ TODO
 1. Minimal Viable Product
 2. Correct indentation
 """
-from compiler.analyzer.new_lol_analyzer import (
+from compiler.analyzer.lol_analyzer import (
     LolAnalysisModule, LolAnalysisFunction, LolAnalysisBuiltinType,
     LolIRReturnStatement, LolIRFunctionCallStatement, LolIRDefinitionStatement, LolIRSetStatement,
     LolIRExpression,
