@@ -13,9 +13,9 @@ TODO
 """
 from typing import List, Set, Union
 
-from prototype.lexer.lol_lexer import Token, TokenType
-from prototype.parser.lol_parser_token_stream import TokenStream
-from prototype.parser.lol_parser_types import (
+from compiler.lexer.lol_lexer import Token, TokenType
+from compiler.parser.lol_parser_token_stream import TokenStream
+from compiler.parser.lol_parser_types import (
     OperatorType,
     # AST Nodes
     ASTNode,
@@ -45,7 +45,7 @@ from prototype.parser.lol_parser_types import (
     # Inner Function Expressions
     ReturnNode,
 )
-from prototype.error.lol_error import print_parser_error
+from compiler.error.lol_error import print_parser_error
 
 
 LITERAL_TOKENS: Set[TokenType] = {TokenType.DEC, TokenType.STRING}

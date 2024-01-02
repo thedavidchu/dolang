@@ -2,8 +2,8 @@ from abc import ABCMeta
 from enum import Enum, auto, unique
 from typing import Any, Dict, List, Set, Union
 
-import prototype.parser.lol_parser_types as parser_types
-from prototype.analyzer.c_keywords import SymbolSource, C_KEYWORDS
+import compiler.parser.lol_parser_types as parser_types
+from compiler.analyzer.c_keywords import SymbolSource, C_KEYWORDS
 
 
 @unique

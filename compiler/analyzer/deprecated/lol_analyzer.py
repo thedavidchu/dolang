@@ -1,10 +1,10 @@
 from typing import Dict, List
 
-from prototype.analyzer.lol_analyzer_types import (
+from compiler.analyzer.lol_analyzer_types import (
     LolAnalysisObj,
     LolModule,
 )
-from prototype.parser.lol_parser import (
+from compiler.parser.lol_parser import (
     ASTNode,
     FunctionDefinitionNode,
     ImportModuleNode,

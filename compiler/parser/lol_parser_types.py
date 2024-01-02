@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 from enum import Enum, auto, unique
 from typing import List, Tuple, Union
 
-from prototype.lexer.lol_lexer import Token
+from compiler.lexer.lol_lexer import Token
 
 
 @unique
