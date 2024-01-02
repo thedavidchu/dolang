@@ -2,7 +2,7 @@ import argparse
 import json
 import os
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from compiler.lexer.lol_lexer_types import Token
 from compiler.parser.lol_parser_token_stream import TokenStream
@@ -10,7 +10,7 @@ from compiler.parser.lol_parser_types import ASTNode
 
 from compiler.lexer.lol_lexer import tokenize
 from compiler.parser.lol_parser import parse
-from compiler.analyzer.lol_analyzer import analyze
+from compiler.analyzer.lol_analyzer import analyze, LolAnalysisModule
 from compiler.emitter.lol_emitter import emit_c
 
 
@@ -31,7 +31,9 @@ class LolModule:
         self.text: str = ""
         self.tokens: List[Token] = []
         self.ast: List[ASTNode] = []
-        self.symbol_table: Dict[str, LolSymbol] = {}
+        self.module: Optional[LolAnalysisModule] = None
+        self.code: Optional[str] = None
+        self.output_language: Optional[str] = None
 
     def read_file(self, file_name: str):
         assert isinstance(file_name, str)
@@ -73,12 +75,13 @@ class LolModule:
     ############################################################################
 
     def run_analyzer(self):
-        self.symbol_table = analyze(self.ast, self.text)
+        self.module = analyze(self.ast, self.text)
 
     def save_analyzer_output_only(self, output_dir: str):
+        assert isinstance(self.module, LolAnalysisModule)
         file_name: str = f"{output_dir}/{self.init_timestamp}-analyzer-output-only.json"
         with open(file_name, "w") as f:
-            json.dump({"analyzer-output": {x: y.to_dict() for x, y in self.symbol_table.module_symbol_table.items()}}, f, indent=4)
+            json.dump({"analyzer-output": {x: y.to_dict() for x, y in self.module.module_symbol_table.items()}}, f, indent=4)
 
     ############################################################################
     ### EMITTER
@@ -86,12 +89,15 @@ class LolModule:
 
     def run_emitter(self):
         # TODO: Make this in the __init__function
-        self.code = emit_c(self.symbol_table)
+        assert self.code is None and self.output_language is None
+        self.code = emit_c(self.module)
+        self.output_language = "c"
 
     def save_emitter_output_only(self, output_dir: str):
-        file_name: str = f"{output_dir}/{self.init_timestamp}-emitter-output-only.json"
+        assert isinstance(self.code, str) and self.output_language == "c"
+        file_name: str = f"{output_dir}/{self.init_timestamp}-emitter-output-only.c"
         with open(file_name, "w") as f:
-            json.dump({"emitter-output": self.code}, f, indent=4)
+            f.write(self.code)
 
 
 
