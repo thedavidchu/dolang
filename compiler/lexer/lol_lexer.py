@@ -1,5 +1,5 @@
 """
-# Parser
+# Lexer
 
 ## Language
 
@@ -43,9 +43,11 @@ Future tokens to accept in the future are:
 6. Add multiline strings ('''multiline string''')
 7. Add multiline comments
 """
-from typing import Dict, List, Optional, Union
+from typing import Dict, List
 
-from lexer.lol_lexer_types import TokenType, Token, CharacterStream, SYMBOL_CONTROL
+from lexer.lol_lexer_types import (
+    TokenType, Token, CharacterStream, SYMBOL_CONTROL
+)
 
 
 class Lexer:
@@ -60,7 +62,7 @@ class Lexer:
             "and", "or", "not"
         }:
             raise NotImplementedError(
-                "lexer supports this but no further stage does"
+                f"lexer supports keyword '{identifier}'; no further stage does"
             )
         key_words: Dict[str, TokenType] = {
             "if": TokenType.IF,
@@ -83,7 +85,7 @@ class Lexer:
         return token_type
 
     @staticmethod
-    def get_identifier(stream: CharacterStream):
+    def lex_identifier(stream: CharacterStream):
         # Concatentation to a list is more efficient than to a string, since
         # strings are immutable.
         c, pos = stream.get_char(), stream.get_pos()
@@ -103,7 +105,7 @@ class Lexer:
         )
 
     @staticmethod
-    def get_number(stream: CharacterStream):
+    def lex_number(stream: CharacterStream):
         # NOTE(dchu): for now, we assume that the number is a base-10 integer.
         c, pos = stream.get_char(), stream.get_pos()
         current_token_type = TokenType.INTEGER
@@ -126,7 +128,7 @@ class Lexer:
         return Token("".join(token), current_token_type, start_position=pos, full_text=stream.get_text())
 
     @staticmethod
-    def get_string(stream: CharacterStream):
+    def lex_string(stream: CharacterStream):
         pos = stream.get_pos()
         # Concatentation to a list is more efficient than to a string, since
         # strings are immutable.
@@ -143,7 +145,7 @@ class Lexer:
         return Token("".join(token), TokenType.STRING, start_position=pos, full_text=stream.get_text())
 
     @staticmethod
-    def _get_comment(stream: CharacterStream):
+    def lex_comment(stream: CharacterStream):
         """Get a comment that is like a C-style comment: /* Comment */. We
         assume that there is already a '/*' and the front."""
         pos = stream.get_pos()
@@ -167,7 +169,11 @@ class Lexer:
         return Token("".join(token), TokenType.COMMENT, start_position=pos, full_text=stream.get_text())
 
     @staticmethod
-    def _is_symbol_implemented(token_type: TokenType) -> bool:
+    def _is_punctuation_implemented(token_type: TokenType) -> bool:
+        # TODO(dchu): This is a hack! I should just maintain a list of
+        #  unimplemented punctuation token types. The reason I do this is
+        #  because it is very clear when inspecting the TokenType definition to
+        #  see what is and isn't implemented.
         if (
             isinstance(token_type.value, tuple)
             and len(token_type.value) >= 2
@@ -181,7 +187,7 @@ class Lexer:
         return True
 
     @staticmethod
-    def get_symbol(stream: CharacterStream):
+    def lex_punctuation(stream: CharacterStream):
         c, pos = stream.get_char(), stream.get_pos()
         if c is None:
             raise ValueError("expected more characters")
@@ -203,7 +209,7 @@ class Lexer:
             else:
                 raise ValueError(f"cannot append {c} to {''.join(lexeme)} -- potential bug, just separate the symbols")
 
-        if not Lexer._is_symbol_implemented(token_type):
+        if not Lexer._is_punctuation_implemented(token_type):
             raise NotImplementedError
 
         return Token(
@@ -214,31 +220,29 @@ class Lexer:
     def tokenize(self):
         while True:
             c = self.stream.get_char()
-            pos = self.stream.get_pos()
-
             if c is None:
                 break
 
             if c.isspace():
                 self.stream.next_char()
             elif c.isalpha() or c == "_":
-                token = self.get_identifier(self.stream)
+                token = self.lex_identifier(self.stream)
                 self.tokens.append(token)
             elif c.isdecimal():
-                token = self.get_number(self.stream)
+                token = self.lex_number(self.stream)
                 self.tokens.append(token)
             elif c == '"':
-                token = self.get_string(self.stream)
+                token = self.lex_string(self.stream)
                 self.tokens.append(token)
             elif c == "/" and self.stream.get_char(offset=1) == "*":
-                _unused_token = self._get_comment(self.stream)
+                _unused_token = self.lex_comment(self.stream)
                 # TODO(dchu): re-enable this once the AST supports comments.
                 # Right now, we skip comments.
                 # self.tokens.append(_unused_token)
             elif c in SYMBOL_CONTROL:
                 # TODO(dchu): '-' does not necessarily imply a punctuation mark.
                 # It can also be the start of a negative number, e.g. -10.3
-                token = self.get_symbol(self.stream)
+                token = self.lex_punctuation(self.stream)
                 self.tokens.append(token)
             else:
                 raise ValueError(f"character '{c}' not supported!")
