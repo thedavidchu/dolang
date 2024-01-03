@@ -48,12 +48,13 @@ from typing import Dict, List, Optional, Union
 from lexer.lol_lexer_types import TokenType, Token, CharacterStream, SYMBOL_CONTROL
 
 
-class Tokenizer:
+class Lexer:
     def __init__(self, src: str):
         self.stream = CharacterStream(src)
         self.tokens = []
 
-    def _get_identifier_token_type(self, identifier: str):
+    @staticmethod
+    def _get_identifier_token_type(identifier: str):
         if identifier in {
             "if", "else", "while", "for", "namespace", "break", "continue",
             "and", "or", "not"
@@ -81,7 +82,8 @@ class Tokenizer:
         token_type = key_words.get(identifier, TokenType.IDENTIFIER)
         return token_type
 
-    def get_identifier(self, stream: CharacterStream):
+    @staticmethod
+    def get_identifier(stream: CharacterStream):
         # Concatentation to a list is more efficient than to a string, since
         # strings are immutable.
         c, pos = stream.get_char(), stream.get_pos()
@@ -92,7 +94,7 @@ class Tokenizer:
             c = stream.get_char()
 
         identifier = "".join(token)
-        token_type = self._get_identifier_token_type(identifier)
+        token_type = Lexer._get_identifier_token_type(identifier)
         return Token(
             identifier,
             token_type,
@@ -100,19 +102,31 @@ class Tokenizer:
             full_text=stream.get_text()
         )
 
-    def get_dec(self, stream: CharacterStream):
+    @staticmethod
+    def get_number(stream: CharacterStream):
         # NOTE(dchu): for now, we assume that the number is a base-10 integer.
         c, pos = stream.get_char(), stream.get_pos()
+        current_token_type = TokenType.INTEGER
         # Concatentation to a list is more efficient than to a string, since
         # strings are immutable.
         token = []
         while c.isdecimal():
-            token.append(c)
-            stream.next_char()
-            c = stream.get_char()
-        return Token("".join(token), TokenType.DEC, start_position=pos, full_text=stream.get_text())
+            if c.isdecimal():
+                token.append(c)
+                stream.next_char()
+                c = stream.get_char()
+            elif c == "." and current_token_type == TokenType.INTEGER:
+                raise NotImplementedError("floats not supported yet!")
+                current_token_type = TokenType.FLOAT
+                token.append(c)
+                stream.next_char()
+                c = stream.get_char()
+            else:
+                raise NotImplementedError
+        return Token("".join(token), current_token_type, start_position=pos, full_text=stream.get_text())
 
-    def get_string(self, stream: CharacterStream):
+    @staticmethod
+    def get_string(stream: CharacterStream):
         pos = stream.get_pos()
         # Concatentation to a list is more efficient than to a string, since
         # strings are immutable.
@@ -152,35 +166,22 @@ class Tokenizer:
                 raise ValueError("expected terminal '*/' in the comment")
         return Token("".join(token), TokenType.COMMENT, start_position=pos, full_text=stream.get_text())
 
-    # UNUSED => DEPRECATED
     @staticmethod
-    def _get_single_char_symbol_token_type(first_char: str) -> Optional[TokenType]:
-        if first_char in "[].?}&^@":
+    def _is_symbol_implemented(token_type: TokenType) -> bool:
+        if (
+            isinstance(token_type.value, tuple)
+            and len(token_type.value) >= 2
+            and token_type.value[1] in {
+                TokenType.NOT_YET_IMPLEMENTED, TokenType.WONT_BE_IMPLEMENTED
+            }
+        ):
             raise NotImplementedError(
-                "character {first_char} supported by lexer but not by parser!"
+                f"token_type {token_type.n} not implemented"
             )
-        single_char_symbols: Dict[str, TokenType] = {
-            "(": TokenType.LPAREN,
-            ")": TokenType.RPAREN,
-            "[": TokenType.LSQB,
-            "]": TokenType.RSQB,
-            "{": TokenType.LBRACE,
-            "}": TokenType.RBRACE,
-            ",": TokenType.COMMA,
-            ".": TokenType.DOT,
-            "=": TokenType.EQUAL,
-            ";": TokenType.SEMICOLON,
-            "+": TokenType.PLUS,
-            "?": TokenType.QUESTION,
-            "|": TokenType.QUESTION,
-            "&": TokenType.AMPERSAND,
-            "^": TokenType.CIRCUMFLEX,
-            "@": TokenType.AT,
-            "\\": TokenType.BSLASH,
-        }
-        return single_char_symbols.get(first_char, None)
+        return True
 
-    def get_symbol(self, stream: CharacterStream):
+    @staticmethod
+    def get_symbol(stream: CharacterStream):
         c, pos = stream.get_char(), stream.get_pos()
         if c is None:
             raise ValueError("expected more characters")
@@ -202,8 +203,9 @@ class Tokenizer:
             else:
                 raise ValueError(f"cannot append {c} to {''.join(lexeme)} -- potential bug, just separate the symbols")
 
-        if isinstance(token_type.value, tuple):
-            raise NotImplementedError(f"token_type {token_type.n} not implemented")
+        if not Lexer._is_symbol_implemented(token_type):
+            raise NotImplementedError
+
         return Token(
             "".join(lexeme), token_type, start_position=pos,
             full_text=stream.get_text()
@@ -223,16 +225,16 @@ class Tokenizer:
                 token = self.get_identifier(self.stream)
                 self.tokens.append(token)
             elif c.isdecimal():
-                token = self.get_dec(self.stream)
+                token = self.get_number(self.stream)
                 self.tokens.append(token)
             elif c == '"':
                 token = self.get_string(self.stream)
                 self.tokens.append(token)
             elif c == "/" and self.stream.get_char(offset=1) == "*":
-                token = self._get_comment(self.stream)
+                _unused_token = self._get_comment(self.stream)
                 # TODO(dchu): re-enable this once the AST supports comments.
                 # Right now, we skip comments.
-                # self.tokens.append(token)
+                # self.tokens.append(_unused_token)
             elif c in SYMBOL_CONTROL:
                 # TODO(dchu): '-' does not necessarily imply a punctuation mark.
                 # It can also be the start of a negative number, e.g. -10.3
@@ -243,6 +245,6 @@ class Tokenizer:
 
 
 def tokenize(text: str) -> List[Token]:
-    t = Tokenizer(text)
+    t = Lexer(text)
     t.tokenize()
     return t.tokens

@@ -77,8 +77,9 @@ class TokenType(Enum):
     # Multicharacter conglomerates
     IDENTIFIER = auto()  # [A-Za-z_][A-Za-z_0-9]
     STRING = auto()  # "[^"\n]*"
-    DEC = auto()  # [1-9][0-9]*
-    COMMENT = auto()  # #.*
+    INTEGER = auto()  # [1-9][0-9]*
+    FLOAT = auto()
+    COMMENT = auto()  # [/][*].*[*][/]
 
     # Keywords
     IF = auto()

@@ -48,7 +48,7 @@ from compiler.parser.lol_parser_types import (
 from compiler.error.lol_error import print_parser_error
 
 
-LITERAL_TOKENS: Set[TokenType] = {TokenType.DEC, TokenType.STRING}
+LITERAL_TOKENS: Set[TokenType] = {TokenType.INTEGER, TokenType.STRING}
 FUNCTION_STATEMENTS = Union[
     ValueExpression,
     TypeExpression,  # Only if we allow isolated type statements in
@@ -121,7 +121,7 @@ def parse_literal(stream: TokenStream) -> Literal:
     if token.is_type(TokenType.STRING):
         stream.next_token()
         return StringLiteral(token)
-    elif token.is_type(TokenType.DEC):
+    elif token.is_type(TokenType.INTEGER):
         stream.next_token()
         return DecimalLiteral(token)
     else:
