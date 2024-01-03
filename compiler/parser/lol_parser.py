@@ -67,8 +67,8 @@ FUNCTION_STATEMENTS = Union[
 ################################################################################
 def eat_token(stream: TokenStream, expected_type: TokenType) -> Token:
     token = stream.get_token()
-    if token.type() != expected_type:
-        error_msg = f"expected {expected_type.name}, got {token.type_name()}"
+    if token.get_token_type() != expected_type:
+        error_msg = f"expected {expected_type.name}, got {token.get_token_type_as_str()}"
         print_parser_error(stream, error_msg)
         raise ValueError(error_msg)
     stream.next_token()
@@ -110,7 +110,7 @@ def get_binop_precedence(op: Token) -> int:
         # TokenType.EQUAL: 200,
         # TokenType.COMMA: 100,  # Weakest
     }
-    return precedence.get(op.type(), -1)
+    return precedence.get(op.get_token_type(), -1)
 
 
 ################################################################################
@@ -159,7 +159,7 @@ def parse_func_call_args(
         else:
             print_parser_error(
                 stream,
-                error_msg=f"Expected COMMA or RPAREN, got {stream.get_token().type()}",
+                error_msg=f"Expected COMMA or RPAREN, got {stream.get_token().get_token_type()}",
             )
             raise ValueError("Expected COMMA or RPAREN")
     return FunctionCallNode(identifier_leaf, args)
@@ -175,7 +175,7 @@ def parse_namespace(stream: TokenStream, identifier_leaf: Identifier) -> Identif
             namespaces.append(identifier_leaf)
         else:
             break
-    hacky_token = Token(0, 0, 0, TokenType.IDENTIFIER, "::".join(n.get_name_as_str() for n in namespaces))
+    hacky_token = Token("::".join(n.get_name_as_str() for n in namespaces), TokenType.IDENTIFIER)
     return Identifier(hacky_token)
 
 
@@ -217,7 +217,7 @@ def parse_primary(stream: TokenStream) -> ValueExpression:
     token = stream.get_token()
     if token.is_type(TokenType.IDENTIFIER):
         return parse_identifier_or_call_or_access(stream)
-    elif token.type() in LITERAL_TOKENS:
+    elif token.get_token_type() in LITERAL_TOKENS:
         return parse_literal(stream)
     elif token.is_type(TokenType.LPAREN):
         return parse_parenthetic_expression(stream)
