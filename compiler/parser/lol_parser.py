@@ -165,7 +165,7 @@ def parse_func_call_args(
     return FunctionCallNode(identifier_leaf, args)
 
 
-def parse_namespace(stream: TokenStream, identifier_leaf: Identifier) -> Identifier:
+def parse_identifier_with_namespace(stream: TokenStream, identifier_leaf: Identifier) -> Identifier:
     namespaces = [identifier_leaf]
     while True:
         next_separator_token = stream.get_token()
@@ -200,7 +200,7 @@ def parse_identifier_or_call_or_access(
 
     token = stream.get_token()
     if token.is_type(TokenType.COLON_COLON):
-        identifier_leaf = parse_namespace(stream, identifier_leaf)
+        identifier_leaf = parse_identifier_with_namespace(stream, identifier_leaf)
 
     token = stream.get_token()
     if token.is_type(TokenType.LPAREN):
