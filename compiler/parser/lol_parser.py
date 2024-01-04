@@ -136,7 +136,7 @@ def parse_parenthetic_expression(stream: TokenStream) -> ValueExpression:
 
 
 def parse_func_call_args(
-    stream: TokenStream, identifier_leaf: Identifier
+    stream: TokenStream, func_name: Identifier
 ) -> FunctionCallNode:
     eat_token(stream, TokenType.LPAREN)
     args = []
@@ -144,7 +144,7 @@ def parse_func_call_args(
     # Check if empty set of arguments
     if token.is_type(TokenType.RPAREN):
         eat_token(stream, TokenType.RPAREN)
-        return FunctionCallNode(identifier_leaf, [])
+        return FunctionCallNode(func_name, [])
     # At this point, we have at least one argument (or error)
     while True:
         expr = parse_value_expression(stream)
@@ -162,7 +162,7 @@ def parse_func_call_args(
                 error_msg=f"Expected COMMA or RPAREN, got {stream.get_token().get_token_type()}",
             )
             raise ValueError("Expected COMMA or RPAREN")
-    return FunctionCallNode(identifier_leaf, args)
+    return FunctionCallNode(func_name, args)
 
 
 def parse_identifier_with_namespace(stream: TokenStream, identifier_leaf: Identifier) -> Identifier:

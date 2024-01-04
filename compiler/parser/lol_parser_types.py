@@ -195,7 +195,7 @@ class VariableDefinitionNode(VariableNode):
         self._data_type = data_type
         self._value = value
 
-    def get_name_as_str(self) -> List[str]:
+    def get_name_as_str(self) -> str:
         return self._name.token.lexeme
 
     def get_data_type(self):

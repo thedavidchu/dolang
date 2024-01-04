@@ -21,27 +21,49 @@ LolIRStatement = Union["LolIRDefinitionStatement", "LolIRSetStatement", "LolIRFu
 ### Expressions
 class LolIRFunctionCallExpression:
     def __init__(self, function: "LolAnalysisFunction", arguments: List["LolAnalysisVariable"]):
+        assert isinstance(function, LolAnalysisFunction)
+        assert isinstance(arguments, list)
+        assert all(isinstance(arg, LolAnalysisVariable) for arg in arguments)
         self.function = function
         self.arguments = arguments
+
+    def __str__(self):
+        return f"{self.function.name}{tuple(arg.name for arg in self.arguments)}"
 
 
 class LolIROperatorExpression:
     def __init__(self, op: str, operands: List["LolAnalysisVariable"]):
+        assert isinstance(op, str)
+        assert isinstance(operands, list)
+        assert all(isinstance(operand, LolAnalysisVariable) for operand in operands)
         self.op = op
         self.operands: List["LolAnalysisVariable"] = operands
+
+    def __str__(self):
+        return f"{self.operands[0].name} {self.op} {self.operands[1].name}"
 
 
 class LolIRLiteralExpression:
     def __init__(self, literal: Any):
         self.literal = literal
 
+    def __str__(self):
+        return f"{self.literal}"
+
 
 ### Statements
 class LolIRDefinitionStatement:
     def __init__(self, name: str, type: "LolAnalysisDataType", value: LolIRExpression):
+        assert isinstance(name, str)
+        # TODO(dchu): This is true for now, but will have to be generalized in
+        #  future to allow different types.
+        assert isinstance(type, LolAnalysisBuiltinType)
         self.name: str = name
         self.type: "LolAnalysisDataType" = type
         self.value = value
+
+    def __str__(self):
+        return f"let {self.name}: {str(self.type)} = {str(self.value)};"
 
 
 class LolIRSetStatement:
@@ -49,16 +71,26 @@ class LolIRSetStatement:
         self.name = name
         self.value = value
 
+    def __str__(self):
+        return f"let {self.name} = {str(self.value)};"
+
 
 class LolIRFunctionCallStatement:
     def __init__(self, func_call: LolIRFunctionCallExpression):
         self.func_call = func_call
+
+    def __str__(self):
+        return f"{str(self.func_call)};"
+
 
 class LolIRIfStatement:
     def __init__(self, if_cond: "LolAnalysisVariable", if_body: List[LolIRStatement], else_body: List[LolIRStatement]):
         self.if_cond = if_cond
         self.if_body = if_body
         self.else_body = else_body
+
+    def __str__(self):
+        return f"if ({str(self.if_cond)}) {{...}} else {{...}}"
 
 
 class LolIRReturnStatement:
@@ -74,6 +106,7 @@ LolAnalysisSymbol = Union[LolAnalysisDataType, "LolAnalysisFunction", "LolAnalys
 
 
 def optional_to_dict(obj: Any):
+    """Return obj.to_dict() if it has that attribute."""
     if obj is None:
         return None
     else:
@@ -89,6 +122,7 @@ def recursive_to_dict(obj: Optional[Dict[str, LolAnalysisSymbol]]):
 
 
 def optional_names(obj: Optional[Dict[str, LolAnalysisSymbol]]):
+    """Get the names of a dict of objects with that attribute."""
     if obj is None:
         return None
     else:
@@ -97,9 +131,17 @@ def optional_names(obj: Optional[Dict[str, LolAnalysisSymbol]]):
 
 
 class LolAnalysisBuiltinType:
+    # TODO(dchu): Make the object of the ops into a function so that we can
+    #  specify the parameter types and the pointer types.
     def __init__(self, name: str, ops: Dict[str, "LolAnalysisBuiltinType"]):
         self.name = name
         self.ops = ops
+
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(name={self.name})"
 
     def to_dict(self):
         return dict(
@@ -111,8 +153,10 @@ class LolAnalysisBuiltinType:
 
 
 def get_type(
-    type_ast: parser_types.TypeExpression, module_symbol_table: Dict[str, LolAnalysisSymbol]
+    type_ast: parser_types.TypeExpression,
+    module_symbol_table: Dict[str, LolAnalysisSymbol]
 ) -> LolAnalysisDataType:
+    """Get the data type of an AST node."""
     # TODO: Change this in when we support multi-token TypeExpressions
     assert isinstance(type_ast, parser_types.Identifier)
     type_token: lexer_types.Token = type_ast.token
@@ -126,11 +170,37 @@ def get_type(
 
 
 class LolAnalysisVariable:
-    def __init__(self, name: str, ast_definition_node: VariableDefinitionNode):
+    def __init__(
+        self,
+        name: str,
+        ast_definition_node: Optional[VariableDefinitionNode],
+        *,
+        type: Optional[LolAnalysisDataType] = None,
+    ):
+        assert isinstance(name, str)
+        assert isinstance(ast_definition_node, VariableDefinitionNode) or ast_definition_node is None
         self.name = name
         self.ast_definition_node = ast_definition_node
 
-        self.type: Optional[LolAnalysisDataType] = None
+        self.type: Optional[LolAnalysisDataType] = type
+
+    def __str__(self):
+        return f"{self.name}: {str(self.type)}"
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(name={self.name}, type={str(self.type)})"
+
+    @staticmethod
+    def init_local_variable(
+        name: str,
+        ast_definition_node: Optional[VariableDefinitionNode],
+        module_symbol_table: Dict[str, LolAnalysisSymbol]
+    ) -> "LolAnalysisVariable":
+        """This method is to allow initializing a variable without needing to
+        wait to complete the prototype. This is just for convenience."""
+        r = LolAnalysisVariable(name, ast_definition_node)
+        r.complete_prototype(module_symbol_table)
+        return r
 
     def complete_prototype(self, module_symbol_table: Dict[str, LolAnalysisSymbol]):
         assert self.type is None
@@ -168,6 +238,21 @@ class LolAnalysisFunction:
         self.symbol_table: Optional[Dict[str, LolAnalysisSymbol]] = symbol_table
         self.body: Optional[List[LolIRStatement]] = body
 
+    def __str__(self):
+        parameters = ", ".join(
+            f'{name}: {str(type_)}'
+                for name, type_ in
+            zip(self.parameter_names, self.parameter_types)
+        )
+        return f"function {self.name}({parameters}) -> {str(self.return_types)}"
+
+    def __repr__(self):
+        parameters = ", ".join(
+            f'{name}: {str(type_)}'
+            for name, type_ in zip(self.parameter_names, self.parameter_types)
+        )
+        return f"{self.__class__.__name__}(name={self.name}, parameters=({parameters}), return_type={str(self.return_types)})"
+
     def complete_prototype(self, module_symbol_table: Dict[str, LolAnalysisSymbol]):
         assert self.return_types is None
         assert self.parameter_types is None
@@ -177,7 +262,7 @@ class LolAnalysisFunction:
             get_type(t.get_data_type(), module_symbol_table) for t in self.ast_definition_node.get_parameters()
         ]
         self.parameter_names = [
-            get_type(t.get_name_as_str(), module_symbol_table) for t in self.ast_definition_node.get_parameters()
+            t.get_name_as_str() for t in self.ast_definition_node.get_parameters()
         ]
 
     def _get_temporary_variable_name(self) -> str:
@@ -188,7 +273,7 @@ class LolAnalysisFunction:
         self.tmp_cnt += 1
         return f"%{tmp}"
 
-    def _get_symbol(self, module_symbol_table: Dict[str, LolAnalysisSymbol], name: str):
+    def _get_symbol(self, module_symbol_table: Dict[str, LolAnalysisSymbol], name: str) -> LolAnalysisSymbol:
         split_names = name.split("::")
         first_name = split_names[0]
 
@@ -197,46 +282,67 @@ class LolAnalysisFunction:
             for name in split_names[:-1]:
                 module = module[name].module_symbol_table
             last_name = split_names[-1]
-            print(module, last_name)
             return module[last_name]
         elif first_name in module_symbol_table:
             module = module_symbol_table
             for name in split_names[:-1]:
                 module = module[name].module_symbol_table
             last_name = split_names[-1]
-            print(module, last_name)
             return module[last_name]
         else:
             raise ValueError(f"symbol {first_name} not found in either module")
 
-    def _parse_expression_recursively(self, x: parser_types.ASTNode, module_symbol_table: Dict[str, LolAnalysisSymbol]) -> str:
+    def _get_operator_return_type(
+        self,
+        module_symbol_table: Dict[str, LolAnalysisSymbol],
+        op_name: str,
+        operands: List["LolAnalysisVariable"]
+    ) -> Optional[LolAnalysisDataType]:
+        first_operand, *_ = operands
+        hacky_ret_type = self._get_symbol(module_symbol_table, first_operand.name).type
+        return hacky_ret_type
+
+    def _parse_expression_recursively(
+        self,
+        x: parser_types.ASTNode,
+        module_symbol_table: Dict[str, LolAnalysisSymbol]
+    ) -> str:
         if isinstance(x, parser_types.OperatorValueExpression):
             op_name: str = x.get_operator_as_str()
             operands: List["LolAnalysisVariable"] = [
-                self._get_symbol(module_symbol_table, self._parse_expression_recursively(y))
+                self._get_symbol(
+                    module_symbol_table,
+                    self._parse_expression_recursively(y, module_symbol_table)
+                )
                 for y in x.get_operands()
             ]
             ret = self._get_temporary_variable_name()
-            stmt = LolIRDefinitionStatement(ret, LolIROperatorExpression(op_name, operands))
+            ret_type = self._get_operator_return_type(module_symbol_table, op_name, operands)
+            ret_value = LolIROperatorExpression(op_name, operands)
+            stmt = LolIRDefinitionStatement(
+                ret, ret_type, ret_value
+            )
             self.body.append(stmt)
-            self.symbol_table[ret] = LolAnalysisVariable(ret, x)
+            self.symbol_table[ret] = LolAnalysisVariable(ret, None, type=ret_type)
             return ret
         elif isinstance(x, parser_types.Literal):
             if isinstance(x, parser_types.DecimalLiteral):
                 ret = self._get_temporary_variable_name()
+                ret_type = module_symbol_table["i32"]
                 stmt = LolIRDefinitionStatement(
-                    ret, module_symbol_table["i32"], LolIRLiteralExpression(x.value)
+                    ret, ret_type, LolIRLiteralExpression(x.value)
                 )
                 self.body.append(stmt)
-                self.symbol_table[ret] = LolAnalysisVariable(ret, x)
+                self.symbol_table[ret] = LolAnalysisVariable(ret, None, type=ret_type)
                 return ret
             elif isinstance(x, parser_types.StringLiteral):
                 ret = self._get_temporary_variable_name()
+                ret_type = module_symbol_table["cstr"]
                 stmt = LolIRDefinitionStatement(
-                    ret, module_symbol_table["cstr"], LolIRLiteralExpression(x.value)
+                    ret, ret_type, LolIRLiteralExpression(x.value)
                 )
                 self.body.append(stmt)
-                self.symbol_table[ret] = LolAnalysisVariable(ret, x)
+                self.symbol_table[ret] = LolAnalysisVariable(ret, None, type=ret_type)
                 return ret
         elif isinstance(x, parser_types.FunctionCallNode):
             func_name: str = x.get_name_as_str()
@@ -249,11 +355,12 @@ class LolAnalysisFunction:
                 for y in x.get_arguments()
             ]
             ret: str = self._get_temporary_variable_name()
+            ret_type = func.return_types
             stmt = LolIRDefinitionStatement(
-                ret, func.return_types, LolIRFunctionCallExpression(func, args)
+                ret, ret_type, LolIRFunctionCallExpression(func, args)
             )
             self.body.append(stmt)
-            self.symbol_table[ret] = LolAnalysisVariable(ret, x)
+            self.symbol_table[ret] = LolAnalysisVariable(ret, None, type=ret_type)
             return ret
         elif isinstance(x, parser_types.ReturnNode):
             ret = self._parse_expression_recursively(x.get_expression(), module_symbol_table)
@@ -262,15 +369,42 @@ class LolAnalysisFunction:
         elif isinstance(x, parser_types.VariableCallNode):
             return x.get_name_as_str()
         else:
-            raise NotImplementedError("")
+            raise NotImplementedError
+
+    def _parse_statement(
+        self,
+        module_symbol_table: Dict[str, LolAnalysisSymbol],
+        x: parser_types.ASTNode
+    ):
+        if isinstance(x, parser_types.VariableDefinitionNode):
+            name = x.get_name_as_str()
+            ast_data_type = x.get_data_type()
+            assert isinstance(ast_data_type, parser_types.Identifier)
+            data_type = self._get_symbol(module_symbol_table, ast_data_type.get_name_as_str())
+            value = self._parse_expression_recursively(x.get_value(), module_symbol_table)
+            self.symbol_table[name] = LolAnalysisVariable.init_local_variable(name, x, module_symbol_table)
+            stmt = LolIRDefinitionStatement(
+                name, data_type, self._get_symbol(module_symbol_table, value)
+            )
+            self.body.append(stmt)
+        elif isinstance(x, parser_types.VariableModificationNode):
+            raise NotImplementedError
+        else:
+            _unused_return_variable = self._parse_expression_recursively(x, module_symbol_table)
 
     def complete_body(self, module_symbol_table: Dict[str, LolAnalysisSymbol]):
         assert self.symbol_table is None
         assert self.body is None
-        self.symbol_table = {}
+        # Add parameters to the symbol table
+        self.symbol_table = {
+            t.get_name_as_str(): LolAnalysisVariable.init_local_variable(
+                t.get_name_as_str(), t, module_symbol_table
+                )
+            for t in self.ast_definition_node.get_parameters()
+        }
         self.body = []
         for statement in self.ast_definition_node.get_body():
-            self._parse_expression_recursively(statement, module_symbol_table)
+            self._parse_statement(module_symbol_table, statement)
 
     def to_dict(self):
         return dict(
@@ -334,7 +468,7 @@ class LolAnalysisModule:
 
     def _add_variable_name(self, ast_definition: VariableDefinitionNode):
         name = ast_definition.get_name_as_str()
-        symbol = LolAnalysisVariable(name, ast_definition)
+        symbol = LolAnalysisVariable.init_local_variable(name, ast_definition)
         self.add_to_module_symbol_table(name, symbol)
 
     # TODO: merge this into the variable!

@@ -188,14 +188,19 @@ class Lexer:
 
     @staticmethod
     def lex_punctuation(stream: CharacterStream):
-        c, pos = stream.get_char(), stream.get_pos()
-        if c is None:
-            raise ValueError("expected more characters")
+        start_pos = stream.get_pos()
 
         control = SYMBOL_CONTROL
         lexeme = []
         while True:
             c = stream.get_char()
+            if c is None:
+                if isinstance(control, TokenType):
+                    token_type = control
+                    break
+                elif None in control:
+                    token_type = control[None]
+                    break
             if isinstance(control, TokenType):
                 token_type = control
                 break
@@ -213,9 +218,9 @@ class Lexer:
             raise NotImplementedError
 
         return Token(
-            "".join(lexeme), token_type, start_position=pos,
-            full_text=stream.get_text()
-            )
+            "".join(lexeme), token_type,
+            start_position=start_pos, full_text=stream.get_text()
+        )
 
     def tokenize(self):
         while True:

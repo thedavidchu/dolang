@@ -51,7 +51,7 @@ def emit_expr(expr: LolIRExpression) -> str:
 def emit_function(func: LolAnalysisFunction):
     prototype = (
         f"{lol_to_c_types[func.return_types.name]}\n"
-        f"{func.name}({', '.join((f'{lol_to_c_types[arg_type]} {arg_name.name}' for arg_type, arg_name in zip(func.parameter_names, func.parameter_types)))})\n"
+        f"{func.name}({', '.join((f'{lol_to_c_types[arg_type.name]} {arg_name}' for arg_type, arg_name in zip(func.parameter_types, func.parameter_names)))})\n"
     )
     statements = []
     for stmt in func.body:
