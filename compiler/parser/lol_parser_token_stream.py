@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from compiler.lexer.lol_lexer import Token
 
@@ -14,7 +14,7 @@ class TokenStream:
     def get_text(self) -> str:
         return self.text
 
-    def get_token(self) -> Token:
+    def get_token(self) -> Optional[Token]:
         """
         Get the current token or return None if at the end.
 
