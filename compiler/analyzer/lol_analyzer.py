@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional, Union
 
-from compiler.parser.new_lol_parser import (
+from compiler.parser.lol_parser import (
     # Generic
     LolParserLiteralType,
 
@@ -26,7 +26,7 @@ from compiler.parser.new_lol_parser import (
     LolParserFunctionDefinition,
     LolParserReturnStatement,
 )
-import compiler.parser.new_lol_parser as parser_types
+import compiler.parser.lol_parser as parser_types
 import compiler.lexer.lol_lexer_types as lexer_types
 
 

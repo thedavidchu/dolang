@@ -6,10 +6,9 @@ from typing import Any, Dict, List, Optional
 
 from compiler.lexer.lol_lexer_types import Token
 from compiler.parser.lol_parser_token_stream import TokenStream
-from compiler.parser.lol_parser_types import ASTNode
 
 from compiler.lexer.lol_lexer import tokenize
-from compiler.parser.new_lol_parser import parse
+from compiler.parser.lol_parser import parse, LolParserModuleLevelStatement
 from compiler.analyzer.lol_analyzer import analyze, LolAnalysisModule
 from compiler.emitter.lol_emitter import emit_c
 
@@ -30,7 +29,7 @@ class LolModule:
 
         self.text: str = ""
         self.tokens: List[Token] = []
-        self.ast: List[ASTNode] = []
+        self.ast: List[LolParserModuleLevelStatement] = []
         self.module: Optional[LolAnalysisModule] = None
         self.code: Optional[str] = None
         self.output_language: Optional[str] = None
