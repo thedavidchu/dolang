@@ -9,7 +9,7 @@ from compiler.parser.lol_parser_token_stream import TokenStream
 from compiler.parser.lol_parser_types import ASTNode
 
 from compiler.lexer.lol_lexer import tokenize
-from compiler.parser.lol_parser import parse
+from compiler.parser.new_lol_parser import parse
 from compiler.analyzer.lol_analyzer import analyze, LolAnalysisModule
 from compiler.emitter.lol_emitter import emit_c
 

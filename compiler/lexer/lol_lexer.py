@@ -45,7 +45,7 @@ Future tokens to accept in the future are:
 """
 from typing import Dict, List
 
-from lexer.lol_lexer_types import (
+from compiler.lexer.lol_lexer_types import (
     TokenType, Token, CharacterStream, SYMBOL_CONTROL
 )
 
@@ -129,19 +129,21 @@ class Lexer:
 
     @staticmethod
     def lex_string(stream: CharacterStream):
-        pos = stream.get_pos()
+        c, pos = stream.get_char(), stream.get_pos()
         # Concatentation to a list is more efficient than to a string, since
         # strings are immutable.
         stream.next_char()
-        c = stream.get_char()
-        token = [c]
-        while c != '"' and c is not None:
+        token = ['"']
+        while True:
+            # TODO(dchu) support escaped quotations
+            c = stream.get_char()
+            if c == '"' or c is None:
+                stream.next_char()
+                break
             token.append(c)
             stream.next_char()
-            c = stream.get_char()
         # Add trailing quote
         token.append(c)
-        stream.next_char()
         return Token("".join(token), TokenType.STRING, start_position=pos, full_text=stream.get_text())
 
     @staticmethod

@@ -187,7 +187,7 @@ class Token:
         """Pretty print the token. This is NOT for serialization, because the
         token type should be an integer id so that it's easier to parse."""
         return (
-            f"Token(lexeme={self.lexeme}, token_type={self.get_token_type_as_str()}, start_idx={self.start_position}, full_text?={isinstance(self.full_text, str)})"
+            f"Token(lexeme={repr(self.lexeme)}, token_type={self.get_token_type_as_str()}, start_idx={self.start_position}, full_text?={isinstance(self.full_text, str)})"
         )
 
     def get_line_and_column_numbers(self) -> Optional[Tuple[int, int]]:
@@ -206,7 +206,7 @@ class Token:
         the start position, and the lexeme. Everything else is superfluous."""
         return dict(
             metatype=self.__class__.__name__,
-            lexeme=self.lexeme,
+            lexeme=repr(self.lexeme),
             token_type=self.get_token_type_as_str(),
             start_position=self.start_position,
         )
