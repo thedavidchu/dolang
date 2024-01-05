@@ -1,13 +1,32 @@
-from typing import Any, Dict, Tuple, List, Optional, Union
-from enum import Enum, auto, unique
+from typing import Any, Dict, List, Optional, Union
 
-from compiler.parser.lol_parser import (
-    ASTNode,
-    FunctionDefinitionNode,
-    ImportModuleNode,
-    VariableDefinitionNode,
+from compiler.parser.new_lol_parser import (
+    # Generic
+    LolParserLiteralType,
+
+    # Generic Expressions
+    LolParserValueExpression,
+    LolParserTypeExpression,
+    LolParserExpression,
+
+    LolParserModuleLevelStatement,
+    LolParserFunctionLevelStatement,
+
+
+    # Specific Expressions
+    LolParserIdentifier,
+    LolParserLiteral,
+    LolParserFunctionCall,
+    LolParserOperatorExpression,
+
+    LolParserImportStatement,
+    LolParserVariableDefinition,
+    LolParserParameterDefinition,
+    LolParserVariableModification,
+    LolParserFunctionDefinition,
+    LolParserReturnStatement,
 )
-import compiler.parser.lol_parser_types as parser_types
+import compiler.parser.new_lol_parser as parser_types
 import compiler.lexer.lol_lexer_types as lexer_types
 
 
@@ -153,14 +172,13 @@ class LolAnalysisBuiltinType:
 
 
 def get_type(
-    type_ast: parser_types.TypeExpression,
+    type_ast: LolParserTypeExpression,
     module_symbol_table: Dict[str, LolAnalysisSymbol]
 ) -> LolAnalysisDataType:
     """Get the data type of an AST node."""
     # TODO: Change this in when we support multi-token TypeExpressions
-    assert isinstance(type_ast, parser_types.Identifier)
-    type_token: lexer_types.Token = type_ast.token
-    type_name: str = type_token.as_str()
+    assert isinstance(type_ast, LolParserIdentifier)
+    type_name = type_ast.name
     if type_name not in module_symbol_table:
         raise ValueError(f"module symbol table should contain name {type_name}")
     type_symbol: LolAnalysisDataType = module_symbol_table[type_name]
@@ -173,12 +191,12 @@ class LolAnalysisVariable:
     def __init__(
         self,
         name: str,
-        ast_definition_node: Optional[VariableDefinitionNode],
+        ast_definition_node: Optional[LolParserVariableDefinition],
         *,
         type: Optional[LolAnalysisDataType] = None,
     ):
         assert isinstance(name, str)
-        assert isinstance(ast_definition_node, VariableDefinitionNode) or ast_definition_node is None
+        assert isinstance(ast_definition_node, (LolParserVariableDefinition, LolParserParameterDefinition)) or ast_definition_node is None
         self.name = name
         self.ast_definition_node = ast_definition_node
 
@@ -193,7 +211,7 @@ class LolAnalysisVariable:
     @staticmethod
     def init_local_variable(
         name: str,
-        ast_definition_node: Optional[VariableDefinitionNode],
+        ast_definition_node: Optional[LolParserVariableDefinition],
         module_symbol_table: Dict[str, LolAnalysisSymbol]
     ) -> "LolAnalysisVariable":
         """This method is to allow initializing a variable without needing to
@@ -204,7 +222,7 @@ class LolAnalysisVariable:
 
     def complete_prototype(self, module_symbol_table: Dict[str, LolAnalysisSymbol]):
         assert self.type is None
-        self.type = get_type(self.ast_definition_node.get_data_type(), module_symbol_table)
+        self.type = get_type(self.ast_definition_node.type, module_symbol_table)
 
     def to_dict(self):
         return dict(
@@ -218,7 +236,7 @@ class LolAnalysisFunction:
     def __init__(
         self,
         name: str,
-        ast_definition_node: Optional[FunctionDefinitionNode],
+        ast_definition_node: Optional[parser_types.LolParserFunctionDefinition],
         *,
         # Function Prototype
         return_types: Optional[LolAnalysisDataType] = None,
@@ -257,12 +275,12 @@ class LolAnalysisFunction:
         assert self.return_types is None
         assert self.parameter_types is None
         assert self.parameter_names is None
-        self.return_types = get_type(self.ast_definition_node.get_return_type(), module_symbol_table)
+        self.return_types = get_type(self.ast_definition_node.return_type, module_symbol_table)
         self.parameter_types = [
-            get_type(t.get_data_type(), module_symbol_table) for t in self.ast_definition_node.get_parameters()
+            get_type(t.type, module_symbol_table) for t in self.ast_definition_node.parameters
         ]
         self.parameter_names = [
-            t.get_name_as_str() for t in self.ast_definition_node.get_parameters()
+            t.get_name_as_str() for t in self.ast_definition_node.parameters
         ]
 
     def _get_temporary_variable_name(self) -> str:
@@ -304,17 +322,17 @@ class LolAnalysisFunction:
 
     def _parse_expression_recursively(
         self,
-        x: parser_types.ASTNode,
+        x: LolParserExpression,
         module_symbol_table: Dict[str, LolAnalysisSymbol]
     ) -> str:
-        if isinstance(x, parser_types.OperatorValueExpression):
-            op_name: str = x.get_operator_as_str()
+        if isinstance(x, LolParserOperatorExpression):
+            op_name: str = x.operator
             operands: List["LolAnalysisVariable"] = [
                 self._get_symbol(
                     module_symbol_table,
                     self._parse_expression_recursively(y, module_symbol_table)
                 )
-                for y in x.get_operands()
+                for y in x.operands
             ]
             ret = self._get_temporary_variable_name()
             ret_type = self._get_operator_return_type(module_symbol_table, op_name, operands)
@@ -325,8 +343,8 @@ class LolAnalysisFunction:
             self.body.append(stmt)
             self.symbol_table[ret] = LolAnalysisVariable(ret, None, type=ret_type)
             return ret
-        elif isinstance(x, parser_types.Literal):
-            if isinstance(x, parser_types.DecimalLiteral):
+        elif isinstance(x, LolParserLiteral):
+            if x.type == LolParserLiteralType.INTEGER:
                 ret = self._get_temporary_variable_name()
                 ret_type = module_symbol_table["i32"]
                 stmt = LolIRDefinitionStatement(
@@ -335,7 +353,7 @@ class LolAnalysisFunction:
                 self.body.append(stmt)
                 self.symbol_table[ret] = LolAnalysisVariable(ret, None, type=ret_type)
                 return ret
-            elif isinstance(x, parser_types.StringLiteral):
+            elif x.type == LolParserLiteralType.STRING:
                 ret = self._get_temporary_variable_name()
                 ret_type = module_symbol_table["cstr"]
                 stmt = LolIRDefinitionStatement(
@@ -344,7 +362,9 @@ class LolAnalysisFunction:
                 self.body.append(stmt)
                 self.symbol_table[ret] = LolAnalysisVariable(ret, None, type=ret_type)
                 return ret
-        elif isinstance(x, parser_types.FunctionCallNode):
+            else:
+                raise NotImplementedError
+        elif isinstance(x, LolParserFunctionCall):
             func_name: str = x.get_name_as_str()
             func: LolAnalysisFunction = self._get_symbol(module_symbol_table, func_name)
             assert isinstance(func, LolAnalysisFunction)
@@ -352,7 +372,7 @@ class LolAnalysisFunction:
                 self._get_symbol(
                     module_symbol_table,
                     self._parse_expression_recursively(y, module_symbol_table))
-                for y in x.get_arguments()
+                for y in x.arguments
             ]
             ret: str = self._get_temporary_variable_name()
             ret_type = func.return_types
@@ -362,32 +382,33 @@ class LolAnalysisFunction:
             self.body.append(stmt)
             self.symbol_table[ret] = LolAnalysisVariable(ret, None, type=ret_type)
             return ret
-        elif isinstance(x, parser_types.ReturnNode):
-            ret = self._parse_expression_recursively(x.get_expression(), module_symbol_table)
+        elif isinstance(x, LolParserReturnStatement):
+            ret = self._parse_expression_recursively(x.value, module_symbol_table)
             stmt = LolIRReturnStatement(self._get_symbol(module_symbol_table, ret))
             self.body.append(stmt)
-        elif isinstance(x, parser_types.VariableCallNode):
-            return x.get_name_as_str()
+        elif isinstance(x, LolParserIdentifier):
+            return x.name
         else:
             raise NotImplementedError
 
     def _parse_statement(
         self,
         module_symbol_table: Dict[str, LolAnalysisSymbol],
-        x: parser_types.ASTNode
+        x: LolParserFunctionLevelStatement
     ):
-        if isinstance(x, parser_types.VariableDefinitionNode):
+        if isinstance(x, LolParserVariableDefinition):
             name = x.get_name_as_str()
-            ast_data_type = x.get_data_type()
-            assert isinstance(ast_data_type, parser_types.Identifier)
-            data_type = self._get_symbol(module_symbol_table, ast_data_type.get_name_as_str())
-            value = self._parse_expression_recursively(x.get_value(), module_symbol_table)
+            ast_data_type = x.type
+            assert isinstance(ast_data_type, LolParserIdentifier)
+            data_type = self._get_symbol(module_symbol_table, ast_data_type.name)
+            value = self._parse_expression_recursively(x.value, module_symbol_table)
             self.symbol_table[name] = LolAnalysisVariable.init_local_variable(name, x, module_symbol_table)
             stmt = LolIRDefinitionStatement(
                 name, data_type, self._get_symbol(module_symbol_table, value)
             )
             self.body.append(stmt)
-        elif isinstance(x, parser_types.VariableModificationNode):
+        elif isinstance(x, LolParserVariableModification):
+            # I'm not even sure that the parser supports modification nodes
             raise NotImplementedError
         else:
             _unused_return_variable = self._parse_expression_recursively(x, module_symbol_table)
@@ -400,10 +421,10 @@ class LolAnalysisFunction:
             t.get_name_as_str(): LolAnalysisVariable.init_local_variable(
                 t.get_name_as_str(), t, module_symbol_table
                 )
-            for t in self.ast_definition_node.get_parameters()
+            for t in self.ast_definition_node.parameters
         }
         self.body = []
-        for statement in self.ast_definition_node.get_body():
+        for statement in self.ast_definition_node.body:
             self._parse_statement(module_symbol_table, statement)
 
     def to_dict(self):
@@ -461,22 +482,22 @@ class LolAnalysisModule:
         )
 
     ### NAME
-    def _add_function_name(self, ast_definition: FunctionDefinitionNode):
+    def _add_function_name(self, ast_definition: LolParserFunctionDefinition):
         name = ast_definition.get_name_as_str()
         symbol = LolAnalysisFunction(name, ast_definition)
         self.add_to_module_symbol_table(name, symbol)
 
-    def _add_variable_name(self, ast_definition: VariableDefinitionNode):
+    def _add_variable_name(self, ast_definition: LolParserVariableDefinition):
         name = ast_definition.get_name_as_str()
         symbol = LolAnalysisVariable.init_local_variable(name, ast_definition)
         self.add_to_module_symbol_table(name, symbol)
 
     # TODO: merge this into the variable!
-    def _add_import_name(self, ast_definition: ImportModuleNode):
-        name = ast_definition.get_name_as_str()
-        library = ast_definition.get_library_as_str()
-        if library == "stdio.h":
-            symbol = LolAnalysisModule(library, caller_module=self)
+    def _add_import_name(self, ast_definition: LolParserImportStatement):
+        alias = ast_definition.get_alias_as_str()
+        library = ast_definition.get_library_name_as_str()
+        if library == "\"stdio.h\"":
+            module = LolAnalysisModule(library, caller_module=self)
             i32: LolAnalysisBuiltinType = self.module_symbol_table["i32"]
             cstr: LolAnalysisBuiltinType = self.module_symbol_table["cstr"]
             printf_func = LolAnalysisFunction(
@@ -486,12 +507,12 @@ class LolAnalysisModule:
                 parameter_types=[cstr],
                 parameter_names=["format"],
             )
-            symbol.add_to_module_symbol_table("printf", printf_func)
+            module.add_to_module_symbol_table("printf", printf_func)
         else:
             raise NotImplementedError("only stdio.h library is supported!")
-        self.add_to_module_symbol_table(name, symbol)
+        self.add_to_module_symbol_table(alias, module)
 
-    def get_module_names(self, ast_nodes: List[ASTNode]):
+    def get_module_names(self, ast_nodes: List[LolParserModuleLevelStatement]):
         """
         Extract names (only) of function definitions, module definitions, and
         imports.
@@ -501,11 +522,11 @@ class LolAnalysisModule:
         1. Add struct/enum/monad
         """
         for i, node in enumerate(ast_nodes):
-            if isinstance(node, FunctionDefinitionNode):
+            if isinstance(node, LolParserFunctionDefinition):
                 self._add_function_name(node)
-            elif isinstance(node, VariableDefinitionNode):
+            elif isinstance(node, LolParserVariableDefinition):
                 self._add_variable_name(node)
-            elif isinstance(node, ImportModuleNode):
+            elif isinstance(node, LolParserImportStatement):
                 # TODO(dchu) - recursively add members to this submodule!
                 self._add_import_name(node)
             # TODO(dchu): accept data structures
@@ -514,65 +535,64 @@ class LolAnalysisModule:
                 raise ValueError(f"{node} cannot be outside of functions!")
 
     ### PROTOTYPES
-    def add_function_prototype(self, ast_definition: FunctionDefinitionNode):
+    def add_function_prototype(self, ast_definition: LolParserFunctionDefinition):
         name = ast_definition.get_name_as_str()
         func: LolAnalysisFunction = self.module_symbol_table[name]
         func.complete_prototype(self.module_symbol_table)
 
-    def add_variable_prototype(self, ast_definition: VariableDefinitionNode):
+    def add_variable_prototype(self, ast_definition: LolParserVariableDefinition):
         name = ast_definition.get_name_as_str()
         var: LolAnalysisVariable = self.module_symbol_table[name]
         var.complete_prototype(self.module_symbol_table)
 
-    def add_import_prototype(self, ast_definition: ImportModuleNode):
+    def add_import_prototype(self, ast_definition: LolParserImportStatement):
         # Intentionally do nothing
         pass
 
-    def get_module_prototypes(self, ast_nodes: List[ASTNode]):
+    def get_module_prototypes(self, ast_nodes: List[LolParserModuleLevelStatement]):
         """Get function and variable prototypes."""
         for i, node in enumerate(ast_nodes):
-            if isinstance(node, FunctionDefinitionNode):
+            if isinstance(node, LolParserFunctionDefinition):
                 self.add_function_prototype(node)
-            elif isinstance(node, VariableDefinitionNode):
+            elif isinstance(node, LolParserVariableDefinition):
                 self.add_variable_prototype(node)
-            elif isinstance(node, ImportModuleNode):
+            elif isinstance(node, LolParserImportStatement):
                 self.add_import_prototype(node)
             else:
                 # We will ignore anything outside of functions! This is an error
                 raise ValueError(f"{node} cannot be outside of functions!")
 
     ### BODIES
-    def add_function_body(self, ast_definition: FunctionDefinitionNode):
+    def add_function_body(self, ast_definition: LolParserFunctionDefinition):
         name = ast_definition.get_name_as_str()
         func: LolAnalysisFunction = self.module_symbol_table[name]
         func.complete_body(self.module_symbol_table)
 
-    def add_variable_body(self, ast_definition: VariableDefinitionNode):
+    def add_variable_body(self, ast_definition: LolParserVariableDefinition):
         # Intentionally do nothing
         pass
 
-    def add_import_body(self, ast_definition: ImportModuleNode):
+    def add_import_body(self, ast_definition: LolParserImportStatement):
         # Intentionally do nothing
         pass
 
-    def get_module_bodies(self, ast_nodes: List[ASTNode]):
+    def get_module_bodies(self, ast_nodes: List[LolParserModuleLevelStatement]):
         for i, node in enumerate(ast_nodes):
-            if isinstance(node, FunctionDefinitionNode):
+            if isinstance(node, LolParserFunctionDefinition):
                 self.add_function_body(node)
-            elif isinstance(node, VariableDefinitionNode):
+            elif isinstance(node, LolParserVariableDefinition):
                 self.add_variable_body(node)
-            elif isinstance(node, ImportModuleNode):
+            elif isinstance(node, LolParserImportStatement):
                 self.add_import_body(node)
             else:
                 # We will ignore anything outside of functions! This is an error
                 raise ValueError(f"{node} cannot be outside of functions!")
 
 
-def analyze(asts: List[ASTNode], raw_text: str) -> LolAnalysisModule:
+def analyze(asts: List[LolParserModuleLevelStatement], raw_text: str) -> LolAnalysisModule:
     module = LolAnalysisModule("main")
     module.get_module_names(asts)
     module.get_module_prototypes(asts)
     module.get_module_bodies(asts)
-    print(module.to_dict())
 
     return module

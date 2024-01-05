@@ -95,6 +95,9 @@ class LolParserParameterDefinition(LolParserGeneric):
     name: LolParserIdentifier
     type: LolParserTypeExpression
 
+    def get_name_as_str(self) -> str:
+        return self.name.name
+
     def to_dict(self):
         return dict(
             metatype=self.__class__.__name__,
@@ -111,6 +114,9 @@ class LolParserFunctionCall(LolParserGeneric):
     name: LolParserIdentifier
     arguments: List[LolParserExpression]
 
+    def get_name_as_str(self):
+        return self.name.name
+
     def to_dict(self):
         return dict(
             metatype=self.__class__.__name__,
@@ -124,6 +130,9 @@ class LolParserVariableDefinition(LolParserGeneric):
     name: LolParserIdentifier
     type: LolParserTypeExpression
     value: LolParserValueExpression
+
+    def get_name_as_str(self) -> str:
+        return self.name.name
 
     def to_dict(self):
         return dict(
@@ -152,6 +161,13 @@ class LolParserImportStatement(LolParserGeneric):
     def __post_init__(self):
         assert self.library_name.type == LolParserLiteralType.STRING
 
+    def get_alias_as_str(self) -> str:
+        return self.alias.name
+
+    def get_library_name_as_str(self) -> str:
+        assert self.library_name.type == LolParserLiteralType.STRING
+        return self.library_name.value
+
     def to_dict(self):
         return dict(
             metatype=self.__class__.__name__,
@@ -166,6 +182,9 @@ class LolParserFunctionDefinition(LolParserGeneric):
     parameters: List[LolParserParameterDefinition]
     return_type: LolParserTypeExpression
     body: List[LolParserFunctionLevelStatement]
+
+    def get_name_as_str(self) -> str:
+        return self.name.name
 
     def to_dict(self):
         return dict(
