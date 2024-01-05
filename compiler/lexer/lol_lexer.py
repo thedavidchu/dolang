@@ -58,7 +58,7 @@ class Lexer:
     @staticmethod
     def _get_identifier_token_type(identifier: str):
         if identifier in {
-            "if", "else", "while", "for", "namespace", "break", "continue",
+            "while", "for", "namespace", "break", "continue",
             "and", "or", "not"
         }:
             raise NotImplementedError(

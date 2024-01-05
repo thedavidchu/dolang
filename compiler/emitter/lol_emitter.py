@@ -7,10 +7,11 @@ TODO
 1. Minimal Viable Product
 2. Correct indentation
 """
+from typing import List
 from compiler.analyzer.lol_analyzer import (
     LolAnalysisModule, LolAnalysisFunction, LolAnalysisBuiltinType,
-    LolIRReturnStatement, LolIRFunctionCallStatement, LolIRDefinitionStatement, LolIRSetStatement,
-    LolIRExpression,
+    LolIRReturnStatement, LolIRFunctionCallStatement, LolIRDefinitionStatement, LolIRSetStatement, LolIRIfStatement,
+    LolIRExpression, LolIRStatement,
     LolIRFunctionCallExpression, LolIROperatorExpression, LolIRLiteralExpression, LolAnalysisVariable
 )
 
@@ -48,35 +49,50 @@ def emit_expr(expr: LolIRExpression) -> str:
         return f"{mangle_var_name(expr.name)}"
 
 
+def emit_statements(
+    ir_statements: List[LolIRStatement],
+    *,
+    indentation: str = "    "
+) -> List[str]:
+    statements: List[str] = []
+    for stmt in ir_statements:
+        if isinstance(stmt, LolIRDefinitionStatement):
+            var_name = mangle_var_name(stmt.name)
+            var_type = lol_to_c_types[stmt.type.name]
+            var_value = emit_expr(stmt.value)
+            statements.append(indentation + f"{var_type} {var_name} = {var_value};")
+        elif isinstance(stmt, LolIRSetStatement):
+            var_name = mangle_var_name(stmt.name)
+            var_value = emit_expr(stmt.value)
+            statements.append(indentation + f"{var_name} = {var_value};")
+        elif isinstance(stmt, LolIRFunctionCallStatement):
+            code = emit_expr(stmt.func_call)
+            statements.append(indentation + f"{code};")
+        elif isinstance(stmt, LolIRReturnStatement):
+            name = mangle_var_name(stmt.ret_var.name)
+            statements.append(indentation + f"return {name};")
+        elif isinstance(stmt, LolIRIfStatement):
+            statements.append(indentation + f"if ({mangle_var_name(stmt.if_cond.name)}) {{")
+            statements.extend(emit_statements(stmt.if_body, indentation=indentation + "    "))
+            statements.append(indentation + "} else {")
+            statements.extend(emit_statements(stmt.else_body, indentation=indentation + "    "))
+            statements.append(indentation + "}")
+        else:
+            raise ValueError("unrecognized statement type (maybe if statement?)")
+    return statements
+
 def emit_function(func: LolAnalysisFunction):
     prototype = (
         f"{lol_to_c_types[func.return_types.name]}\n"
         f"{func.name}({', '.join((f'{lol_to_c_types[arg_type.name]} {arg_name}' for arg_type, arg_name in zip(func.parameter_types, func.parameter_names)))})\n"
     )
-    statements = []
-    for stmt in func.body:
-        if isinstance(stmt, LolIRDefinitionStatement):
-            var_name = mangle_var_name(stmt.name)
-            var_type = lol_to_c_types[stmt.type.name]
-            var_value = emit_expr(stmt.value)
-            statements.append(f"    {var_type} {var_name} = {var_value};")
-        elif isinstance(stmt, LolIRSetStatement):
-            var_name = mangle_var_name(stmt.name)
-            var_value = emit_expr(stmt.value)
-            statements.append(f"    {var_name} = {var_value};")
-        elif isinstance(stmt, LolIRFunctionCallStatement):
-            code = emit_expr(stmt.func_call)
-            statements.append(f"    {code};")
-        elif isinstance(stmt, LolIRReturnStatement):
-            name = mangle_var_name(stmt.ret_var.name)
-            statements.append(f"    return {name};")
-        else:
-            raise ValueError("unrecognized statement type (maybe if statement?)")
+    statements = emit_statements(func.body)
+
     return prototype + "{\n" + "\n".join(statements) + "\n}\n"
 
 
 def emit_import(include: LolAnalysisModule):
-    return f"#include <{include.name}>"
+    return f"#include <{include.name[1:-1]}>"
 
 
 def emit_c(analysis_module: LolAnalysisModule):

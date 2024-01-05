@@ -25,6 +25,7 @@ from compiler.parser.lol_parser import (
     LolParserVariableModification,
     LolParserFunctionDefinition,
     LolParserReturnStatement,
+    LolParserIfStatement,
 )
 import compiler.parser.lol_parser as parser_types
 import compiler.lexer.lol_lexer_types as lexer_types
@@ -116,6 +117,9 @@ class LolIRReturnStatement:
     def __init__(self, ret_var: "LolAnalysisVariable"):
         self.ret_var = ret_var
 
+    def __repr__(self):
+        return f"return {str(self.ret_var)}"
+
 
 ################################################################################
 ### LOL ANALYSIS TYPES
@@ -191,7 +195,7 @@ class LolAnalysisVariable:
     def __init__(
         self,
         name: str,
-        ast_definition_node: Optional[LolParserVariableDefinition],
+        ast_definition_node: Optional[Union[LolParserVariableDefinition, LolParserParameterDefinition]],
         *,
         type: Optional[LolAnalysisDataType] = None,
     ):
@@ -211,7 +215,7 @@ class LolAnalysisVariable:
     @staticmethod
     def init_local_variable(
         name: str,
-        ast_definition_node: Optional[LolParserVariableDefinition],
+        ast_definition_node: Optional[Union[LolParserVariableDefinition, LolParserParameterDefinition]],
         module_symbol_table: Dict[str, LolAnalysisSymbol]
     ) -> "LolAnalysisVariable":
         """This method is to allow initializing a variable without needing to
@@ -323,14 +327,16 @@ class LolAnalysisFunction:
     def _parse_expression_recursively(
         self,
         x: LolParserExpression,
-        module_symbol_table: Dict[str, LolAnalysisSymbol]
+        module_symbol_table: Dict[str, LolAnalysisSymbol],
+        *,
+        body_block: List[LolIRStatement],
     ) -> str:
         if isinstance(x, LolParserOperatorExpression):
             op_name: str = x.operator
             operands: List["LolAnalysisVariable"] = [
                 self._get_symbol(
                     module_symbol_table,
-                    self._parse_expression_recursively(y, module_symbol_table)
+                    self._parse_expression_recursively(y, module_symbol_table, body_block=body_block)
                 )
                 for y in x.operands
             ]
@@ -340,7 +346,7 @@ class LolAnalysisFunction:
             stmt = LolIRDefinitionStatement(
                 ret, ret_type, ret_value
             )
-            self.body.append(stmt)
+            body_block.append(stmt)
             self.symbol_table[ret] = LolAnalysisVariable(ret, None, type=ret_type)
             return ret
         elif isinstance(x, LolParserLiteral):
@@ -350,7 +356,7 @@ class LolAnalysisFunction:
                 stmt = LolIRDefinitionStatement(
                     ret, ret_type, LolIRLiteralExpression(x.value)
                 )
-                self.body.append(stmt)
+                body_block.append(stmt)
                 self.symbol_table[ret] = LolAnalysisVariable(ret, None, type=ret_type)
                 return ret
             elif x.type == LolParserLiteralType.STRING:
@@ -359,7 +365,7 @@ class LolAnalysisFunction:
                 stmt = LolIRDefinitionStatement(
                     ret, ret_type, LolIRLiteralExpression(x.value)
                 )
-                self.body.append(stmt)
+                body_block.append(stmt)
                 self.symbol_table[ret] = LolAnalysisVariable(ret, None, type=ret_type)
                 return ret
             else:
@@ -371,7 +377,8 @@ class LolAnalysisFunction:
             args: List["LolAnalysisVariable"] = [
                 self._get_symbol(
                     module_symbol_table,
-                    self._parse_expression_recursively(y, module_symbol_table))
+                    self._parse_expression_recursively(y, module_symbol_table, body_block=body_block)
+                )
                 for y in x.arguments
             ]
             ret: str = self._get_temporary_variable_name()
@@ -379,13 +386,24 @@ class LolAnalysisFunction:
             stmt = LolIRDefinitionStatement(
                 ret, ret_type, LolIRFunctionCallExpression(func, args)
             )
-            self.body.append(stmt)
+            body_block.append(stmt)
             self.symbol_table[ret] = LolAnalysisVariable(ret, None, type=ret_type)
             return ret
         elif isinstance(x, LolParserReturnStatement):
-            ret = self._parse_expression_recursively(x.value, module_symbol_table)
+            ret = self._parse_expression_recursively(x.value, module_symbol_table, body_block=body_block)
             stmt = LolIRReturnStatement(self._get_symbol(module_symbol_table, ret))
-            self.body.append(stmt)
+            body_block.append(stmt)
+        elif isinstance(x, LolParserIfStatement):
+            if_cond_name = self._parse_expression_recursively(x.if_condition, module_symbol_table, body_block=body_block)
+            if_cond = self._get_symbol(module_symbol_table, if_cond_name)
+            if_block = []
+            for y in x.if_block:
+                self._parse_statement(module_symbol_table, y, body_block=if_block)
+            else_block = []
+            for y in x.else_block:
+                self._parse_statement(module_symbol_table, y, body_block=else_block)
+            stmt = LolIRIfStatement(if_cond, if_block, else_block)
+            body_block.append(stmt)
         elif isinstance(x, LolParserIdentifier):
             return x.name
         else:
@@ -394,24 +412,26 @@ class LolAnalysisFunction:
     def _parse_statement(
         self,
         module_symbol_table: Dict[str, LolAnalysisSymbol],
-        x: LolParserFunctionLevelStatement
+        x: LolParserFunctionLevelStatement,
+        *,
+        body_block: List[LolIRStatement],
     ):
         if isinstance(x, LolParserVariableDefinition):
             name = x.get_name_as_str()
             ast_data_type = x.type
             assert isinstance(ast_data_type, LolParserIdentifier)
             data_type = self._get_symbol(module_symbol_table, ast_data_type.name)
-            value = self._parse_expression_recursively(x.value, module_symbol_table)
+            value = self._parse_expression_recursively(x.value, module_symbol_table, body_block=body_block)
             self.symbol_table[name] = LolAnalysisVariable.init_local_variable(name, x, module_symbol_table)
             stmt = LolIRDefinitionStatement(
                 name, data_type, self._get_symbol(module_symbol_table, value)
             )
-            self.body.append(stmt)
+            body_block.append(stmt)
         elif isinstance(x, LolParserVariableModification):
             # I'm not even sure that the parser supports modification nodes
             raise NotImplementedError
         else:
-            _unused_return_variable = self._parse_expression_recursively(x, module_symbol_table)
+            _unused_return_variable = self._parse_expression_recursively(x, module_symbol_table, body_block=body_block)
 
     def complete_body(self, module_symbol_table: Dict[str, LolAnalysisSymbol]):
         assert self.symbol_table is None
@@ -425,7 +445,7 @@ class LolAnalysisFunction:
         }
         self.body = []
         for statement in self.ast_definition_node.body:
-            self._parse_statement(module_symbol_table, statement)
+            self._parse_statement(module_symbol_table, statement, body_block=self.body)
 
     def to_dict(self):
         return dict(

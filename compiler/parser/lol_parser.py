@@ -327,7 +327,7 @@ class Parser:
     @staticmethod
     def parse_identifier_with_namespace_separator(
         stream: TokenStream, identifier_leaf: LolParserIdentifier
-        ) -> LolParserIdentifier:
+    ) -> LolParserIdentifier:
         namespaces: List[str] = [identifier_leaf.name]
         while True:
             next_separator_token = stream.get_token()
@@ -377,6 +377,18 @@ class Parser:
             raise ValueError("accesses not supported yet... i.e. `x[100]`")
         else:
             return LolParserIdentifier(identifier_leaf.name)
+
+    @staticmethod
+    def parse_if(stream: TokenStream) -> LolParserIfStatement:
+        eat_token(stream, TokenType.IF)
+        if_cond = Parser.parse_expression(stream)
+        if_block = Parser.parse_block_body(stream)
+        token = stream.get_token()
+        else_block = []
+        if token.is_type(TokenType.ELSE):
+            eat_token(stream, TokenType.ELSE)
+            else_block = Parser.parse_block_body(stream)
+        return LolParserIfStatement(if_cond, if_block, else_block)
 
     @staticmethod
     def parse_primary(stream: TokenStream) -> LolParserExpression:
@@ -480,7 +492,6 @@ class Parser:
         assert lhs is not None
         return Parser.parse_binop_rhs(stream, 0, lhs)
 
-
     @staticmethod
     def parse_type_expression(stream: TokenStream) -> LolParserTypeExpression:
         # We only support single-token type expressions for now
@@ -548,13 +559,15 @@ class Parser:
             eat_token(stream, TokenType.SEMICOLON)
             return LolParserReturnStatement(ret_val)
         # TODO(dchu): if, while, for loops
+        elif token.is_type(TokenType.IF):
+            return Parser.parse_if(stream)
         else:
             result = Parser.parse_value_expression(stream)
             eat_token(stream, TokenType.SEMICOLON)
             return result
 
     @staticmethod
-    def parse_function_body(stream: TokenStream) -> List[LolParserFunctionLevelStatement]:
+    def parse_block_body(stream: TokenStream) -> List[LolParserFunctionLevelStatement]:
         func_body: List[LolParserFunctionLevelStatement] = []
         eat_token(stream, TokenType.LBRACE)
         while True:
@@ -569,7 +582,7 @@ class Parser:
     def parse_function_definition(stream: TokenStream):
         start_pos = stream.get_pos()
         func_identifier, params, ret_type = Parser.parse_function_prototype(stream)
-        func_body = Parser.parse_function_body(stream)
+        func_body = Parser.parse_block_body(stream)
         end_pos = stream.get_pos()
         return LolParserFunctionDefinition(func_identifier, params, ret_type, func_body)
 
