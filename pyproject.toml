@@ -1,5 +1,5 @@
 [project]
-name = "c_lib"
+name = "lolc"
 version = "0.0.0"
 description = "Prototype for an interpreter."
 authors = [
@@ -8,9 +8,9 @@ authors = [
 license = "MIT"
 readme = "README.md"
 python = "^3.6"
-homepage = "https://github.com/thedavidchu/c_lib/"
-repository = "https://github.com/thedavidchu/c_lib/"
-documentation = "https://github.com/thedavidchu/c_lib/"
+homepage = "https://github.com/thedavidchu/lolc/"
+repository = "https://github.com/thedavidchu/lolc/"
+documentation = "https://github.com/thedavidchu/lolc/"
 
 # Requirements
 [dependencies]

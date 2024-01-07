@@ -1,5 +1,5 @@
 """
-# Parser
+# Lexer
 
 ## Language
 
@@ -43,60 +43,48 @@ Future tokens to accept in the future are:
 6. Add multiline strings ('''multiline string''')
 7. Add multiline comments
 """
+from typing import Dict, List
 
-lexeme = """
-# My first program!
-print("Hello, World!")
-"""
-
-medium_text = """
-io = import("io")
-
-io.stdout("Hello, World!")
-
-function sum3(a: int, b: int, c: int): int {
-    return a.add(b).add(c)
-}
-
-let a: int = 0
-let b: int = 1
-let c: int = 2
-let d: int = sum3(a, b, c)
-io.stdout("Answer: ", d)
-"""
-
-advanced_text = """
-io = import ( "io" );
-
-# Fibonacci sequence
-function fibonacci ( iterations : int ) -> int {
-    let result : int = 0 , prev_result : int = 0
-    for _ in range ( 0 , 10 ) {
-        result = 0
-    }
-}
-
-let a : int = fibonacci ( 0 )
-let b : int = fibonacci ( 1 )
-
-let a_str : str = str ( a )
-let b_str : str = str ( b )
-
-io . stdout ( a_str )
-io . stdout ( b_str )
-"""
-
-from typing import List
-
-from lexer.lol_lexer_types import TokenType, Token, CharacterStream
+from compiler.lexer.lol_lexer_types import (
+    TokenType, Token, CharacterStream, SYMBOL_CONTROL
+)
 
 
-class Tokenizer:
+class Lexer:
     def __init__(self, src: str):
         self.stream = CharacterStream(src)
         self.tokens = []
 
-    def get_identifier(self, stream: CharacterStream):
+    @staticmethod
+    def _get_identifier_token_type(identifier: str):
+        if identifier in {
+            "while", "for", "namespace", "break", "continue", "not"
+        }:
+            raise NotImplementedError(
+                f"lexer supports keyword '{identifier}'; no further stage does"
+            )
+        key_words: Dict[str, TokenType] = {
+            "if": TokenType.IF,
+            "else": TokenType.ELSE,
+            "let": TokenType.LET,
+            "while": TokenType.WHILE,
+            "for": TokenType.FOR,
+            "function": TokenType.FUNCTION,
+            "return": TokenType.RETURN,
+            "namespace": TokenType.NAMESPACE,
+            "module": TokenType.MODULE,
+            "import": TokenType.IMPORT,
+            "break": TokenType.BREAK,
+            "continue": TokenType.CONTINUE,
+            "and": TokenType.AND,
+            "or": TokenType.OR,
+            "not": TokenType.NOT,
+        }
+        token_type = key_words.get(identifier, TokenType.IDENTIFIER)
+        return token_type
+
+    @staticmethod
+    def lex_identifier(stream: CharacterStream):
         # Concatentation to a list is more efficient than to a string, since
         # strings are immutable.
         c, pos = stream.get_char(), stream.get_pos()
@@ -106,142 +94,167 @@ class Tokenizer:
             stream.next_char()
             c = stream.get_char()
 
-        ident = "".join(token)
-        if ident == "if":
-            return Token(*pos, TokenType.IF, ident)
-        elif ident == "else":
-            return Token(*pos, TokenType.ELSE, ident)
-        elif ident == "while":
-            return Token(*pos, TokenType.WHILE, ident)
-        elif ident == "function":
-            return Token(*pos, TokenType.FUNCTION, ident)
-        elif ident == "return":
-            return Token(*pos, TokenType.RETURN, ident)
-        elif ident == "let":
-            return Token(*pos, TokenType.LET, ident)
-        elif ident == "namespace":
-            return Token(*pos, TokenType.NAMESPACE, ident)
-        elif ident == "module":
-            return Token(*pos, TokenType.MODULE, ident)
-        elif ident == "import":
-            return Token(*pos, TokenType.IMPORT, ident)
-        else:
-            return Token(*pos, TokenType.IDENTIFIER, ident)
+        identifier = "".join(token)
+        token_type = Lexer._get_identifier_token_type(identifier)
+        return Token(
+            identifier,
+            token_type,
+            start_position=pos,
+            full_text=stream.get_text()
+        )
 
-    def get_dec(self, stream: CharacterStream):
+    @staticmethod
+    def lex_number(stream: CharacterStream):
         # NOTE(dchu): for now, we assume that the number is a base-10 integer.
         c, pos = stream.get_char(), stream.get_pos()
+        current_token_type = TokenType.INTEGER
         # Concatentation to a list is more efficient than to a string, since
         # strings are immutable.
         token = []
         while c.isdecimal():
-            token.append(c)
-            stream.next_char()
-            c = stream.get_char()
-        return Token(*pos, TokenType.DEC, "".join(token))
+            if c.isdecimal():
+                token.append(c)
+                stream.next_char()
+                c = stream.get_char()
+            elif c == "." and current_token_type == TokenType.INTEGER:
+                raise NotImplementedError("floats not supported yet!")
+                current_token_type = TokenType.FLOAT
+                token.append(c)
+                stream.next_char()
+                c = stream.get_char()
+            else:
+                raise NotImplementedError
+        return Token("".join(token), current_token_type, start_position=pos, full_text=stream.get_text())
 
-    def get_string(self, stream: CharacterStream):
+    @staticmethod
+    def lex_string(stream: CharacterStream):
         c, pos = stream.get_char(), stream.get_pos()
         # Concatentation to a list is more efficient than to a string, since
         # strings are immutable.
-
-        # We need to do one iteration outside the loop, since the first
-        # character is the same as the stop character in a string.
-        token = [c]
         stream.next_char()
-        c = stream.get_char()
-        while c != '"' and c is not None:
+        token = ['"']
+        while True:
+            # TODO(dchu) support escaped quotations
+            c = stream.get_char()
+            if c == '"' or c is None:
+                stream.next_char()
+                break
             token.append(c)
             stream.next_char()
-            c = stream.get_char()
         # Add trailing quote
         token.append(c)
-        stream.next_char()
-        return Token(*pos, TokenType.STRING, "".join(token))
+        return Token("".join(token), TokenType.STRING, start_position=pos, full_text=stream.get_text())
 
-    def get_comment(self, stream: CharacterStream):
-        c, pos = stream.get_char(), stream.get_pos()
+    @staticmethod
+    def lex_comment(stream: CharacterStream):
+        """Get a comment that is like a C-style comment: /* Comment */. We
+        assume that there is already a '/*' and the front."""
+        pos = stream.get_pos()
+        assert stream.get_char() == "/" and stream.get_char(offset=1) == "*"
+        stream.next_char()
+        stream.next_char()
         # Concatentation to a list is more efficient than to a string, since
         # strings are immutable.
-        token = []
-        while c != "\n" and c is not None:
+        token = ["/*"]
+        c = stream.get_char()
+        while True:
             token.append(c)
             stream.next_char()
-            c = stream.get_char()
-        return Token(*pos, TokenType.COMMENT, "".join(token))
+            c, n = stream.get_char(), stream.get_char(offset=1)
+            if c == "*" and n == "/":
+                stream.next_char()
+                stream.next_char()
+                break
+            elif c is None:
+                raise ValueError("expected terminal '*/' in the comment")
+        return Token("".join(token), TokenType.COMMENT, start_position=pos, full_text=stream.get_text())
 
-    def get_symbol(self, stream: CharacterStream):
-        c, pos = stream.get_char(), stream.get_pos()
-        stream.next_char()
-        if c == "(":
-            return Token(*pos, TokenType.LPAREN, c)
-        elif c == ")":
-            return Token(*pos, TokenType.RPAREN, c)
-        elif c == "[":
-            return Token(*pos, TokenType.LSQB, c)
-        elif c == "]":
-            return Token(*pos, TokenType.RSQB, c)
-        elif c == "{":
-            return Token(*pos, TokenType.LBRACE, c)
-        elif c == "}":
-            return Token(*pos, TokenType.RBRACE, c)
-        elif c == ",":
-            return Token(*pos, TokenType.COMMA, c)
-        elif c == ".":
-            return Token(*pos, TokenType.DOT, c)
-        elif c == "=":
-            return Token(*pos, TokenType.EQUAL, c)
-        elif c == ":":
-            if stream.get_char() == ":":
+    @staticmethod
+    def _is_punctuation_implemented(token_type: TokenType) -> bool:
+        # TODO(dchu): This is a hack! I should just maintain a list of
+        #  unimplemented punctuation token types. The reason I do this is
+        #  because it is very clear when inspecting the TokenType definition to
+        #  see what is and isn't implemented.
+        if (
+            isinstance(token_type.value, tuple)
+            and len(token_type.value) >= 2
+            and token_type.value[1] in {
+                TokenType.NOT_YET_IMPLEMENTED, TokenType.WONT_BE_IMPLEMENTED
+            }
+        ):
+            raise NotImplementedError(
+                f"token_type {token_type.n} not implemented"
+            )
+        return True
+
+    @staticmethod
+    def lex_punctuation(stream: CharacterStream):
+        start_pos = stream.get_pos()
+
+        control = SYMBOL_CONTROL
+        lexeme = []
+        while True:
+            c = stream.get_char()
+            if c is None:
+                if isinstance(control, TokenType):
+                    token_type = control
+                    break
+                elif None in control:
+                    token_type = control[None]
+                    break
+            if isinstance(control, TokenType):
+                token_type = control
+                break
+            elif c in control:
+                lexeme.append(c)
                 stream.next_char()
-                return Token(*pos, TokenType.COLON_COLON, "::")
-            return Token(*pos, TokenType.COLON, c)
-        elif c == ";":
-            return Token(*pos, TokenType.SEMICOLON, c)
-        elif c == "+":
-            return Token(*pos, TokenType.PLUS, c)
-        elif c == "-":
-            if stream.get_char() == ">":
-                stream.next_char()
-                return Token(*pos, TokenType.ARROW, "->")
-            return Token(*pos, TokenType.MINUS, c)
-        else:
-            raise ValueError(f"character '{c}' not supported!")
+                control = control[c]
+            elif None in control:
+                token_type = control[None]
+                break
+            else:
+                raise ValueError(f"cannot append {c} to {''.join(lexeme)} -- potential bug, just separate the symbols")
+
+        if not Lexer._is_punctuation_implemented(token_type):
+            raise NotImplementedError
+
+        return Token(
+            "".join(lexeme), token_type,
+            start_position=start_pos, full_text=stream.get_text()
+        )
 
     def tokenize(self):
         while True:
             c = self.stream.get_char()
-            pos = self.stream.get_pos()
-
             if c is None:
                 break
 
             if c.isspace():
                 self.stream.next_char()
             elif c.isalpha() or c == "_":
-                token = self.get_identifier(self.stream)
+                token = self.lex_identifier(self.stream)
                 self.tokens.append(token)
             elif c.isdecimal():
-                token = self.get_dec(self.stream)
+                token = self.lex_number(self.stream)
                 self.tokens.append(token)
             elif c == '"':
-                token = self.get_string(self.stream)
+                token = self.lex_string(self.stream)
                 self.tokens.append(token)
-            elif c == "#":
-                token = self.get_comment(self.stream)
+            elif c == "/" and self.stream.get_char(offset=1) == "*":
+                _unused_token = self.lex_comment(self.stream)
                 # TODO(dchu): re-enable this once the AST supports comments.
                 # Right now, we skip comments.
-                # self.tokens.append(token)
-            elif c in "()[]{}.,=:;-+":
+                # self.tokens.append(_unused_token)
+            elif c in SYMBOL_CONTROL:
                 # TODO(dchu): '-' does not necessarily imply a punctuation mark.
                 # It can also be the start of a negative number, e.g. -10.3
-                token = self.get_symbol(self.stream)
+                token = self.lex_punctuation(self.stream)
                 self.tokens.append(token)
             else:
                 raise ValueError(f"character '{c}' not supported!")
 
 
 def tokenize(text: str) -> List[Token]:
-    t = Tokenizer(text)
+    t = Lexer(text)
     t.tokenize()
     return t.tokens

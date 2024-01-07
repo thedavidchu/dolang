@@ -1,0 +1,26 @@
+name: Linux Compiler CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  run-linux-python3:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+          uses: actions/setup-python@v4
+          with:
+            python-version: '3.10'
+      - name: Compile
+        run: |
+          cd compiler
+          for x in fibonacci helloworld math_ops nested_if sum_three
+          do
+            python lol.py -i examples/$x.lol -o results
+            gcc results/$x-*.c
+            ./a.out
+          done
