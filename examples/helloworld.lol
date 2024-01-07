@@ -1,4 +1,4 @@
-### Basic hello world
+/* Basic hello world */
 module io = import("stdio.h");
 
 function main() -> i32 {

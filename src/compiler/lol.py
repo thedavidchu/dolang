@@ -2,16 +2,14 @@ import argparse
 import json
 import os
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
-from compiler.lexer.lol_lexer_types import Token
-from compiler.parser.lol_parser_token_stream import TokenStream
-from compiler.parser.lol_parser_types import ASTNode
-
-from compiler.lexer.lol_lexer import tokenize
-from compiler.parser.lol_parser import parse
-from compiler.analyzer.new_lol_analyzer import analyze
+from compiler.analyzer.lol_analyzer import analyze, LolAnalysisModule
 from compiler.emitter.lol_emitter import emit_c
+from compiler.lexer.lol_lexer import tokenize
+from compiler.lexer.lol_lexer_types import Token
+from compiler.parser.lol_parser import parse, LolParserModuleLevelStatement
+from compiler.parser.lol_parser_token_stream import TokenStream
 
 
 class LolSymbol:
@@ -24,19 +22,33 @@ class LolSymbol:
 
 
 class LolModule:
-    def __init__(self):
+    def __init__(
+        self,
+        *,
+        input_file: str,
+        output_dir: str,
+    ):
         # Metadata
-        self.init_timestamp = time.time()
+        self.input_file = input_file
+        self.output_dir = output_dir
+        prefix, ext = os.path.splitext(os.path.basename(input_file))
+        self.output_prefix = prefix
 
         self.text: str = ""
         self.tokens: List[Token] = []
-        self.ast: List[ASTNode] = []
-        self.symbol_table: Dict[str, LolSymbol] = {}
+        self.ast: List[LolParserModuleLevelStatement] = []
+        self.module: Optional[LolAnalysisModule] = None
+        self.code: Optional[str] = None
+        self.output_language: Optional[str] = None
 
-    def read_file(self, file_name: str):
-        assert isinstance(file_name, str)
-        with open(file_name) as f:
+    def read_input_file(self):
+        with open(self.input_file) as f:
             self.text = f.read()
+
+    def setup_output_dir(self):
+        # Make empty output dir if it doesn't exist
+        if not os.path.exists(self.output_dir):
+            os.mkdir(self.output_dir)
 
     ############################################################################
     ### LEXER
@@ -48,8 +60,8 @@ class LolModule:
 
         self.tokens = tokenize(self.text)
 
-    def save_lexer_output_only(self, output_dir: str):
-        file_name: str = f"{output_dir}/{self.init_timestamp}-lexer-output-only.json"
+    def save_lexer_output_only(self):
+        file_name: str = f"{self.output_dir}/{self.output_prefix}-{time.time()}-lexer-output-only.json"
         with open(file_name, "w") as f:
             json.dump({"lexer-output": [x.to_dict() for x in self.tokens]}, f, indent=4)
 
@@ -63,8 +75,8 @@ class LolModule:
         stream = TokenStream(self.tokens, self.text)
         self.ast = parse(stream)
 
-    def save_parser_output_only(self, output_dir: str):
-        file_name: str = f"{output_dir}/{self.init_timestamp}-parser-output-only.json"
+    def save_parser_output_only(self):
+        file_name: str = f"{self.output_dir}/{self.output_prefix}-{time.time()}-parser-output-only.json"
         with open(file_name, "w") as f:
             json.dump({"parser-output": [x.to_dict() for x in self.ast]}, f, indent=4)
 
@@ -73,12 +85,13 @@ class LolModule:
     ############################################################################
 
     def run_analyzer(self):
-        self.symbol_table = analyze(self.ast, self.text)
+        self.module = analyze(self.ast, self.text)
 
-    def save_analyzer_output_only(self, output_dir: str):
-        file_name: str = f"{output_dir}/{self.init_timestamp}-analyzer-output-only.json"
+    def save_analyzer_output_only(self):
+        assert isinstance(self.module, LolAnalysisModule)
+        file_name: str = f"{self.output_dir}/{self.output_prefix}-{time.time()}-analyzer-output-only.json"
         with open(file_name, "w") as f:
-            json.dump({"analyzer-output": {x: y.to_dict() for x, y in self.symbol_table.module_symbol_table.items()}}, f, indent=4)
+            json.dump({"analyzer-output": {x: y.to_dict() for x, y in self.module.module_symbol_table.items()}}, f, indent=4)
 
     ############################################################################
     ### EMITTER
@@ -86,13 +99,15 @@ class LolModule:
 
     def run_emitter(self):
         # TODO: Make this in the __init__function
-        self.code = emit_c(self.symbol_table)
+        assert self.code is None and self.output_language is None
+        self.code = emit_c(self.module)
+        self.output_language = "c"
 
-    def save_emitter_output_only(self, output_dir: str):
-        file_name: str = f"{output_dir}/{self.init_timestamp}-emitter-output-only.json"
+    def save_emitter_output_only(self):
+        assert isinstance(self.code, str) and self.output_language == "c"
+        file_name: str = f"{self.output_dir}/{self.output_prefix}-{time.time()}-emitter-output-only.c"
         with open(file_name, "w") as f:
-            json.dump({"emitter-output": self.code}, f, indent=4)
-
+            f.write(self.code)
 
 
 def main() -> None:
@@ -103,7 +118,7 @@ def main() -> None:
         "-i", "--input", type=str, required=True, help="Input file name"
     )
     parser.add_argument(
-        "-o", "--output", type=str, default=None, help="Output directory name"
+        "-o", "--output", type=str, default=".", help="Output directory name"
     )
     args = parser.parse_args()
 
@@ -112,21 +127,18 @@ def main() -> None:
     input_file = args.input
     output_dir = args.output
 
-    module = LolModule()
-    # Assume input_file is not None because it is required
-    module.read_file(input_file)
-    # Make empty output dir if it doesn't exist
-    if not os.path.exists(output_dir):
-        os.mkdir(output_dir)
+    module = LolModule(input_file=input_file, output_dir=output_dir)
+    module.read_input_file()
+    module.setup_output_dir()
 
     module.run_lexer()
-    module.save_lexer_output_only(output_dir)
+    module.save_lexer_output_only()
     module.run_parser()
-    module.save_parser_output_only(output_dir)
+    module.save_parser_output_only()
     module.run_analyzer()
-    module.save_analyzer_output_only(output_dir)
+    module.save_analyzer_output_only()
     module.run_emitter()
-    module.save_emitter_output_only(output_dir)
+    module.save_emitter_output_only()
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 [project]
-name = "c_lib"
+name = "lolc"
 version = "0.0.0"
 description = "Prototype for an interpreter."
 authors = [
@@ -8,19 +8,19 @@ authors = [
 license = "MIT"
 readme = "README.md"
 python = "^3.6"
-homepage = "https://github.com/thedavidchu/c_lib/"
-repository = "https://github.com/thedavidchu/c_lib/"
-documentation = "https://github.com/thedavidchu/c_lib/"
+homepage = "https://github.com/thedavidchu/lolc/"
+repository = "https://github.com/thedavidchu/lolc/"
+documentation = "https://github.com/thedavidchu/lolc/"
 
 # Requirements
 [dependencies]
 
 [dev-dependencies]
-black = { version = "^22.3.0", python = "^3.6" }
+black = { version = "^22.3.0", python = "^3.10" }
 
 [tool.black]
 line-length = 80
-target_version = ['py36']
+target-version = ['py310']
 exclude = '''
 (
     /(

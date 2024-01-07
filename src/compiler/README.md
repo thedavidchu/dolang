@@ -20,7 +20,7 @@ In no particular order, here are some fun features that I may add.
 4. Borrow checker. (???)
 5. Closures. (???)
 
-## Ecosystem
+## Future Ecosystem
 
 1. VS Code extension with syntax highlighting.
 2. Bootstrap this into its own language. What's nice is that once we write it,
