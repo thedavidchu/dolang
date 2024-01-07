@@ -8,17 +8,16 @@ TODO
 2. Correct indentation
 """
 from typing import List
+
 from compiler.analyzer.lol_analyzer import (
     LolAnalysisModule, LolAnalysisFunction, LolAnalysisBuiltinType,
-    LolIRReturnStatement, LolIRFunctionCallStatement, LolIRDefinitionStatement, LolIRSetStatement, LolIRIfStatement,
+    LolIRReturnStatement, LolIRFunctionCallStatement, LolIRDefinitionStatement,
+    LolIRSetStatement, LolIRIfStatement,
     LolIRExpression, LolIRStatement,
-    LolIRFunctionCallExpression, LolIROperatorExpression, LolIRLiteralExpression, LolAnalysisVariable
+    LolIRFunctionCallExpression, LolIROperatorExpression,
+    LolIRLiteralExpression, LolAnalysisVariable
 )
 
-headers = """
-#include <stdint.h>
-#include <stdio.h>
-"""
 
 lol_to_c_types = {"cstr": "char *", "i32": "int", "void": "void"}
 

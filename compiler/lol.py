@@ -4,13 +4,12 @@ import os
 import time
 from typing import Any, Dict, List, Optional
 
-from compiler.lexer.lol_lexer_types import Token
-from compiler.parser.lol_parser_token_stream import TokenStream
-
-from compiler.lexer.lol_lexer import tokenize
-from compiler.parser.lol_parser import parse, LolParserModuleLevelStatement
 from compiler.analyzer.lol_analyzer import analyze, LolAnalysisModule
 from compiler.emitter.lol_emitter import emit_c
+from compiler.lexer.lol_lexer import tokenize
+from compiler.lexer.lol_lexer_types import Token
+from compiler.parser.lol_parser import parse, LolParserModuleLevelStatement
+from compiler.parser.lol_parser_token_stream import TokenStream
 
 
 class LolSymbol:
