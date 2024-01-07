@@ -23,9 +23,13 @@ class LolSymbol:
 
 
 class LolModule:
-    def __init__(self):
+    def __init__(
+        self,
+        *,
+        output_prefix: str,
+    ):
         # Metadata
-        self.init_timestamp = time.time()
+        self.output_prefix = output_prefix
 
         self.text: str = ""
         self.tokens: List[Token] = []
@@ -50,7 +54,7 @@ class LolModule:
         self.tokens = tokenize(self.text)
 
     def save_lexer_output_only(self, output_dir: str):
-        file_name: str = f"{output_dir}/{self.init_timestamp}-lexer-output-only.json"
+        file_name: str = f"{output_dir}/{self.output_prefix}-{time.time()}-lexer-output-only.json"
         with open(file_name, "w") as f:
             json.dump({"lexer-output": [x.to_dict() for x in self.tokens]}, f, indent=4)
 
@@ -65,7 +69,7 @@ class LolModule:
         self.ast = parse(stream)
 
     def save_parser_output_only(self, output_dir: str):
-        file_name: str = f"{output_dir}/{self.init_timestamp}-parser-output-only.json"
+        file_name: str = f"{output_dir}/{self.output_prefix}-{time.time()}-parser-output-only.json"
         with open(file_name, "w") as f:
             json.dump({"parser-output": [x.to_dict() for x in self.ast]}, f, indent=4)
 
@@ -78,7 +82,7 @@ class LolModule:
 
     def save_analyzer_output_only(self, output_dir: str):
         assert isinstance(self.module, LolAnalysisModule)
-        file_name: str = f"{output_dir}/{self.init_timestamp}-analyzer-output-only.json"
+        file_name: str = f"{output_dir}/{self.output_prefix}-{time.time()}-analyzer-output-only.json"
         with open(file_name, "w") as f:
             json.dump({"analyzer-output": {x: y.to_dict() for x, y in self.module.module_symbol_table.items()}}, f, indent=4)
 
@@ -94,10 +98,9 @@ class LolModule:
 
     def save_emitter_output_only(self, output_dir: str):
         assert isinstance(self.code, str) and self.output_language == "c"
-        file_name: str = f"{output_dir}/{self.init_timestamp}-emitter-output-only.c"
+        file_name: str = f"{output_dir}/{self.output_prefix}-{time.time()}-emitter-output-only.c"
         with open(file_name, "w") as f:
             f.write(self.code)
-
 
 
 def main() -> None:
@@ -108,7 +111,7 @@ def main() -> None:
         "-i", "--input", type=str, required=True, help="Input file name"
     )
     parser.add_argument(
-        "-o", "--output", type=str, default=None, help="Output directory name"
+        "-o", "--output", type=str, default=".", help="Output directory name"
     )
     args = parser.parse_args()
 
@@ -117,7 +120,8 @@ def main() -> None:
     input_file = args.input
     output_dir = args.output
 
-    module = LolModule()
+    prefix, ext = os.path.splitext(os.path.basename(input_file))
+    module = LolModule(output_prefix=prefix)
     # Assume input_file is not None because it is required
     module.read_file(input_file)
     # Make empty output dir if it doesn't exist

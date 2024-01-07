@@ -14,8 +14,9 @@ jobs:
       - name: Compile
         run: |
           cd compiler
-          python lol.py -i examples\fibonacci.lol -o results
-          python lol.py -i examples\helloworld.lol -o results
-          python lol.py -i examples\math_ops.lol -o results
-          python lol.py -i examples\nested_if.lol -o results
-          python lol.py -i examples\sum_three.lol -o results
+          for x in fibonacci helloworld math_ops nested_if sum_three
+          do
+            python lol.py -i examples/$x.lol -o results
+            gcc results/$x-*.c
+            ./a.out
+          done
