@@ -1,0 +1,21 @@
+name: Linux Compiler CI
+
+on: pull_request
+
+jobs:
+  run-linux-python3:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+          uses: actions/setup-python@v4
+          with:
+            python-version: '3.10'
+      - name: Compile
+        run: |
+          cd compiler
+          python lol.py -i examples\fibonacci.lol -o results
+          python lol.py -i examples\helloworld.lol -o results
+          python lol.py -i examples\math_ops.lol -o results
+          python lol.py -i examples\nested_if.lol -o results
+          python lol.py -i examples\sum_three.lol -o results

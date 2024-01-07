@@ -381,7 +381,7 @@ class Parser:
     @staticmethod
     def parse_if(stream: TokenStream) -> LolParserIfStatement:
         eat_token(stream, TokenType.IF)
-        if_cond = Parser.parse_expression(stream)
+        if_cond = Parser.parse_value_expression(stream)
         if_block = Parser.parse_block_body(stream)
         token = stream.get_token()
         else_block = []
@@ -428,7 +428,7 @@ class Parser:
             TokenType.CIRCUMFLEX: 800,
             # In C, this is lower than comparison ops
             TokenType.VBAR: 700,  # In C, this is lower than comparison ops
-            TokenType.COLON: 600,  # Not in C
+            # TokenType.COLON: 600,  # Not in C
             TokenType.LESSER: 500,
             TokenType.LESSER_EQUAL: 500,
             TokenType.GREATER: 500,
@@ -437,6 +437,8 @@ class Parser:
             # In C, this is lower than other comparison ops
             TokenType.NOT_EQUAL: 500,
             # In C, this is lower than other comparison ops
+            TokenType.AND: 400,
+            TokenType.OR: 300,
             # The '&&'/'and' operator is 400
             # The '||'/'or' operator is 300
             # NOTE(dchu): I remove the ability to parse the '=' and ',' as operators since this would be confusing!

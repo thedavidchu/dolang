@@ -36,7 +36,11 @@ def emit_expr(expr: LolIRExpression) -> str:
         if len(expr.operands) == 1:
             return f"{expr.op}{mangle_var_name(expr.operands[0].name)}"
         elif len(expr.operands) == 2:
-            return f"{mangle_var_name(expr.operands[0].name)} {expr.op} {mangle_var_name(expr.operands[1].name)}"
+            if expr.op in {"or", "and"}:
+                expr_op = {"or": "||", "and": "&&"}.get(expr.op)
+            else:
+                expr_op = expr.op
+            return f"{mangle_var_name(expr.operands[0].name)} {expr_op} {mangle_var_name(expr.operands[1].name)}"
         else:
             raise ValueError("only 1 or 2 operands accepted!")
     elif isinstance(expr, LolIRLiteralExpression):

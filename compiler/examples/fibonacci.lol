@@ -2,10 +2,7 @@
 module io = import("stdio.h");
 
 function fibonacci(n: i32) -> i32 {
-    if n == 0 {
-        return 1;
-    }
-    if n == 1 {
+    if n == 0 or n == 1 {
         return 1;
     }
     return fibonacci(n - 1) + fibonacci(n - 2);
