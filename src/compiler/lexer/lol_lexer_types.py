@@ -1,5 +1,5 @@
+from enum import Enum, auto, unique
 from typing import Dict, Tuple, Union, Optional
-from enum import Enum, auto, unique, Flag
 
 
 @unique

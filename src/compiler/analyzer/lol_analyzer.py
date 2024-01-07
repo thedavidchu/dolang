@@ -1,17 +1,16 @@
 from typing import Any, Dict, List, Optional, Union
 
+import compiler.parser.lol_parser as parser_types
 from compiler.parser.lol_parser import (
     # Generic
     LolParserLiteralType,
 
     # Generic Expressions
-    LolParserValueExpression,
     LolParserTypeExpression,
     LolParserExpression,
 
     LolParserModuleLevelStatement,
     LolParserFunctionLevelStatement,
-
 
     # Specific Expressions
     LolParserIdentifier,
@@ -27,9 +26,6 @@ from compiler.parser.lol_parser import (
     LolParserReturnStatement,
     LolParserIfStatement,
 )
-import compiler.parser.lol_parser as parser_types
-import compiler.lexer.lol_lexer_types as lexer_types
-
 
 ################################################################################
 ### LOL ANALYSIS INTERMEDIATE REPRESENTATION

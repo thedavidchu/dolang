@@ -6,7 +6,7 @@
 venv/
 
 # Ignore Python Caches
-compiler/results
+/results/
 __pycache__/
 
 # Ignore CMake's build directory

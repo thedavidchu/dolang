@@ -12,15 +12,16 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python
-          uses: actions/setup-python@v4
-          with:
+        uses: actions/setup-python@v4
+        with:
             python-version: '3.10'
       - name: Compile
         run: |
-          cd compiler
+          # For some reason, if we change to the compiler directory, Python complains.
+          export PYTHONPATH="${PYTHONPATH}:/home/runner/work/lolc/lolc/src/"
           for x in fibonacci helloworld math_ops nested_if sum_three
           do
-            python lol.py -i examples/$x.lol -o results
+            python src/compiler/lol.py -i examples/$x.lol -o results
             gcc results/$x-*.c
             ./a.out
           done

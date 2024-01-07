@@ -8,13 +8,12 @@ they have side-effects, we have undefined behaviour)
 
 
 from abc import ABCMeta, abstractmethod
-from enum import Enum, auto, unique
-from typing import Any, Dict, List, Set, Tuple, Optional, Union
 from dataclasses import dataclass
+from enum import Enum, auto, unique
+from typing import Any, List, Set, Tuple, Union
 
 from compiler.lexer.lol_lexer_types import Token, TokenType
 from compiler.parser.lol_parser_token_stream import TokenStream
-
 
 frozen_dataclass = dataclass(frozen=True)
 
