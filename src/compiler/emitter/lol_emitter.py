@@ -115,5 +115,4 @@ def emit_c(analysis_module: LolAnalysisModule):
 
     statements = import_statements + func_statements
     code = "\n".join(statements)
-    print(code)
     return code

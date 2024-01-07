@@ -17,12 +17,11 @@ jobs:
             python-version: '3.10'
       - name: Compile
         run: |
-          pwd
-          ls -lAF
           # For some reason, if we change to the compiler directory, Python complains.
+          export PYTHONPATH="${PYTHONPATH}:/home/runner/work/lolc/lolc/src/"
           for x in fibonacci helloworld math_ops nested_if sum_three
           do
-            python compiler/lol.py -i compiler/examples/$x.lol -o compiler/results
-            gcc compiler/results/$x-*.c
+            python src/compiler/lol.py -i examples/$x.lol -o results
+            gcc results/$x-*.c
             ./a.out
           done

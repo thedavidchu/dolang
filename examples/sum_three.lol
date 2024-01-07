@@ -7,6 +7,6 @@ function sum_three(a: i32, b: i32, c: i32) -> i32 {
 
 function main() -> i32 {
     let sum: i32 = sum_three(1, 2, 3);
-    io::printf("Sum should be 6: %d", sum);
+    io::printf("Sum should be 6: %d\n", sum);
     return 0;
 }
