@@ -1,38 +1,38 @@
-# Light Object Language
+# Light Object-Oriented Language (LOL)
 
-**Successor of "Object Zero" repo (private) for my "Light Object Language".**
+## Project Naming
 
-This library is misnamed. It is actually an attempt (number 3 or so) at creating an interpreter. My previous repos are private (and for good reason). I have previously implemented a Robinhood hash table, but it was messy and I didn't understand why it worked. This code is much better.
-
-I am building out the standard library that I will use for the interpreter/language runtime (see C project).
-I am also interested in building a transpiler (see Python project).
-I need to come up with a better architecture for this all and decide what features I want and what I don't want.
-This will allow me to write a reasonable amount of code.
-Otherwise, I risk writing way too generic code.
-
-I am also trying to come up with an appropriate name for this project.
+I am trying to come up with an appropriate name for this project.
 I like "Light Object Language" (because lol), but it's not really object-based.
-I was thinking of something short and close to the beginning of the alphabet (e.g. "Ah").
-I was musing with design objectives as well; my goals for this language are to be (1) secure, (2) usable, and (3) performant in that order (or maybe.
+Maybe "Light Open-Source Language" is better.
+I was thinking of something short and close to the beginning of the alphabet (e.g.
+"Ah").
+I was musing with design objectives as well; my goals for this language are to be 
+(1) secure, (2) usable, and (3) performant in that order (or maybe.
 This would lead to the acronym "sup", like "wassup".
-As a mature individual (the "lol" notwithstanding), I'm not sure if this would be great; it would also put my language in the middle-toward-the-end of the alphabet, i.e. the most forgettable place ever.
+As a mature individual (the "lol" notwithstanding), I'm not sure if this would be 
+great; it would also put my language in the middle-toward-the-end of the alphabet,
+i.e. the most forgettable place ever.
 
-I was also musing about why I wanted to become a systems programmer.
-The reason is that I wanted to understand everything from a low level upwards.
-Being the deeply empathetic person I am, I thought: why would I not want to treat my compiler the same way?
-And so I thought: what if you dump as much information (as the programmer) as you can onto the compiler?
+## Project Goals
 
-## Visibility
+1. Expose the internals of the transpiler to the user (if they so choose).
+2. Provide a (1) secure, (2) usable, and (3) performant language, in that order.
+3. Allow the programmer to dump as much information into the compiler as they wish.
+How much is used by the compiler is another question. (Is this a good idea?)
+4. Don't make silly features. 
 
-This repository is public not because I want my half-built code to be visible, but rather so I get unlimited Github Action minutes (not that I am close to using the limit anyways).
+## Bootstrapping
 
-## Prototyping
-
-Prototyping will be done in Python. I am faster at writing Python and its error handling is faster to hack together.
+This project is to be bootstrapped in Python. Since it targets C, I can choose any 
+language for the bootstrap. I chose Python because of its rich standard library,
+and I am faster at writing Python than C.
 
 ## Language Features
 
-Make safety and usability/intuitiveness the priority. Then, performance can be added for a little extra work (since much of the optimization will be done on a small amount of the code).
+Make safety and usability/intuitiveness the priority. Then, performance can be 
+added for a little extra work (since much of the optimization will be done on a 
+small amount of the code).
 
 - Drop in replacement for C
   - Structs are in order

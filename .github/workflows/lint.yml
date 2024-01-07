@@ -1,6 +1,10 @@
 name: Lint Code Base
 
-on: [push]
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
   run-linter:
@@ -18,12 +22,3 @@ jobs:
             --exclude /(\.github|\.git|\.venv|\.vscode)/
           src: "."
           version: "22.3.0"
-
-      - name: Run clang-format (C)
-        uses: HorstBaerbel/action-clang-format@1.5
-        # These are optional (defaults displayed)
-        with:
-          scandir: '.'
-          excludedirs: 'build,cmake,third-party'
-          extensions: 'c,h,C,H,cpp,hpp,cc,hh,c++,h++,cxx,hxx'
-          style: 'file'
