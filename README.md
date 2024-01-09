@@ -1,20 +1,23 @@
-# Light Object-Oriented Language (LOL)
+The Do Language (Do as in "doe" a deer)
+================================================================================
 
-## Project Naming
+Project Naming
+--------------------------------------------------------------------------------
 
-I am trying to come up with an appropriate name for this project.
-I like "Light Object Language" (because lol), but it's not really object-based.
-Maybe "Light Open-Source Language" is better.
-I was thinking of something short and close to the beginning of the alphabet (e.g.
-"Ah").
-I was musing with design objectives as well; my goals for this language are to be 
-(1) secure, (2) usable, and (3) performant in that order (or maybe.
-This would lead to the acronym "sup", like "wassup".
-As a mature individual (the "lol" notwithstanding), I'm not sure if this would be 
-great; it would also put my language in the middle-toward-the-end of the alphabet,
-i.e. the most forgettable place ever.
+This language is named "Do" (rhymes with "doe" as in a deer) because it is a C
+transpiler and "do" is the name for "C" in the solfege system. It's short and
+sweet. It looks like "do" as in the verb, which is perfect for an imperative
+language. And rhymes with "go", a modern language that I admire. And best of all,
+no other language is named "Do" (unlike LOL/LOLCODE)! The only problem is that
+the compiler would be named "doc". Well, if it's a transpiler, then we can call
+it "dot". Finally, there are lots of musical puns to be had.
 
-## Project Goals
+Historically, I played with the names "Object Zero" (.oz) and
+"Light {Open-source,Object{ive,-oriented,}} Language". The former sounds silly;
+the latter's acronym (.lol) is already used for the esoteric language, LOLCODE.
+
+Project Goals
+--------------------------------------------------------------------------------
 
 1. Expose the internals of the transpiler to the user (if they so choose).
 2. Provide a (1) secure, (2) usable, and (3) performant language, in that order.
@@ -22,13 +25,15 @@ i.e. the most forgettable place ever.
 How much is used by the compiler is another question. (Is this a good idea?)
 4. Don't make silly features. 
 
-## Bootstrapping
+Bootstrapping
+--------------------------------------------------------------------------------
 
 This project is to be bootstrapped in Python. Since it targets C, I can choose any 
 language for the bootstrap. I chose Python because of its rich standard library,
 and I am faster at writing Python than C.
 
-## Language Features
+Language Features
+--------------------------------------------------------------------------------
 
 Make safety and usability/intuitiveness the priority. Then, performance can be 
 added for a little extra work (since much of the optimization will be done on a 
