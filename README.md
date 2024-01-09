@@ -1,4 +1,4 @@
-The Do Language (Do as in "doe" a deer)
+The Do Language
 ================================================================================
 
 Project Naming
