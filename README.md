@@ -4,11 +4,11 @@ The Do Language
 Project Naming
 --------------------------------------------------------------------------------
 
-This language is named "Do" (rhymes with "doe" as in a deer) because it is a C
+This language is named "Do" (as in "doe" as in a deer) because it is a C
 transpiler and "do" is the name for "C" in the solfege system. It's short and
 sweet. It looks like "do" as in the verb, which is perfect for an imperative
-language. And rhymes with "go", a modern language that I admire. And best of all,
-no other language is named "Do" (unlike LOL/LOLCODE)! The only problem is that
+language. And rhymes with "go", a modern language that I admire (for its simplicity and resistance to feature creep). And best of all,
+no other language is named "Do" as far as I know (unlike LOL/LOLCODE)! The only problem is that
 the compiler would be named "doc". Well, if it's a transpiler, then we can call
 it "dot". Finally, there are lots of musical puns to be had.
 
@@ -31,6 +31,8 @@ Bootstrapping
 This project is to be bootstrapped in Python. Since it targets C, I can choose any 
 language for the bootstrap. I chose Python because of its rich standard library,
 and I am faster at writing Python than C.
+
+For performance reasons, I have considered writing it in Rust. However, I am too far gone in Python (although I could do layer by layer).
 
 Language Features
 --------------------------------------------------------------------------------
