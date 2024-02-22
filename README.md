@@ -1,3 +1,6 @@
+[![Linter](https://github.com/thedavidchu/dolang/workflows/Lint/badge.svg)](https://github.com/thedavidchu/dolang/actions)
+[![Tester](https://github.com/thedavidchu/dolang/workflows/Test/badge.svg)](https://github.com/thedavidchu/dolang/actions)
+
 The Do Language
 ================================================================================
 

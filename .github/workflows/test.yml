@@ -1,4 +1,4 @@
-name: Linux Compiler CI
+name: Test
 
 on:
   push:
