@@ -4,7 +4,7 @@ The Do Language
 Project Naming
 --------------------------------------------------------------------------------
 
-This language is named "Do" (as in "doe" as in a deer) because it is a C
+This language is named "Do" (as in "doe" a deer) because it is a C
 transpiler and "do" is the name for "C" in the solfege system. It's short and
 sweet. It looks like "do" as in the verb, which is perfect for an imperative
 language. And rhymes with "go", a modern language that I admire (for its simplicity and resistance to feature creep). And best of all,
