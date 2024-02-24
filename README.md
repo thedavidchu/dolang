@@ -77,3 +77,6 @@ small amount of the code).
   - Generics with templates. I'm going to use Python/Go's syntax
 - Inspired by Java
   - The name "interface" instead of Rust's "trait" makes more sense to me... I may just be missing the full idea of Rust traits.
+- Inspired by Mur&phi;
+  - Specificy ranges of numbers
+  - I considered taking the operators (`=` for equality, `:=` for setting, etc) but I found it confusing even though I think it's logical from a non-C-family person)
