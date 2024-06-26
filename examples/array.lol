@@ -1,5 +1,5 @@
 /* Demonstrate array syntax */
-module io = import("stdio.h")
+module io = import("stdio.h");
 
 function main() -> i32 {
     let array: Array[i32] = [0, 1, 2, 3];
