@@ -7,15 +7,24 @@ TODO
 1. Minimal Viable Product
 2. Correct indentation
 """
+
 from typing import List
 
 from compiler.analyzer.lol_analyzer import (
-    LolAnalysisModule, LolAnalysisFunction, LolAnalysisBuiltinType,
-    LolIRReturnStatement, LolIRFunctionCallStatement, LolIRDefinitionStatement,
-    LolIRSetStatement, LolIRIfStatement,
-    LolIRExpression, LolIRStatement,
-    LolIRFunctionCallExpression, LolIROperatorExpression,
-    LolIRLiteralExpression, LolAnalysisVariable
+    LolAnalysisModule,
+    LolAnalysisFunction,
+    LolAnalysisBuiltinType,
+    LolIRReturnStatement,
+    LolIRFunctionCallStatement,
+    LolIRDefinitionStatement,
+    LolIRSetStatement,
+    LolIRIfStatement,
+    LolIRExpression,
+    LolIRStatement,
+    LolIRFunctionCallExpression,
+    LolIROperatorExpression,
+    LolIRLiteralExpression,
+    LolAnalysisVariable,
 )
 
 
@@ -45,7 +54,7 @@ def emit_expr(expr: LolIRExpression) -> str:
     elif isinstance(expr, LolIRLiteralExpression):
         literal = expr.literal
         if isinstance(literal, str):
-            return f"\"{literal}\""
+            return f'"{literal}"'
         elif isinstance(literal, int):
             return f"{expr.literal}"
     elif isinstance(expr, LolAnalysisVariable):
@@ -53,9 +62,7 @@ def emit_expr(expr: LolIRExpression) -> str:
 
 
 def emit_statements(
-    ir_statements: List[LolIRStatement],
-    *,
-    indentation: str = "    "
+    ir_statements: List[LolIRStatement], *, indentation: str = "    "
 ) -> List[str]:
     statements: List[str] = []
     for stmt in ir_statements:
@@ -63,7 +70,9 @@ def emit_statements(
             var_name = mangle_var_name(stmt.name)
             var_type = lol_to_c_types[stmt.type.name]
             var_value = emit_expr(stmt.value)
-            statements.append(indentation + f"{var_type} {var_name} = {var_value};")
+            statements.append(
+                indentation + f"{var_type} {var_name} = {var_value};"
+            )
         elif isinstance(stmt, LolIRSetStatement):
             var_name = mangle_var_name(stmt.name)
             var_value = emit_expr(stmt.value)
@@ -75,14 +84,25 @@ def emit_statements(
             name = mangle_var_name(stmt.ret_var.name)
             statements.append(indentation + f"return {name};")
         elif isinstance(stmt, LolIRIfStatement):
-            statements.append(indentation + f"if ({mangle_var_name(stmt.if_cond.name)}) {{")
-            statements.extend(emit_statements(stmt.if_body, indentation=indentation + "    "))
+            statements.append(
+                indentation + f"if ({mangle_var_name(stmt.if_cond.name)}) {{"
+            )
+            statements.extend(
+                emit_statements(stmt.if_body, indentation=indentation + "    ")
+            )
             statements.append(indentation + "} else {")
-            statements.extend(emit_statements(stmt.else_body, indentation=indentation + "    "))
+            statements.extend(
+                emit_statements(
+                    stmt.else_body, indentation=indentation + "    "
+                )
+            )
             statements.append(indentation + "}")
         else:
-            raise ValueError("unrecognized statement type (maybe if statement?)")
+            raise ValueError(
+                "unrecognized statement type (maybe if statement?)"
+            )
     return statements
+
 
 def emit_function(func: LolAnalysisFunction):
     prototype = (
