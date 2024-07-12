@@ -43,10 +43,14 @@ Future tokens to accept in the future are:
 6. Add multiline strings ('''multiline string''')
 7. Add multiline comments
 """
+
 from typing import Dict, List
 
 from compiler.lexer.lol_lexer_types import (
-    TokenType, Token, CharacterStream, SYMBOL_CONTROL
+    TokenType,
+    Token,
+    CharacterStream,
+    SYMBOL_CONTROL,
 )
 
 
@@ -58,7 +62,12 @@ class Lexer:
     @staticmethod
     def _get_identifier_token_type(identifier: str):
         if identifier in {
-            "while", "for", "namespace", "break", "continue", "not"
+            "while",
+            "for",
+            "namespace",
+            "break",
+            "continue",
+            "not",
         }:
             raise NotImplementedError(
                 f"lexer supports keyword '{identifier}'; no further stage does"
@@ -100,7 +109,7 @@ class Lexer:
             identifier,
             token_type,
             start_position=pos,
-            full_text=stream.get_text()
+            full_text=stream.get_text(),
         )
 
     @staticmethod
@@ -124,7 +133,12 @@ class Lexer:
                 c = stream.get_char()
             else:
                 raise NotImplementedError
-        return Token("".join(token), current_token_type, start_position=pos, full_text=stream.get_text())
+        return Token(
+            "".join(token),
+            current_token_type,
+            start_position=pos,
+            full_text=stream.get_text(),
+        )
 
     @staticmethod
     def lex_string(stream: CharacterStream):
@@ -143,7 +157,12 @@ class Lexer:
             stream.next_char()
         # Add trailing quote
         token.append(c)
-        return Token("".join(token), TokenType.STRING, start_position=pos, full_text=stream.get_text())
+        return Token(
+            "".join(token),
+            TokenType.STRING,
+            start_position=pos,
+            full_text=stream.get_text(),
+        )
 
     @staticmethod
     def lex_comment(stream: CharacterStream):
@@ -167,7 +186,12 @@ class Lexer:
                 break
             elif c is None:
                 raise ValueError("expected terminal '*/' in the comment")
-        return Token("".join(token), TokenType.COMMENT, start_position=pos, full_text=stream.get_text())
+        return Token(
+            "".join(token),
+            TokenType.COMMENT,
+            start_position=pos,
+            full_text=stream.get_text(),
+        )
 
     @staticmethod
     def _is_punctuation_implemented(token_type: TokenType) -> bool:
@@ -178,9 +202,8 @@ class Lexer:
         if (
             isinstance(token_type.value, tuple)
             and len(token_type.value) >= 2
-            and token_type.value[1] in {
-                TokenType.NOT_YET_IMPLEMENTED, TokenType.WONT_BE_IMPLEMENTED
-            }
+            and token_type.value[1]
+            in {TokenType.NOT_YET_IMPLEMENTED, TokenType.WONT_BE_IMPLEMENTED}
         ):
             raise NotImplementedError(
                 f"token_type {token_type.n} not implemented"
@@ -213,14 +236,18 @@ class Lexer:
                 token_type = control[None]
                 break
             else:
-                raise ValueError(f"cannot append {c} to {''.join(lexeme)} -- potential bug, just separate the symbols")
+                raise ValueError(
+                    f"cannot append {c} to {''.join(lexeme)} -- potential bug, just separate the symbols"
+                )
 
         if not Lexer._is_punctuation_implemented(token_type):
             raise NotImplementedError
 
         return Token(
-            "".join(lexeme), token_type,
-            start_position=start_pos, full_text=stream.get_text()
+            "".join(lexeme),
+            token_type,
+            start_position=start_pos,
+            full_text=stream.get_text(),
         )
 
     def tokenize(self):

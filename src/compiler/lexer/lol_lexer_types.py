@@ -73,7 +73,6 @@ class TokenType(Enum):
     # AT_EQUAL = WONT_BE_IMPLEMENTED          # @=
     # BSLASH = auto(), WONT_BE_IMPLEMENTED    # \
 
-
     # Multicharacter conglomerates
     IDENTIFIER = auto()  # [A-Za-z_][A-Za-z_0-9]
     STRING = auto()  # "[^"\n]*"
@@ -186,16 +185,16 @@ class Token:
     def __repr__(self):
         """Pretty print the token. This is NOT for serialization, because the
         token type should be an integer id so that it's easier to parse."""
-        return (
-            f"Token(lexeme={repr(self.lexeme)}, token_type={self.get_token_type_as_str()}, start_idx={self.start_position}, full_text?={isinstance(self.full_text, str)})"
-        )
+        return f"Token(lexeme={repr(self.lexeme)}, token_type={self.get_token_type_as_str()}, start_idx={self.start_position}, full_text?={isinstance(self.full_text, str)})"
 
     def get_line_and_column_numbers(self) -> Optional[Tuple[int, int]]:
         if self.start_position is None or self.full_text is None:
             return None
-        line_no = self.full_text[:self.start_position].count("\n") + 1
+        line_no = self.full_text[: self.start_position].count("\n") + 1
         lines = self.full_text.split("\n")
-        col_no = self.start_position - sum(len(line) for line in lines[:line_no])
+        col_no = self.start_position - sum(
+            len(line) for line in lines[:line_no]
+        )
         return line_no, col_no
 
     def to_dict(self) -> Dict[str, Union[TokenType, int, str]]:
@@ -220,7 +219,7 @@ class CharacterStream:
         self.column_number = 1
 
     def get_text_after(self):
-        return self.text[self.idx:]
+        return self.text[self.idx :]
 
     def get_text(self) -> str:
         return self.text
