@@ -20,7 +20,7 @@ def lol_compile(input_file: str, output_dir: str = "results"):
 
 
 def main():
-    for x in os.listdir('examples'):
+    for x in os.listdir("examples"):
         file_name = os.path.join("examples", x)
         if os.path.isfile(file_name):
             lol_compile(file_name)
