@@ -6,7 +6,6 @@
 they have side-effects, we have undefined behaviour)
 """
 
-
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
 from enum import Enum, auto, unique
@@ -68,10 +67,7 @@ class LolParserIdentifier(LolParserGeneric):
     name: str
 
     def to_dict(self):
-        return dict(
-            metatype=self.__class__.__name__,
-            name=self.name
-        )
+        return dict(metatype=self.__class__.__name__, name=self.name)
 
 
 @frozen_dataclass
@@ -147,7 +143,9 @@ class LolParserVariableDefinition(LolParserGeneric):
 ################################################################################
 LolParserModuleLevelStatement = Union[Any]
 LolParserFunctionLevelStatement = Union[Any]
-LolParserStatement = Union[LolParserModuleLevelStatement, LolParserFunctionLevelStatement]
+LolParserStatement = Union[
+    LolParserModuleLevelStatement, LolParserFunctionLevelStatement
+]
 
 
 @frozen_dataclass
@@ -291,7 +289,9 @@ class Parser:
         return LolParserLiteral(lit_type, lit_value)
 
     @staticmethod
-    def parse_parenthetic_expression(stream: TokenStream) -> LolParserExpression:
+    def parse_parenthetic_expression(
+        stream: TokenStream,
+    ) -> LolParserExpression:
         eat_token(stream, TokenType.LPAREN)  # Eat '('
         ret = Parser.parse_expression(stream)
         eat_token(stream, TokenType.RPAREN)  # Eat ')'
@@ -332,7 +332,9 @@ class Parser:
             next_separator_token = stream.get_token()
             if next_separator_token.is_type(TokenType.COLON_COLON):
                 eat_token(stream, TokenType.COLON_COLON)
-                identifier_name = eat_token(stream, TokenType.IDENTIFIER).as_str()
+                identifier_name = eat_token(
+                    stream, TokenType.IDENTIFIER
+                ).as_str()
                 namespaces.append(identifier_name)
             else:
                 break
@@ -346,7 +348,7 @@ class Parser:
         LolParserIdentifier,
         LolParserFunctionCall,
         LolParserOperatorExpression,
-        LolParserIdentifier
+        LolParserIdentifier,
     ]:
         """
         Parse both variables and function calls.
@@ -368,7 +370,7 @@ class Parser:
         if token.is_type(TokenType.COLON_COLON):
             identifier_leaf = Parser.parse_identifier_with_namespace_separator(
                 stream, identifier_leaf
-                )
+            )
         token = stream.get_token()
         if token.is_type(TokenType.LPAREN):
             return Parser.parse_func_call_args(stream, identifier_leaf)
@@ -450,7 +452,7 @@ class Parser:
     def parse_binop_rhs(
         stream: TokenStream,
         min_expression_precedence: int,
-        lhs: LolParserExpression
+        lhs: LolParserExpression,
     ) -> LolParserExpression:
         """
         Inputs
@@ -479,11 +481,15 @@ class Parser:
             token = stream.get_token()
             next_prec = Parser.get_binop_precedence(token)
             if binop_token_precedence < next_prec:
-                rhs = Parser.parse_binop_rhs(stream, binop_token_precedence + 1, rhs)
+                rhs = Parser.parse_binop_rhs(
+                    stream, binop_token_precedence + 1, rhs
+                )
                 assert rhs
 
             lhs = LolParserOperatorExpression(
-                binop_token.lexeme, LolParserOperatorType.BINARY_INFIX, [lhs, rhs]
+                binop_token.lexeme,
+                LolParserOperatorType.BINARY_INFIX,
+                [lhs, rhs],
             )
 
     @staticmethod
@@ -508,19 +514,25 @@ class Parser:
     ### Functions
     ############################################################################
     @staticmethod
-    def parse_parameter_definition(stream: TokenStream) -> LolParserParameterDefinition:
+    def parse_parameter_definition(
+        stream: TokenStream,
+    ) -> LolParserParameterDefinition:
         start_pos = stream.get_pos()
-        identifier = LolParserIdentifier(eat_token(stream, TokenType.IDENTIFIER).as_str())
+        identifier = LolParserIdentifier(
+            eat_token(stream, TokenType.IDENTIFIER).as_str()
+        )
         eat_token(stream, TokenType.COLON)
         param_type = Parser.parse_type_expression(stream)
         end_pos = stream.get_pos()
         return LolParserParameterDefinition(identifier, param_type)
 
     @staticmethod
-    def parse_function_prototype(stream: TokenStream) -> Tuple[
+    def parse_function_prototype(
+        stream: TokenStream,
+    ) -> Tuple[
         LolParserIdentifier,
         List[LolParserParameterDefinition],
-        LolParserTypeExpression
+        LolParserTypeExpression,
     ]:
         _function = eat_token(stream, TokenType.FUNCTION)
         func_identifier = LolParserIdentifier(
@@ -550,7 +562,9 @@ class Parser:
         return func_identifier, params, ret_type
 
     @staticmethod
-    def parse_function_level_statement(stream: TokenStream) -> LolParserFunctionLevelStatement:
+    def parse_function_level_statement(
+        stream: TokenStream,
+    ) -> LolParserFunctionLevelStatement:
         token = stream.get_token()
         if token.is_type(TokenType.LET):  # Local variable
             return Parser.parse_variable_definition(stream)
@@ -568,7 +582,9 @@ class Parser:
             return result
 
     @staticmethod
-    def parse_block_body(stream: TokenStream) -> List[LolParserFunctionLevelStatement]:
+    def parse_block_body(
+        stream: TokenStream,
+    ) -> List[LolParserFunctionLevelStatement]:
         func_body: List[LolParserFunctionLevelStatement] = []
         eat_token(stream, TokenType.LBRACE)
         while True:
@@ -582,10 +598,14 @@ class Parser:
     @staticmethod
     def parse_function_definition(stream: TokenStream):
         start_pos = stream.get_pos()
-        func_identifier, params, ret_type = Parser.parse_function_prototype(stream)
+        func_identifier, params, ret_type = Parser.parse_function_prototype(
+            stream
+        )
         func_body = Parser.parse_block_body(stream)
         end_pos = stream.get_pos()
-        return LolParserFunctionDefinition(func_identifier, params, ret_type, func_body)
+        return LolParserFunctionDefinition(
+            func_identifier, params, ret_type, func_body
+        )
 
     ############################################################################
     ### VARIABLE DEFINITION
@@ -596,7 +616,9 @@ class Parser:
     ):
         start_pos = stream.get_pos()
         _let = eat_token(stream, TokenType.LET)
-        identifier = LolParserIdentifier(eat_token(stream, TokenType.IDENTIFIER).as_str())
+        identifier = LolParserIdentifier(
+            eat_token(stream, TokenType.IDENTIFIER).as_str()
+        )
         eat_token(stream, TokenType.COLON)
         data_type = Parser.parse_type_expression(stream)
         eat_token(stream, TokenType.EQUAL)
@@ -609,7 +631,9 @@ class Parser:
     ### IMPORT
     ############################################################################
     @staticmethod
-    def parse_import_module(stream: TokenStream) -> LolParserModuleLevelStatement:
+    def parse_import_module(
+        stream: TokenStream,
+    ) -> LolParserModuleLevelStatement:
         """
         Parse import statement outside of a function.
 
@@ -630,11 +654,15 @@ class Parser:
         end_pos = stream.get_pos()
         r = LolParserImportStatement(
             LolParserIdentifier(alias_name.as_str()),
-            LolParserLiteral(LolParserLiteralType.STRING, library_name.as_str())
+            LolParserLiteral(
+                LolParserLiteralType.STRING, library_name.as_str()
+            ),
         )
         return r
 
-    def parse_module_statements(self, stream: TokenStream) -> List[LolParserStatement]:
+    def parse_module_statements(
+        self, stream: TokenStream
+    ) -> List[LolParserStatement]:
         result = []
         token = stream.get_token()
         while token is not None:
