@@ -1,6 +1,6 @@
 import os
 
-from compiler.lol import LolModule
+from compiler.main import LolModule
 
 
 def lol_compile(input_file: str, output_dir: str = "results"):
