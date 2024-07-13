@@ -1,3 +1,4 @@
+import sys
 from subprocess import run
 
 
@@ -9,3 +10,7 @@ def get_top_level_path() -> str:
         text=True,
     ).stdout.strip()
     return top_level_path
+
+
+def add_compiler_to_sys_path():
+    sys.path.append(f"{get_top_level_path()}/src")

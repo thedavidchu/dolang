@@ -1,9 +1,7 @@
 from pathlib import Path
-from common import get_top_level_path
+from common import add_compiler_to_sys_path
 
-import sys
-
-sys.path.append(f"{get_top_level_path()}/src")
+add_compiler_to_sys_path()
 
 from compiler.error import LolError
 

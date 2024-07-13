@@ -1,5 +1,7 @@
 import os
+from common import add_compiler_to_sys_path
 
+add_compiler_to_sys_path()
 from compiler.main import LolModule
 
 
