@@ -13,38 +13,69 @@ class LolError:
             input_path, start_position, end_position, message
         )
 
+        self.input_path = input_path
+        self.start_position = start_position
+        self.end_position = end_position
+        self.message = message
+
     def __str__(self) -> str:
         return self.error_string
 
     def __repr__(self) -> str:
         return self.error_string
 
+    def get_text_of_interest(self) -> str:
+        """
+        @brief  This function returns the text that we intended to highlight.
+
+        @note   This intention of this function is for debugging.
+        """
+        with self.input_path.open() as f:
+            text = f.read()
+
+        return text[self.start_position : self.end_position]
+
+    @staticmethod
+    def get_position(text: str, lineno: int, colno: int) -> tuple[int, int]:
+        # We want to take the first 'lineno' lines (i.e. we want a list
+        # of length 'lineno' lines).
+        lines = text.splitlines()[: lineno + 1]
+        assert len(lines) == lineno
+        # Similarly, we want the line of interest (i.e. the last line)
+        # to be a string of 'colno' characters.
+        lines[-1] = lines[-1][: colno + 1]
+        assert len(lines[-1]) == colno
+        return len("\n".join(lines))
+
     @staticmethod
     def get_line_and_column(text: str, position: int) -> tuple[int, int]:
         """
+        @note   I index from zero.
         Source: https://stackoverflow.com/questions/24495713/python-get-the-line-and-column-number-of-string-index
         """
-        # NOTE  We start counting on line 1, so we add 1.
         # NOTE  A new line character ends the line, so we do not count the
         #       character itself in the count. I do not believe this
         #       implements this property.
         #       i.e. "Hello, World!\n"
         #            "Good-bye, World!\n"
         if not len(text):
-            return 1, 1
-        sp = text[: position + 1].splitlines(keepends=True)
-        return len(sp), len(sp[-1])
+            return 0, 0
+        sp = text[:position].splitlines()
+        lineno, colno = len(sp) - 1, len(sp[-1])
+        return lineno, colno
 
     @staticmethod
     def create_single_line_error_string(
         input_text: str, lineno: int, start_col: int, end_col: int, message: str
     ) -> str:
+        """Create an error string for an error that spans a single line."""
         text_lines: list[str] = input_text.splitlines()
+        user_line = lineno + 1
         return (
             f"Error: {message}\n"
-            f"> {lineno} | {text_lines[lineno-1]}\n"
+            f"> {user_line} | {text_lines[lineno]}\n"
             # NOTE  I just guessed for the number of spaces and '^'
-            f"  {' ' * len(str(lineno))} | {' ' * (start_col-1)}{'^' * (end_col-start_col)}\n"
+            f"> {' ' * len(str(user_line))} | {' ' * (start_col)}{'^' * (end_col-start_col)}\n"
         )
 
     @staticmethod
