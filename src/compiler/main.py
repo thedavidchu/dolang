@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 from compiler.analyzer.lol_analyzer import analyze, LolAnalysisModule
 from compiler.emitter.lol_emitter import emit_c
 from compiler.lexer.lol_lexer import tokenize
-from compiler.lexer.lol_lexer_types import Token
+from compiler.lexer.lol_lexer_types import LolToken
 from compiler.parser.lol_parser import parse, LolParserModuleLevelStatement
 from compiler.parser.lol_parser_token_stream import TokenStream
 
@@ -18,7 +18,9 @@ class LolSymbol:
         self.definition: Any = None
 
     def to_dict(self) -> Dict[str, Any]:
-        return {"type": self.type, }
+        return {
+            "type": self.type,
+        }
 
 
 class LolModule:
@@ -35,7 +37,7 @@ class LolModule:
         self.output_prefix = prefix
 
         self.text: str = ""
-        self.tokens: List[Token] = []
+        self.tokens: List[LolToken] = []
         self.ast: List[LolParserModuleLevelStatement] = []
         self.module: Optional[LolAnalysisModule] = None
         self.code: Optional[str] = None
@@ -61,9 +63,15 @@ class LolModule:
         self.tokens = tokenize(self.text)
 
     def save_lexer_output_only(self):
-        file_name: str = f"{self.output_dir}/{self.output_prefix}-{time.time()}-lexer-output-only.json"
+        file_name: str = (
+            f"{self.output_dir}/{self.output_prefix}-{time.time()}-lexer-output-only.json"
+        )
         with open(file_name, "w") as f:
-            json.dump({"lexer-output": [x.to_dict() for x in self.tokens]}, f, indent=4)
+            json.dump(
+                {"lexer-output": [x.to_dict() for x in self.tokens]},
+                f,
+                indent=4,
+            )
 
     ############################################################################
     ### PARSER
@@ -76,9 +84,13 @@ class LolModule:
         self.ast = parse(stream)
 
     def save_parser_output_only(self):
-        file_name: str = f"{self.output_dir}/{self.output_prefix}-{time.time()}-parser-output-only.json"
+        file_name: str = (
+            f"{self.output_dir}/{self.output_prefix}-{time.time()}-parser-output-only.json"
+        )
         with open(file_name, "w") as f:
-            json.dump({"parser-output": [x.to_dict() for x in self.ast]}, f, indent=4)
+            json.dump(
+                {"parser-output": [x.to_dict() for x in self.ast]}, f, indent=4
+            )
 
     ############################################################################
     ### ANALYZER
@@ -89,9 +101,20 @@ class LolModule:
 
     def save_analyzer_output_only(self):
         assert isinstance(self.module, LolAnalysisModule)
-        file_name: str = f"{self.output_dir}/{self.output_prefix}-{time.time()}-analyzer-output-only.json"
+        file_name: str = (
+            f"{self.output_dir}/{self.output_prefix}-{time.time()}-analyzer-output-only.json"
+        )
         with open(file_name, "w") as f:
-            json.dump({"analyzer-output": {x: y.to_dict() for x, y in self.module.module_symbol_table.items()}}, f, indent=4)
+            json.dump(
+                {
+                    "analyzer-output": {
+                        x: y.to_dict()
+                        for x, y in self.module.module_symbol_table.items()
+                    }
+                },
+                f,
+                indent=4,
+            )
 
     ############################################################################
     ### EMITTER
@@ -105,7 +128,9 @@ class LolModule:
 
     def save_emitter_output_only(self):
         assert isinstance(self.code, str) and self.output_language == "c"
-        file_name: str = f"{self.output_dir}/{self.output_prefix}-{time.time()}-emitter-output-only.c"
+        file_name: str = (
+            f"{self.output_dir}/{self.output_prefix}-{time.time()}-emitter-output-only.c"
+        )
         with open(file_name, "w") as f:
             f.write(self.code)
 

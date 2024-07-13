@@ -47,8 +47,8 @@ Future tokens to accept in the future are:
 from typing import Dict, List
 
 from compiler.lexer.lol_lexer_types import (
-    TokenType,
-    Token,
+    LolTokenType,
+    LolToken,
     CharacterStream,
     SYMBOL_CONTROL,
 )
@@ -72,24 +72,24 @@ class Lexer:
             raise NotImplementedError(
                 f"lexer supports keyword '{identifier}'; no further stage does"
             )
-        key_words: Dict[str, TokenType] = {
-            "if": TokenType.IF,
-            "else": TokenType.ELSE,
-            "let": TokenType.LET,
-            "while": TokenType.WHILE,
-            "for": TokenType.FOR,
-            "function": TokenType.FUNCTION,
-            "return": TokenType.RETURN,
-            "namespace": TokenType.NAMESPACE,
-            "module": TokenType.MODULE,
-            "import": TokenType.IMPORT,
-            "break": TokenType.BREAK,
-            "continue": TokenType.CONTINUE,
-            "and": TokenType.AND,
-            "or": TokenType.OR,
-            "not": TokenType.NOT,
+        key_words: Dict[str, LolTokenType] = {
+            "if": LolTokenType.IF,
+            "else": LolTokenType.ELSE,
+            "let": LolTokenType.LET,
+            "while": LolTokenType.WHILE,
+            "for": LolTokenType.FOR,
+            "function": LolTokenType.FUNCTION,
+            "return": LolTokenType.RETURN,
+            "namespace": LolTokenType.NAMESPACE,
+            "module": LolTokenType.MODULE,
+            "import": LolTokenType.IMPORT,
+            "break": LolTokenType.BREAK,
+            "continue": LolTokenType.CONTINUE,
+            "and": LolTokenType.AND,
+            "or": LolTokenType.OR,
+            "not": LolTokenType.NOT,
         }
-        token_type = key_words.get(identifier, TokenType.IDENTIFIER)
+        token_type = key_words.get(identifier, LolTokenType.IDENTIFIER)
         return token_type
 
     @staticmethod
@@ -105,7 +105,7 @@ class Lexer:
 
         identifier = "".join(token)
         token_type = Lexer._get_identifier_token_type(identifier)
-        return Token(
+        return LolToken(
             identifier,
             token_type,
             start_position=pos,
@@ -116,7 +116,7 @@ class Lexer:
     def lex_number(stream: CharacterStream):
         # NOTE(dchu): for now, we assume that the number is a base-10 integer.
         c, pos = stream.get_char(), stream.get_pos()
-        current_token_type = TokenType.INTEGER
+        current_token_type = LolTokenType.INTEGER
         # Concatentation to a list is more efficient than to a string, since
         # strings are immutable.
         token = []
@@ -125,15 +125,15 @@ class Lexer:
                 token.append(c)
                 stream.next_char()
                 c = stream.get_char()
-            elif c == "." and current_token_type == TokenType.INTEGER:
+            elif c == "." and current_token_type == LolTokenType.INTEGER:
                 raise NotImplementedError("floats not supported yet!")
-                current_token_type = TokenType.FLOAT
+                current_token_type = LolTokenType.FLOAT
                 token.append(c)
                 stream.next_char()
                 c = stream.get_char()
             else:
                 raise NotImplementedError
-        return Token(
+        return LolToken(
             "".join(token),
             current_token_type,
             start_position=pos,
@@ -157,9 +157,9 @@ class Lexer:
             stream.next_char()
         # Add trailing quote
         token.append(c)
-        return Token(
+        return LolToken(
             "".join(token),
-            TokenType.STRING,
+            LolTokenType.STRING,
             start_position=pos,
             full_text=stream.get_text(),
         )
@@ -186,15 +186,15 @@ class Lexer:
                 break
             elif c is None:
                 raise ValueError("expected terminal '*/' in the comment")
-        return Token(
+        return LolToken(
             "".join(token),
-            TokenType.COMMENT,
+            LolTokenType.COMMENT,
             start_position=pos,
             full_text=stream.get_text(),
         )
 
     @staticmethod
-    def _is_punctuation_implemented(token_type: TokenType) -> bool:
+    def _is_punctuation_implemented(token_type: LolTokenType) -> bool:
         # TODO(dchu): This is a hack! I should just maintain a list of
         #  unimplemented punctuation token types. The reason I do this is
         #  because it is very clear when inspecting the TokenType definition to
@@ -203,7 +203,10 @@ class Lexer:
             isinstance(token_type.value, tuple)
             and len(token_type.value) >= 2
             and token_type.value[1]
-            in {TokenType.NOT_YET_IMPLEMENTED, TokenType.WONT_BE_IMPLEMENTED}
+            in {
+                LolTokenType.NOT_YET_IMPLEMENTED,
+                LolTokenType.WONT_BE_IMPLEMENTED,
+            }
         ):
             raise NotImplementedError(
                 f"token_type {token_type.n} not implemented"
@@ -219,13 +222,13 @@ class Lexer:
         while True:
             c = stream.get_char()
             if c is None:
-                if isinstance(control, TokenType):
+                if isinstance(control, LolTokenType):
                     token_type = control
                     break
                 elif None in control:
                     token_type = control[None]
                     break
-            if isinstance(control, TokenType):
+            if isinstance(control, LolTokenType):
                 token_type = control
                 break
             elif c in control:
@@ -243,7 +246,7 @@ class Lexer:
         if not Lexer._is_punctuation_implemented(token_type):
             raise NotImplementedError
 
-        return Token(
+        return LolToken(
             "".join(lexeme),
             token_type,
             start_position=start_pos,
@@ -281,7 +284,7 @@ class Lexer:
                 raise ValueError(f"character '{c}' not supported!")
 
 
-def tokenize(text: str) -> List[Token]:
+def tokenize(text: str) -> List[LolToken]:
     t = Lexer(text)
     t.tokenize()
     return t.tokens

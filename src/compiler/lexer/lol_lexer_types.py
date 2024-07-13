@@ -3,7 +3,7 @@ from typing import Dict, Tuple, Union, Optional
 
 
 @unique
-class TokenType(Enum):
+class LolTokenType(Enum):
     # Just for error checking!
     IMPLEMENTED = auto()
     NOT_YET_IMPLEMENTED = auto()
@@ -98,68 +98,68 @@ class TokenType(Enum):
     NOT = auto()
 
 
-SYMBOL_CONTROL: Dict[Optional[str], Union[Dict, TokenType]] = {
-    "(": {None: TokenType.LPAREN},
-    ")": {None: TokenType.RPAREN},
-    "[": {None: TokenType.LSQB},
-    "]": {None: TokenType.RSQB},
-    "{": {None: TokenType.LBRACE},
-    "}": {None: TokenType.RBRACE},
-    ",": {None: TokenType.COMMA},
-    ".": {None: TokenType.DOT},
-    ";": {None: TokenType.SEMICOLON},
-    "?": {None: TokenType.QUESTION},
-    "|": {None: TokenType.QUESTION},
-    "&": {None: TokenType.AMPERSAND},
-    "^": {None: TokenType.CIRCUMFLEX},
-    "@": {None: TokenType.AT},
+SYMBOL_CONTROL: Dict[Optional[str], Union[Dict, LolTokenType]] = {
+    "(": {None: LolTokenType.LPAREN},
+    ")": {None: LolTokenType.RPAREN},
+    "[": {None: LolTokenType.LSQB},
+    "]": {None: LolTokenType.RSQB},
+    "{": {None: LolTokenType.LBRACE},
+    "}": {None: LolTokenType.RBRACE},
+    ",": {None: LolTokenType.COMMA},
+    ".": {None: LolTokenType.DOT},
+    ";": {None: LolTokenType.SEMICOLON},
+    "?": {None: LolTokenType.QUESTION},
+    "|": {None: LolTokenType.QUESTION},
+    "&": {None: LolTokenType.AMPERSAND},
+    "^": {None: LolTokenType.CIRCUMFLEX},
+    "@": {None: LolTokenType.AT},
     ":": {
-        ":": TokenType.COLON_COLON,
-        None: TokenType.COLON,
+        ":": LolTokenType.COLON_COLON,
+        None: LolTokenType.COLON,
     },
     "=": {
-        "=": TokenType.EQUAL_EQUAL,
-        None: TokenType.EQUAL,
+        "=": LolTokenType.EQUAL_EQUAL,
+        None: LolTokenType.EQUAL,
     },
     ">": {
-        ">": TokenType.RSHIFT,
-        "=": TokenType.GREATER_EQUAL,
-        None: TokenType.GREATER,
+        ">": LolTokenType.RSHIFT,
+        "=": LolTokenType.GREATER_EQUAL,
+        None: LolTokenType.GREATER,
     },
     "<": {
-        "<": TokenType.LSHIFT,
-        "=": TokenType.LESSER_EQUAL,
-        None: TokenType.LESSER,
+        "<": LolTokenType.LSHIFT,
+        "=": LolTokenType.LESSER_EQUAL,
+        None: LolTokenType.LESSER,
     },
     "!": {
-        "=": TokenType.NOT_EQUAL,
-        None: TokenType.NOT,
+        "=": LolTokenType.NOT_EQUAL,
+        None: LolTokenType.NOT,
     },
     "+": {
-        "+": TokenType.PLUS_PLUS,
-        None: TokenType.PLUS,
+        "+": LolTokenType.PLUS_PLUS,
+        None: LolTokenType.PLUS,
     },
     "*": {
-        "*": TokenType.STAR_STAR,
-        None: TokenType.STAR,
+        "*": LolTokenType.STAR_STAR,
+        None: LolTokenType.STAR,
     },
     "-": {
-        "-": TokenType.MINUS,
-        ">": TokenType.ARROW,
-        None: TokenType.MINUS,
+        "-": LolTokenType.MINUS,
+        ">": LolTokenType.ARROW,
+        None: LolTokenType.MINUS,
     },
     "/": {
-        "/": TokenType.SLASH_SLASH,
-        None: TokenType.SLASH,
+        "/": LolTokenType.SLASH_SLASH,
+        None: LolTokenType.SLASH,
     },
 }
 
 
-class Token:
+class LolToken:
     def __init__(
         self,
         lexeme: str,
-        token_type: TokenType,
+        token_type: LolTokenType,
         *,
         start_position: Optional[int] = None,
         full_text: Optional[str] = None,
@@ -170,7 +170,7 @@ class Token:
         self.start_position = start_position
         self.full_text = full_text
 
-    def is_type(self, token_type: TokenType) -> bool:
+    def is_type(self, token_type: LolTokenType) -> bool:
         return self.token_type == token_type
 
     def as_str(self):
@@ -197,7 +197,7 @@ class Token:
         )
         return line_no, col_no
 
-    def to_dict(self) -> Dict[str, Union[TokenType, int, str]]:
+    def to_dict(self) -> Dict[str, Union[LolTokenType, int, str]]:
         """
         Pretty print the serialized token.
 
