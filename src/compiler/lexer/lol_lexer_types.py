@@ -98,44 +98,6 @@ class LolTokenType(Enum):
     NOT = auto()
 
 
-# UNIMPLEMENTED_TOKEN_TYPES: set[LolTokenType] = {
-#     # Unimplemented in tokenizer
-#     EXCLAMATION,  # !
-#     AT,  # @
-#     PERCENT,  # %
-#     CIRCUMFLEX,  # ^
-#     AMPERSAND,  # &
-#     QUESTION,  # ?
-#     VBAR,  # |
-#     # Doubled characters
-#     RSHIFT,  # >>
-#     LSHIFT,  # <<
-#     GREATER_EQUAL,  # >=
-#     LESSER_EQUAL,  # <=
-#     EQUAL_EQUAL,  # ==
-#     NOT_EQUAL,  # !=
-#     # Unimplemented in tokenizer (no plan to implement these yet)
-#     STAR_STAR,  # **
-#     PLUS_PLUS,  # ++
-#     MINUS_MINUS,  # --
-#     SLASH_SLASH,  # //
-#     # COLON_EQUAL = auto()                    # :=
-#     # STAR_EQUAL = WONT_BE_IMPLEMENTED        # *=
-#     # PLUS_EQUAL = WONT_BE_IMPLEMENTED        # +=
-#     # MINUS_EQUAL = WONT_BE_IMPLEMENTED       # -=
-#     # SLASH_EQUAL = WONT_BE_IMPLEMENTED       # /=
-#     # RSHIFT_EQUAL = WONT_BE_IMPLEMENTED      # >>=
-#     # LSHIFT_EQUAL = WONT_BE_IMPLEMENTED      # <<=
-#     # PERCENT_EQUAL = WONT_BE_IMPLEMENTED     # %=
-#     # CIRCUMFLEX_EQUAL = WONT_BE_IMPLEMENTED  # ^=
-#     # AMPERSAND_EQUAL = WONT_BE_IMPLEMENTED   # &=
-#     # QUESTION_EQUAL = WONT_BE_IMPLEMENTED    # ?=
-#     # VBAR_EQUAL = WONT_BE_IMPLEMENTED        # |=
-#     # AT_EQUAL = WONT_BE_IMPLEMENTED          # @=
-#     # BSLASH = auto(), WONT_BE_IMPLEMENTED    # \
-# }
-
-
 SYMBOL_CONTROL: Dict[Optional[str], Union[Dict, LolTokenType]] = {
     "(": {None: LolTokenType.LPAREN},
     ")": {None: LolTokenType.RPAREN},
