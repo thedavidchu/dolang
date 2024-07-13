@@ -98,6 +98,44 @@ class LolTokenType(Enum):
     NOT = auto()
 
 
+# UNIMPLEMENTED_TOKEN_TYPES: set[LolTokenType] = {
+#     # Unimplemented in tokenizer
+#     EXCLAMATION,  # !
+#     AT,  # @
+#     PERCENT,  # %
+#     CIRCUMFLEX,  # ^
+#     AMPERSAND,  # &
+#     QUESTION,  # ?
+#     VBAR,  # |
+#     # Doubled characters
+#     RSHIFT,  # >>
+#     LSHIFT,  # <<
+#     GREATER_EQUAL,  # >=
+#     LESSER_EQUAL,  # <=
+#     EQUAL_EQUAL,  # ==
+#     NOT_EQUAL,  # !=
+#     # Unimplemented in tokenizer (no plan to implement these yet)
+#     STAR_STAR,  # **
+#     PLUS_PLUS,  # ++
+#     MINUS_MINUS,  # --
+#     SLASH_SLASH,  # //
+#     # COLON_EQUAL = auto()                    # :=
+#     # STAR_EQUAL = WONT_BE_IMPLEMENTED        # *=
+#     # PLUS_EQUAL = WONT_BE_IMPLEMENTED        # +=
+#     # MINUS_EQUAL = WONT_BE_IMPLEMENTED       # -=
+#     # SLASH_EQUAL = WONT_BE_IMPLEMENTED       # /=
+#     # RSHIFT_EQUAL = WONT_BE_IMPLEMENTED      # >>=
+#     # LSHIFT_EQUAL = WONT_BE_IMPLEMENTED      # <<=
+#     # PERCENT_EQUAL = WONT_BE_IMPLEMENTED     # %=
+#     # CIRCUMFLEX_EQUAL = WONT_BE_IMPLEMENTED  # ^=
+#     # AMPERSAND_EQUAL = WONT_BE_IMPLEMENTED   # &=
+#     # QUESTION_EQUAL = WONT_BE_IMPLEMENTED    # ?=
+#     # VBAR_EQUAL = WONT_BE_IMPLEMENTED        # |=
+#     # AT_EQUAL = WONT_BE_IMPLEMENTED          # @=
+#     # BSLASH = auto(), WONT_BE_IMPLEMENTED    # \
+# }
+
+
 SYMBOL_CONTROL: Dict[Optional[str], Union[Dict, LolTokenType]] = {
     "(": {None: LolTokenType.LPAREN},
     ")": {None: LolTokenType.RPAREN},
@@ -109,7 +147,7 @@ SYMBOL_CONTROL: Dict[Optional[str], Union[Dict, LolTokenType]] = {
     ".": {None: LolTokenType.DOT},
     ";": {None: LolTokenType.SEMICOLON},
     "?": {None: LolTokenType.QUESTION},
-    "|": {None: LolTokenType.QUESTION},
+    "|": {None: LolTokenType.VBAR},
     "&": {None: LolTokenType.AMPERSAND},
     "^": {None: LolTokenType.CIRCUMFLEX},
     "@": {None: LolTokenType.AT},
@@ -155,7 +193,7 @@ SYMBOL_CONTROL: Dict[Optional[str], Union[Dict, LolTokenType]] = {
 }
 
 
-class Token:
+class LolToken:
     def __init__(
         self,
         lexeme: str,
@@ -185,7 +223,7 @@ class Token:
     def __repr__(self):
         """Pretty print the token. This is NOT for serialization, because the
         token type should be an integer id so that it's easier to parse."""
-        return f"Token(lexeme={repr(self.lexeme)}, token_type={self.get_token_type_as_str()}, start_idx={self.start_position}, full_text?={isinstance(self.full_text, str)})"
+        return f"LolToken(lexeme={repr(self.lexeme)}, token_type={self.get_token_type_as_str()}, start_idx={self.start_position}, full_text?={isinstance(self.full_text, str)})"
 
     def get_line_and_column_numbers(self) -> Optional[Tuple[int, int]]:
         if self.start_position is None or self.full_text is None:

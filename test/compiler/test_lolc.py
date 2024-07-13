@@ -2,7 +2,7 @@ import os
 from common import add_compiler_to_sys_path
 
 add_compiler_to_sys_path()
-from compiler.main import LolModule
+from main import LolModule
 
 
 def lol_compile(input_file: str, output_dir: str = "results"):

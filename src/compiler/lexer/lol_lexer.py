@@ -206,13 +206,11 @@ class Lexer:
             and len(token_type.value) >= 2
             and token_type.value[1]
             in {
-                LolTokenType.NOT_YET_IMPLEMENTED,
-                LolTokenType.WONT_BE_IMPLEMENTED,
+                LolTokenType.NOT_YET_IMPLEMENTED.value,
+                LolTokenType.WONT_BE_IMPLEMENTED.value,
             }
         ):
-            raise NotImplementedError(
-                f"token_type {token_type.n} not implemented"
-            )
+            return False
         return True
 
     @staticmethod
@@ -246,6 +244,13 @@ class Lexer:
                 )
 
         if not Lexer._is_punctuation_implemented(token_type):
+            err = LolError(
+                stream.get_text(),
+                start_pos,
+                start_pos + len(lexeme),
+                "unimplemented token",
+            )
+            print(err)
             raise NotImplementedError
 
         return LolToken(
