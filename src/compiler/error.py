@@ -4,16 +4,16 @@ from pathlib import Path
 class LolError:
     def __init__(
         self,
-        input_path: Path,
+        input_: Path | str,
         start_position: int,
         end_position: int,
         message: str,
     ):
         self.error_string = LolError.create_error_string(
-            input_path, start_position, end_position, message
+            input_, start_position, end_position, message
         )
 
-        self.input_path = input_path
+        self.input_ = input_
         self.start_position = start_position
         self.end_position = end_position
         self.message = message
@@ -30,7 +30,7 @@ class LolError:
 
         @note   This intention of this function is for debugging.
         """
-        with self.input_path.open() as f:
+        with self.input_.open() as f:
             text = f.read()
 
         return text[self.start_position : self.end_position]
@@ -72,7 +72,7 @@ class LolError:
         text_lines: list[str] = input_text.splitlines()
         user_line = lineno + 1
         return (
-            f"Error: {message}\n"
+            f"> Error: {message}\n"
             f"> {user_line} | {text_lines[lineno]}\n"
             # NOTE  I just guessed for the number of spaces and '^'
             f"> {' ' * len(str(user_line))} | {' ' * (start_col)}{'^' * (end_col-start_col)}\n"
@@ -80,7 +80,10 @@ class LolError:
 
     @staticmethod
     def create_error_string(
-        input_path: Path, start_position: int, end_position: int, message: str
+        input_: Path | str,
+        start_position: int,
+        end_position: int,
+        message: str,
     ) -> str:
         """
         @brief  Create a string with the error underlined and the error message displayed.
@@ -101,8 +104,11 @@ class LolError:
         """
         assert start_position < end_position
 
-        with input_path.open() as f:
-            input_text: str = f.read()
+        if isinstance(input_, Path):
+            with input_.open() as f:
+                input_text: str = f.read()
+        elif isinstance(input_, str):
+            input_text = input_
         start_line, start_col = LolError.get_line_and_column(
             input_text, start_position
         )
