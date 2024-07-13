@@ -49,7 +49,7 @@ class LolTokenType(Enum):
     LSHIFT = auto(), NOT_YET_IMPLEMENTED  # <<
     GREATER_EQUAL = auto(), NOT_YET_IMPLEMENTED  # >=
     LESSER_EQUAL = auto(), NOT_YET_IMPLEMENTED  # <=
-    EQUAL_EQUAL = auto(), NOT_YET_IMPLEMENTED  # ==
+    EQUAL_EQUAL = auto()  # ==
     NOT_EQUAL = auto(), NOT_YET_IMPLEMENTED  # !=
 
     # Unimplemented in tokenizer (no plan to implement these yet)
