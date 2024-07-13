@@ -215,8 +215,6 @@ class CharacterStream:
     def __init__(self, text: str):
         self.text = text
         self.idx = 0
-        self.line_number = 1
-        self.column_number = 1
 
     def get_text_after(self):
         return self.text[self.idx :]
@@ -236,11 +234,6 @@ class CharacterStream:
         if c is None:
             return
         self.idx += 1
-        if c == "\n":
-            self.line_number += 1
-            self.column_number = 1
-        else:
-            self.column_number += 1
 
     def get_pos(self) -> int:
         """Get the current character position in a (absolute_index, line_number,
