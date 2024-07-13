@@ -155,7 +155,7 @@ SYMBOL_CONTROL: Dict[Optional[str], Union[Dict, LolTokenType]] = {
 }
 
 
-class LolToken:
+class Token:
     def __init__(
         self,
         lexeme: str,

@@ -53,6 +53,8 @@ from compiler.lexer.lol_lexer_types import (
     SYMBOL_CONTROL,
 )
 
+from compiler.error import LolError
+
 
 class Lexer:
     def __init__(self, src: str):
