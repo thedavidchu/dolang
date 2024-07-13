@@ -3,7 +3,7 @@ from common import add_compiler_to_sys_path
 
 add_compiler_to_sys_path()
 
-from compiler.error import LolError
+from compiler.lol_error import LolError
 
 
 def get_single_line_underlined_text(text: str):
