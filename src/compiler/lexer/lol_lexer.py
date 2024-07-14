@@ -44,6 +44,7 @@ Future tokens to accept in the future are:
 7. Add multiline comments
 """
 
+from pathlib import Path
 from typing import Dict, List
 
 from compiler.lexer.lol_lexer_types import (
@@ -57,8 +58,8 @@ from compiler.error import LolError
 
 
 class Lexer:
-    def __init__(self, src: str):
-        self.stream = CharacterStream(src)
+    def __init__(self, path: Path):
+        self.stream = CharacterStream(path)
         self.tokens = []
 
     @staticmethod
@@ -320,7 +321,7 @@ class Lexer:
                 raise ValueError(f"character '{c}' not supported!")
 
 
-def tokenize(text: str) -> List[LolToken]:
-    t = Lexer(text)
+def tokenize(path: Path) -> List[LolToken]:
+    t = Lexer(path)
     t.tokenize()
     return t.tokens

@@ -2,6 +2,7 @@ import argparse
 import json
 import os
 import time
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from compiler.analyzer.lol_analyzer import analyze, LolAnalysisModule
@@ -60,7 +61,7 @@ class LolModule:
         assert self.text != "", "LolModule"
         assert self.tokens == []
 
-        self.tokens = tokenize(self.text)
+        self.tokens = tokenize(Path(self.input_file))
 
     def save_lexer_output_only(self):
         file_name: str = (
