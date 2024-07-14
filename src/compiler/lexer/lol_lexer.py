@@ -71,9 +71,7 @@ class Lexer:
             "continue",
             "not",
         }:
-            raise NotImplementedError(
-                f"lexer supports keyword '{identifier}'; no further stage does"
-            )
+            return None
         key_words: Dict[str, LolTokenType] = {
             "if": LolTokenType.IF,
             "else": LolTokenType.ELSE,
@@ -107,6 +105,16 @@ class Lexer:
 
         identifier = "".join(token)
         token_type = Lexer._get_identifier_token_type(identifier)
+        if token_type is None:
+            LolError.print_error(
+                stream.text,
+                pos,
+                pos + len(identifier),
+                "heretofore unsupported token",
+            )
+            raise NotImplementedError(
+                f"lexer supports keyword '{identifier}'; no further stage does"
+            )
         return LolToken(
             identifier,
             token_type,
@@ -128,12 +136,24 @@ class Lexer:
                 stream.next_char()
                 c = stream.get_char()
             elif c == "." and current_token_type == LolTokenType.INTEGER:
+                LolError.print_error(
+                    stream.text,
+                    pos,
+                    pos + len(token),
+                    "floats not supported yet",
+                )
                 raise NotImplementedError("floats not supported yet!")
                 current_token_type = LolTokenType.FLOAT
                 token.append(c)
                 stream.next_char()
                 c = stream.get_char()
             else:
+                LolError.print_error(
+                    stream.text,
+                    pos,
+                    pos + len(token),
+                    "unrecognized number format (0b0, 0o0, 0x0, etc not supported)",
+                )
                 raise NotImplementedError
         return LolToken(
             "".join(token),
@@ -187,6 +207,12 @@ class Lexer:
                 stream.next_char()
                 break
             elif c is None:
+                LolError.print_error(
+                    stream.text,
+                    pos,
+                    pos + len("/*"),
+                    "expecting closing '*/' for comment",
+                )
                 raise ValueError("expected terminal '*/' in the comment")
         return LolToken(
             "".join(token),
@@ -239,18 +265,20 @@ class Lexer:
                 token_type = control[None]
                 break
             else:
+                LolError.print_error(
+                    stream.text, start_pos, start_pos + len(lexeme), ""
+                )
                 raise ValueError(
                     f"cannot append {c} to {''.join(lexeme)} -- potential bug, just separate the symbols"
                 )
 
         if not Lexer._is_punctuation_implemented(token_type):
-            err = LolError(
-                stream.get_text(),
+            LolError.print_error(
+                stream.text,
                 start_pos,
                 start_pos + len(lexeme),
                 "unimplemented token",
             )
-            print(err)
             raise NotImplementedError
 
         return LolToken(
@@ -288,6 +316,12 @@ class Lexer:
                 token = self.lex_punctuation(self.stream)
                 self.tokens.append(token)
             else:
+                LolError.print_error(
+                    self.stream.text,
+                    self.stream.get_pos(),
+                    self.stream.get_pos() + 1,
+                    "character is not supported",
+                )
                 raise ValueError(f"character '{c}' not supported!")
 
 

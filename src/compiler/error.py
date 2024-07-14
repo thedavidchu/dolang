@@ -24,6 +24,18 @@ class LolError:
     def __repr__(self) -> str:
         return self.error_string
 
+    @staticmethod
+    def print_error(
+        input_: Path | str,
+        start_position: int,
+        end_position: int,
+        message: str,
+    ):
+        error_string = LolError.create_error_string(
+            input_, start_position, end_position, message
+        )
+        print(error_string)
+
     def get_text_of_interest(self) -> str:
         """
         @brief  This function returns the text that we intended to highlight.
