@@ -63,7 +63,7 @@ class Lexer:
         self.tokens = []
 
     @staticmethod
-    def _get_identifier_token_type(identifier: str):
+    def _get_identifier_token_type(identifier: str) -> LolTokenType | None:
         if identifier in {
             "while",
             "for",
