@@ -1,4 +1,5 @@
 from enum import Enum, auto, unique
+from pathlib import Path
 from typing import Dict, Tuple, Union, Optional
 
 
@@ -212,30 +213,29 @@ class LolToken:
 
 
 class CharacterStream:
-    def __init__(self, text: str):
-        self.text = text
-        self.idx = 0
+    def __init__(self, path: Path):
+        self.path: Path = path
+        with path.open() as f:
+            self.text: str = f.read()
+        self.position: int = 0
 
     def get_text_after(self):
-        return self.text[self.idx :]
-
-    def get_text(self) -> str:
-        return self.text
+        return self.text[self.position :]
 
     def get_char(self, *, offset: Optional[int] = 0) -> Optional[str]:
         """Get the current character or return None"""
-        if self.idx + offset >= len(self.text):
+        if self.position + offset >= len(self.text):
             return None
-        return self.text[self.idx + offset]
+        return self.text[self.position + offset]
 
     def next_char(self):
         """Advance to the next character or return early if we are at the last character."""
         c = self.get_char()
         if c is None:
             return
-        self.idx += 1
+        self.position += 1
 
     def get_pos(self) -> int:
         """Get the current character position in a (absolute_index, line_number,
         column_number) tuple"""
-        return self.idx
+        return self.position

@@ -119,7 +119,6 @@ class Lexer:
             identifier,
             token_type,
             start_position=pos,
-            full_text=stream.get_text(),
         )
 
     @staticmethod
@@ -159,7 +158,6 @@ class Lexer:
             "".join(token),
             current_token_type,
             start_position=pos,
-            full_text=stream.get_text(),
         )
 
     @staticmethod
@@ -183,7 +181,6 @@ class Lexer:
             "".join(token),
             LolTokenType.STRING,
             start_position=pos,
-            full_text=stream.get_text(),
         )
 
     @staticmethod
@@ -218,7 +215,6 @@ class Lexer:
             "".join(token),
             LolTokenType.COMMENT,
             start_position=pos,
-            full_text=stream.get_text(),
         )
 
     @staticmethod
@@ -285,7 +281,6 @@ class Lexer:
             "".join(lexeme),
             token_type,
             start_position=start_pos,
-            full_text=stream.get_text(),
         )
 
     def tokenize(self):

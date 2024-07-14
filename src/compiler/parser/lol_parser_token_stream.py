@@ -11,9 +11,6 @@ class TokenStream:
         self.src = src
         self.idx = 0
 
-    def get_text(self) -> str:
-        return self.text
-
     def get_token(self, *, offset: int = 0) -> Optional[LolToken]:
         """
         Get the current token or return None if at the end.
