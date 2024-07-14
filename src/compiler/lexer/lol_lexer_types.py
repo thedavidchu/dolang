@@ -234,8 +234,3 @@ class CharacterStream:
         if c is None:
             return
         self.position += 1
-
-    def get_pos(self) -> int:
-        """Get the current character position in a (absolute_index, line_number,
-        column_number) tuple"""
-        return self.position

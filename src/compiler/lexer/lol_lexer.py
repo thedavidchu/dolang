@@ -97,7 +97,7 @@ class Lexer:
     def lex_identifier(stream: CharacterStream):
         # Concatentation to a list is more efficient than to a string, since
         # strings are immutable.
-        c, pos = stream.get_char(), stream.get_pos()
+        c, pos = stream.get_char(), stream.position
         token = []
         while c.isalnum() or c == "_":
             token.append(c)
@@ -125,7 +125,7 @@ class Lexer:
     @staticmethod
     def lex_number(stream: CharacterStream):
         # NOTE(dchu): for now, we assume that the number is a base-10 integer.
-        c, pos = stream.get_char(), stream.get_pos()
+        c, pos = stream.get_char(), stream.position
         current_token_type = LolTokenType.INTEGER
         # Concatentation to a list is more efficient than to a string, since
         # strings are immutable.
@@ -163,7 +163,7 @@ class Lexer:
 
     @staticmethod
     def lex_string(stream: CharacterStream):
-        c, pos = stream.get_char(), stream.get_pos()
+        c, pos = stream.get_char(), stream.position
         # Concatentation to a list is more efficient than to a string, since
         # strings are immutable.
         stream.next_char()
@@ -188,7 +188,7 @@ class Lexer:
     def lex_comment(stream: CharacterStream):
         """Get a comment that is like a C-style comment: /* Comment */. We
         assume that there is already a '/*' and the front."""
-        pos = stream.get_pos()
+        pos = stream.position
         assert stream.get_char() == "/" and stream.get_char(offset=1) == "*"
         stream.next_char()
         stream.next_char()
@@ -238,7 +238,7 @@ class Lexer:
 
     @staticmethod
     def lex_punctuation(stream: CharacterStream):
-        start_pos = stream.get_pos()
+        start_pos = stream.position
 
         control = SYMBOL_CONTROL
         lexeme = []
@@ -314,8 +314,8 @@ class Lexer:
             else:
                 LolError.print_error(
                     self.stream.text,
-                    self.stream.get_pos(),
-                    self.stream.get_pos() + 1,
+                    self.stream.position,
+                    self.stream.position + 1,
                     "character is not supported",
                 )
                 raise ValueError(f"character '{c}' not supported!")

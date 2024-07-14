@@ -273,7 +273,7 @@ class Parser:
 
     @staticmethod
     def parse_literal(stream: TokenStream) -> LolParserLiteral:
-        start_pos = stream.get_pos()
+        start_pos = stream.position
         token = stream.get_token()
         if token.is_type(LolTokenType.STRING):
             lit_type = LolParserLiteralType.STRING
@@ -285,7 +285,7 @@ class Parser:
         else:
             raise ValueError(f"unexpected token type: {repr(token)}")
         stream.next_token()
-        end_pos = stream.get_pos()
+        end_pos = stream.position
         return LolParserLiteral(lit_type, lit_value)
 
     @staticmethod
@@ -517,13 +517,13 @@ class Parser:
     def parse_parameter_definition(
         stream: TokenStream,
     ) -> LolParserParameterDefinition:
-        start_pos = stream.get_pos()
+        start_pos = stream.position
         identifier = LolParserIdentifier(
             eat_token(stream, LolTokenType.IDENTIFIER).as_str()
         )
         eat_token(stream, LolTokenType.COLON)
         param_type = Parser.parse_type_expression(stream)
-        end_pos = stream.get_pos()
+        end_pos = stream.position
         return LolParserParameterDefinition(identifier, param_type)
 
     @staticmethod
@@ -597,12 +597,12 @@ class Parser:
 
     @staticmethod
     def parse_function_definition(stream: TokenStream):
-        start_pos = stream.get_pos()
+        start_pos = stream.position
         func_identifier, params, ret_type = Parser.parse_function_prototype(
             stream
         )
         func_body = Parser.parse_block_body(stream)
-        end_pos = stream.get_pos()
+        end_pos = stream.position
         return LolParserFunctionDefinition(
             func_identifier, params, ret_type, func_body
         )
@@ -614,7 +614,7 @@ class Parser:
     def parse_variable_definition(
         stream: TokenStream,
     ):
-        start_pos = stream.get_pos()
+        start_pos = stream.position
         _let = eat_token(stream, LolTokenType.LET)
         identifier = LolParserIdentifier(
             eat_token(stream, LolTokenType.IDENTIFIER).as_str()
@@ -624,7 +624,7 @@ class Parser:
         eat_token(stream, LolTokenType.EQUAL)
         value = Parser.parse_value_expression(stream)
         eat_token(stream, LolTokenType.SEMICOLON)
-        end_pos = stream.get_pos()
+        end_pos = stream.position
         return LolParserVariableDefinition(identifier, data_type, value)
 
     ############################################################################
@@ -641,7 +641,7 @@ class Parser:
         """
         # TODO(dchu): this is deprecated because eventually we will have
         #  namespaces and let statements all be one thing.
-        start_pos = stream.get_pos()
+        start_pos = stream.position
         eat_token(stream, LolTokenType.MODULE)
         # NOTE: This only allows a single identifier for the module alias
         alias_name = eat_token(stream, LolTokenType.IDENTIFIER)
@@ -651,7 +651,7 @@ class Parser:
         library_name = eat_token(stream, LolTokenType.STRING)
         eat_token(stream, LolTokenType.RPAREN)
         eat_token(stream, LolTokenType.SEMICOLON)
-        end_pos = stream.get_pos()
+        end_pos = stream.position
         r = LolParserImportStatement(
             LolParserIdentifier(alias_name.as_str()),
             LolParserLiteral(

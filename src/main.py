@@ -81,7 +81,7 @@ class LolModule:
     def run_parser(self):
         assert self.tokens != []
 
-        stream = TokenStream(self.tokens, self.text)
+        stream = TokenStream(self.tokens)
         self.ast = parse(stream)
 
     def save_parser_output_only(self):

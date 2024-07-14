@@ -6,10 +6,9 @@ from compiler.lexer.lol_lexer import LolToken
 class TokenStream:
     """Semantics taken from CharacterStream"""
 
-    def __init__(self, src: List[LolToken], text: str = None) -> None:
-        self.text = text
-        self.src = src
-        self.idx = 0
+    def __init__(self, tokens: List[LolToken]) -> None:
+        self.tokens = tokens
+        self.position = 0
 
     def get_token(self, *, offset: int = 0) -> Optional[LolToken]:
         """
@@ -17,16 +16,13 @@ class TokenStream:
 
         N.B. Does NOT advance the token!
         """
-        if self.idx + offset >= len(self.src):
+        if self.position + offset >= len(self.tokens):
             return None
-        return self.src[self.idx + offset]
+        return self.tokens[self.position + offset]
 
     def next_token(self):
         """Advance to the next token."""
         t = self.get_token()
         if t is None:
             return
-        self.idx += 1
-
-    def get_pos(self):
-        return self.idx
+        self.position += 1
