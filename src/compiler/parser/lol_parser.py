@@ -7,7 +7,7 @@ they have side-effects, we have undefined behaviour)
 """
 
 from abc import ABCMeta, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from enum import Enum, auto, unique
 from typing import Any, List, Set, Tuple, Union
 
@@ -15,15 +15,12 @@ from compiler.lexer.lol_lexer_types import LolToken, LolTokenType
 from compiler.parser.lol_parser_token_stream import TokenStream
 
 frozen_dataclass = dataclass(frozen=True)
+json_type = dict[str, list | dict | str | int | float | None]
 
 
 ################################################################################
 ### GENERIC
 ################################################################################
-class LolParserGeneric(metaclass=ABCMeta):
-    @abstractmethod
-    def to_dict(self):
-        raise NotImplementedError
 
 
 @unique
@@ -41,6 +38,31 @@ class LolParserLiteralType(Enum):
     FLOAT = auto()
 
 
+@frozen_dataclass
+class LolParserGeneric:
+    def to_dict(self):
+        def recursive_to_dict(item: LolParserGeneric | Any) -> json_type:
+            if isinstance(item, LolParserGeneric):
+                # NOTE  We don't use the asdict() function because this
+                #       recursively converts all values into a dict,
+                #       which discards necessary type information.
+                return dict(
+                    metatype=item.__class__.__name__,
+                ) | {
+                    field.name: recursive_to_dict(getattr(item, field.name))
+                    for field in fields(item)
+                }
+            elif isinstance(item, Enum):
+                return item.name
+            elif isinstance(item, list):
+                return [recursive_to_dict(x) for x in item]
+            else:
+                return item
+
+        r = recursive_to_dict(self)
+        return r
+
+
 ################################################################################
 ### EXPRESSIONS, LEAVES, AND AMBIGUOUS (e.g. function calls)
 ################################################################################
@@ -54,20 +76,10 @@ class LolParserLiteral(LolParserGeneric):
     type: LolParserLiteralType
     value: Union[int, bool, float, str]
 
-    def to_dict(self):
-        return dict(
-            metatype=self.__class__.__name__,
-            type=self.type.name,
-            value=self.value,
-        )
-
 
 @frozen_dataclass
 class LolParserIdentifier(LolParserGeneric):
     name: str
-
-    def to_dict(self):
-        return dict(metatype=self.__class__.__name__, name=self.name)
 
 
 @frozen_dataclass
@@ -75,14 +87,6 @@ class LolParserOperatorExpression(LolParserGeneric):
     operator: str
     type: LolParserOperatorType
     operands: List[LolParserExpression]
-
-    def to_dict(self):
-        return dict(
-            metatype=self.__class__.__name__,
-            operator=repr(self.operator),
-            type=self.type.name,
-            operands=[o.to_dict() for o in self.operands],
-        )
 
 
 @frozen_dataclass
@@ -92,13 +96,6 @@ class LolParserParameterDefinition(LolParserGeneric):
 
     def get_name_as_str(self) -> str:
         return self.name.name
-
-    def to_dict(self):
-        return dict(
-            metatype=self.__class__.__name__,
-            name=self.name.to_dict(),
-            type=self.type.to_dict(),
-        )
 
 
 ################################################################################
@@ -112,13 +109,6 @@ class LolParserFunctionCall(LolParserGeneric):
     def get_name_as_str(self):
         return self.name.name
 
-    def to_dict(self):
-        return dict(
-            metatype=self.__class__.__name__,
-            name=self.name.to_dict(),
-            arguments=[a.to_dict() for a in self.arguments],
-        )
-
 
 @frozen_dataclass
 class LolParserVariableDefinition(LolParserGeneric):
@@ -128,14 +118,6 @@ class LolParserVariableDefinition(LolParserGeneric):
 
     def get_name_as_str(self) -> str:
         return self.name.name
-
-    def to_dict(self):
-        return dict(
-            metatype=self.__class__.__name__,
-            name=self.name.to_dict(),
-            type=self.type.to_dict(),
-            value=self.value.to_dict(),
-        )
 
 
 ################################################################################
@@ -165,13 +147,6 @@ class LolParserImportStatement(LolParserGeneric):
         assert self.library_name.type == LolParserLiteralType.STRING
         return self.library_name.value
 
-    def to_dict(self):
-        return dict(
-            metatype=self.__class__.__name__,
-            alias=self.alias.to_dict(),
-            library_name=self.library_name.to_dict(),
-        )
-
 
 @frozen_dataclass
 class LolParserFunctionDefinition(LolParserGeneric):
@@ -183,27 +158,11 @@ class LolParserFunctionDefinition(LolParserGeneric):
     def get_name_as_str(self) -> str:
         return self.name.name
 
-    def to_dict(self):
-        return dict(
-            metatype=self.__class__.__name__,
-            name=self.name.to_dict(),
-            parameters=[p.to_dict() for p in self.parameters],
-            return_type=self.return_type.to_dict(),
-            body=[s.to_dict() for s in self.body],
-        )
-
 
 @frozen_dataclass
 class LolParserVariableModification(LolParserGeneric):
     name: LolParserIdentifier
     value: LolParserValueExpression
-
-    def to_dict(self):
-        return dict(
-            metatype=self.__class__.__name__,
-            name=self.name.to_dict(),
-            value=self.value.to_dict(),
-        )
 
 
 @frozen_dataclass
@@ -213,43 +172,20 @@ class LolParserIfStatement(LolParserGeneric):
     if_block: List[LolParserFunctionLevelStatement]
     else_block: List[LolParserFunctionLevelStatement]
 
-    def to_dict(self):
-        return dict(
-            metatype=self.__class__.__name__,
-            if_condition=self.if_condition.to_dict(),
-            if_block=[s.to_dict() for s in self.if_block],
-            else_block=[s.to_dict() for s in self.else_block],
-        )
-
 
 @frozen_dataclass
 class LolParserLoopStatement(LolParserGeneric):
     block: List[LolParserFunctionLevelStatement]
 
-    def to_dict(self):
-        return dict(
-            metatype=self.__class__.__name__,
-            block=[s.to_dict() for s in self.block],
-        )
-
 
 @frozen_dataclass
 class LolParserBreakStatement(LolParserGeneric):
-    def to_dict(self):
-        return dict(
-            metatype=self.__class__.__name__,
-        )
+    pass
 
 
 @frozen_dataclass
 class LolParserReturnStatement(LolParserGeneric):
     value: LolParserValueExpression
-
-    def to_dict(self):
-        return dict(
-            metatype=self.__class__.__name__,
-            value=self.value.to_dict(),
-        )
 
 
 ################################################################################
