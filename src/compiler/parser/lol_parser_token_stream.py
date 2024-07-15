@@ -1,4 +1,5 @@
 from typing import List, Optional
+from pathlib import Path
 
 from compiler.lexer.lol_lexer import LolToken
 
@@ -6,7 +7,8 @@ from compiler.lexer.lol_lexer import LolToken
 class TokenStream:
     """Semantics taken from CharacterStream"""
 
-    def __init__(self, tokens: List[LolToken]) -> None:
+    def __init__(self, path: Path, tokens: List[LolToken]) -> None:
+        self.path = path
         self.tokens = tokens
         self.position = 0
 
@@ -16,7 +18,7 @@ class TokenStream:
 
         N.B. Does NOT advance the token!
         """
-        if self.position + offset >= len(self.tokens):
+        if self.position + offset not in range(len(self.tokens)):
             return None
         return self.tokens[self.position + offset]
 

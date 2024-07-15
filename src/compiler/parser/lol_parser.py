@@ -13,6 +13,7 @@ from typing import Any, List, Set, Tuple, Union
 
 from compiler.lexer.lol_lexer_types import LolToken, LolTokenType
 from compiler.parser.lol_parser_token_stream import TokenStream
+from compiler.error import LolError
 
 frozen_dataclass = dataclass(frozen=True)
 json_type = dict[str, list | dict | str | int | float | None]
@@ -40,6 +41,9 @@ class LolParserLiteralType(Enum):
 
 @frozen_dataclass
 class LolParserGeneric:
+    start_position: int
+    end_position: int
+
     def to_dict(self):
         def recursive_to_dict(item: LolParserGeneric | Any) -> json_type:
             if isinstance(item, LolParserGeneric):
@@ -198,9 +202,20 @@ def eat_token(stream: TokenStream, expected_type: LolTokenType) -> LolToken:
     token = stream.get_token()
     if token.get_token_type() != expected_type:
         error_msg = f"expected {expected_type.name}, got {token.get_token_type_as_str()}"
+        LolError.print_error(
+            stream.path, get_start(token), get_end(token), error_msg
+        )
         raise ValueError(error_msg)
     stream.next_token()
     return token
+
+
+def get_start(token: LolToken) -> int:
+    return token.start_position
+
+
+def get_end(token: LolToken) -> int:
+    return token.start_position + len(token.lexeme)
 
 
 class Parser:
@@ -209,7 +224,6 @@ class Parser:
 
     @staticmethod
     def parse_literal(stream: TokenStream) -> LolParserLiteral:
-        start_pos = stream.position
         token = stream.get_token()
         if token.is_type(LolTokenType.STRING):
             lit_type = LolParserLiteralType.STRING
@@ -221,8 +235,9 @@ class Parser:
         else:
             raise ValueError(f"unexpected token type: {repr(token)}")
         stream.next_token()
-        end_pos = stream.position
-        return LolParserLiteral(lit_type, lit_value)
+        return LolParserLiteral(
+            get_start(token), get_end(token), lit_type, lit_value
+        )
 
     @staticmethod
     def parse_parenthetic_expression(
@@ -237,13 +252,16 @@ class Parser:
     def parse_func_call_args(
         stream: TokenStream, func_identifier: LolParserIdentifier
     ) -> LolParserFunctionCall:
+        start_pos = func_identifier.start_position
         eat_token(stream, LolTokenType.LPAREN)
         args: List[LolParserValueExpression] = []
         token = stream.get_token()
         # Check if empty set of arguments
         if token.is_type(LolTokenType.RPAREN):
-            eat_token(stream, LolTokenType.RPAREN)
-            return LolParserFunctionCall(func_identifier, args)
+            rp_tok = eat_token(stream, LolTokenType.RPAREN)
+            return LolParserFunctionCall(
+                start_pos, get_end(rp_tok), func_identifier, args
+            )
         # At this point, we have at least one argument (or error)
         while True:
             expr = Parser.parse_value_expression(stream)
@@ -257,13 +275,15 @@ class Parser:
                 continue
             else:
                 raise ValueError("Expected COMMA or RPAREN")
-        return LolParserFunctionCall(func_identifier, args)
+        end_pos = get_end(stream.get_token(offset=-1))
+        return LolParserFunctionCall(start_pos, end_pos, func_identifier, args)
 
     @staticmethod
     def parse_identifier_with_namespace_separator(
         stream: TokenStream, identifier_leaf: LolParserIdentifier
     ) -> LolParserIdentifier:
         namespaces: List[str] = [identifier_leaf.name]
+        start_pos = get_start(stream.get_token())
         while True:
             next_separator_token = stream.get_token()
             if next_separator_token.is_type(LolTokenType.COLON_COLON):
@@ -275,7 +295,8 @@ class Parser:
             else:
                 break
         hacky_identifier_str = "::".join(n for n in namespaces)
-        return LolParserIdentifier(hacky_identifier_str)
+        end_pos = get_end(stream.get_token(offset=-1))
+        return LolParserIdentifier(start_pos, end_pos, hacky_identifier_str)
 
     @staticmethod
     def parse_leading_identifier(
@@ -300,7 +321,9 @@ class Parser:
         In the future, it may be an array thing too array[100].
         """
         id_token = eat_token(stream, LolTokenType.IDENTIFIER)
-        identifier_leaf = LolParserIdentifier(id_token.as_str())
+        identifier_leaf = LolParserIdentifier(
+            get_start(id_token), get_end(id_token), id_token.as_str()
+        )
 
         token = stream.get_token()
         if token.is_type(LolTokenType.COLON_COLON):
@@ -313,11 +336,15 @@ class Parser:
         elif token.is_type(LolTokenType.LSQB):
             raise ValueError("accesses not supported yet... i.e. `x[100]`")
         else:
-            return LolParserIdentifier(identifier_leaf.name)
+            return LolParserIdentifier(
+                identifier_leaf.start_position,
+                identifier_leaf.end_position,
+                identifier_leaf.name,
+            )
 
     @staticmethod
     def parse_if(stream: TokenStream) -> LolParserIfStatement:
-        eat_token(stream, LolTokenType.IF)
+        if_tok = eat_token(stream, LolTokenType.IF)
         if_cond = Parser.parse_value_expression(stream)
         if_block = Parser.parse_block_body(stream)
         token = stream.get_token()
@@ -325,7 +352,10 @@ class Parser:
         if token.is_type(LolTokenType.ELSE):
             eat_token(stream, LolTokenType.ELSE)
             else_block = Parser.parse_block_body(stream)
-        return LolParserIfStatement(if_cond, if_block, else_block)
+        end_pos = get_end(stream.get_token(offset=-1))
+        return LolParserIfStatement(
+            get_start(if_tok), end_pos, if_cond, if_block, else_block
+        )
 
     @staticmethod
     def parse_primary(stream: TokenStream) -> LolParserExpression:
@@ -338,6 +368,9 @@ class Parser:
             return Parser.parse_parenthetic_expression(stream)
         else:
             error_msg = f"unrecognized primary {token}"
+            LolError.print_error(
+                stream.path, get_start(token), get_end(token), error_msg
+            )
             raise ValueError(error_msg)
 
     @staticmethod
@@ -423,6 +456,8 @@ class Parser:
                 assert rhs
 
             lhs = LolParserOperatorExpression(
+                get_start(binop_token),
+                rhs.end_position,
                 binop_token.lexeme,
                 LolParserOperatorType.BINARY_INFIX,
                 [lhs, rhs],
@@ -438,8 +473,9 @@ class Parser:
     @staticmethod
     def parse_type_expression(stream: TokenStream) -> LolParserTypeExpression:
         # We only support single-token type expressions for now
+        ident = eat_token(stream, LolTokenType.IDENTIFIER)
         return LolParserIdentifier(
-            eat_token(stream, LolTokenType.IDENTIFIER).as_str()
+            get_start(ident), get_end(ident), ident.as_str()
         )
 
     @staticmethod
@@ -453,14 +489,16 @@ class Parser:
     def parse_parameter_definition(
         stream: TokenStream,
     ) -> LolParserParameterDefinition:
-        start_pos = stream.position
+        ident = eat_token(stream, LolTokenType.IDENTIFIER)
         identifier = LolParserIdentifier(
-            eat_token(stream, LolTokenType.IDENTIFIER).as_str()
+            get_start(ident), get_end(ident), ident.as_str()
         )
         eat_token(stream, LolTokenType.COLON)
         param_type = Parser.parse_type_expression(stream)
-        end_pos = stream.position
-        return LolParserParameterDefinition(identifier, param_type)
+        end_pos = get_end(stream.get_token(offset=-1))
+        return LolParserParameterDefinition(
+            get_start(ident), end_pos, identifier, param_type
+        )
 
     @staticmethod
     def parse_function_prototype(
@@ -471,8 +509,9 @@ class Parser:
         LolParserTypeExpression,
     ]:
         _function = eat_token(stream, LolTokenType.FUNCTION)
+        ident = eat_token(stream, LolTokenType.IDENTIFIER)
         func_identifier = LolParserIdentifier(
-            eat_token(stream, LolTokenType.IDENTIFIER).as_str()
+            get_start(ident), get_end(ident), ident.as_str()
         )
         eat_token(stream, LolTokenType.LPAREN)
         params: List[LolParserParameterDefinition] = []
@@ -490,9 +529,11 @@ class Parser:
                     eat_token(stream, LolTokenType.RPAREN)
                     break
                 else:
-                    raise ValueError(
-                        f"expected comma or right parenthesis, got {token.as_str()}"
+                    errmsg = f"expected comma or right parenthesis, got {token.as_str()}"
+                    LolError.print_error(
+                        stream.path, get_start(token), get_end(token), errmsg
                     )
+                    raise ValueError(errmsg)
         eat_token(stream, LolTokenType.ARROW)
         ret_type = Parser.parse_type_expression(stream)
         return func_identifier, params, ret_type
@@ -505,10 +546,12 @@ class Parser:
         if token.is_type(LolTokenType.LET):  # Local variable
             return Parser.parse_variable_definition(stream)
         elif token.is_type(LolTokenType.RETURN):
-            eat_token(stream, LolTokenType.RETURN)
+            ret_tok = eat_token(stream, LolTokenType.RETURN)
             ret_val = Parser.parse_value_expression(stream)
-            eat_token(stream, LolTokenType.SEMICOLON)
-            return LolParserReturnStatement(ret_val)
+            sc_tok = eat_token(stream, LolTokenType.SEMICOLON)
+            return LolParserReturnStatement(
+                get_start(ret_tok), get_end(sc_tok), ret_val
+            )
         # TODO(dchu): if, while, for loops
         elif token.is_type(LolTokenType.IF):
             return Parser.parse_if(stream)
@@ -520,7 +563,7 @@ class Parser:
     @staticmethod
     def parse_block_body(
         stream: TokenStream,
-    ) -> List[LolParserFunctionLevelStatement]:
+    ) -> list[LolParserFunctionLevelStatement]:
         func_body: List[LolParserFunctionLevelStatement] = []
         eat_token(stream, LolTokenType.LBRACE)
         while True:
@@ -533,14 +576,19 @@ class Parser:
 
     @staticmethod
     def parse_function_definition(stream: TokenStream):
-        start_pos = stream.position
+        function_tok = stream.get_token()
         func_identifier, params, ret_type = Parser.parse_function_prototype(
             stream
         )
         func_body = Parser.parse_block_body(stream)
-        end_pos = stream.position
+        end_pos = get_end(stream.get_token(offset=-1))
         return LolParserFunctionDefinition(
-            func_identifier, params, ret_type, func_body
+            get_start(function_tok),
+            end_pos,
+            func_identifier,
+            params,
+            ret_type,
+            func_body,
         )
 
     ############################################################################
@@ -550,18 +598,23 @@ class Parser:
     def parse_variable_definition(
         stream: TokenStream,
     ):
-        start_pos = stream.position
         _let = eat_token(stream, LolTokenType.LET)
+        ident = eat_token(stream, LolTokenType.IDENTIFIER)
         identifier = LolParserIdentifier(
-            eat_token(stream, LolTokenType.IDENTIFIER).as_str()
+            get_start(ident), get_end(ident), ident.as_str()
         )
         eat_token(stream, LolTokenType.COLON)
         data_type = Parser.parse_type_expression(stream)
         eat_token(stream, LolTokenType.EQUAL)
         value = Parser.parse_value_expression(stream)
-        eat_token(stream, LolTokenType.SEMICOLON)
-        end_pos = stream.position
-        return LolParserVariableDefinition(identifier, data_type, value)
+        semicolon_tok = eat_token(stream, LolTokenType.SEMICOLON)
+        return LolParserVariableDefinition(
+            get_start(_let),
+            get_end(semicolon_tok),
+            identifier,
+            data_type,
+            value,
+        )
 
     ############################################################################
     ### IMPORT
@@ -577,8 +630,7 @@ class Parser:
         """
         # TODO(dchu): this is deprecated because eventually we will have
         #  namespaces and let statements all be one thing.
-        start_pos = stream.position
-        eat_token(stream, LolTokenType.MODULE)
+        modtok = eat_token(stream, LolTokenType.MODULE)
         # NOTE: This only allows a single identifier for the module alias
         alias_name = eat_token(stream, LolTokenType.IDENTIFIER)
         eat_token(stream, LolTokenType.EQUAL)
@@ -586,15 +638,20 @@ class Parser:
         eat_token(stream, LolTokenType.LPAREN)
         library_name = eat_token(stream, LolTokenType.STRING)
         eat_token(stream, LolTokenType.RPAREN)
-        eat_token(stream, LolTokenType.SEMICOLON)
-        end_pos = stream.position
-        r = LolParserImportStatement(
-            LolParserIdentifier(alias_name.as_str()),
+        sctok = eat_token(stream, LolTokenType.SEMICOLON)
+        return LolParserImportStatement(
+            get_start(modtok),
+            get_end(sctok),
+            LolParserIdentifier(
+                get_start(alias_name), get_end(alias_name), alias_name.as_str()
+            ),
             LolParserLiteral(
-                LolParserLiteralType.STRING, library_name.as_str()
+                get_start(library_name),
+                get_end(library_name),
+                LolParserLiteralType.STRING,
+                library_name.as_str(),
             ),
         )
-        return r
 
     def parse_module_statements(
         self, stream: TokenStream
