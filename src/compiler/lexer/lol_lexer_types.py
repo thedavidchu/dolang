@@ -1,9 +1,10 @@
 from enum import Enum, auto, unique
+from pathlib import Path
 from typing import Dict, Tuple, Union, Optional
 
 
 @unique
-class TokenType(Enum):
+class LolTokenType(Enum):
     # Just for error checking!
     IMPLEMENTED = auto()
     NOT_YET_IMPLEMENTED = auto()
@@ -49,7 +50,7 @@ class TokenType(Enum):
     LSHIFT = auto(), NOT_YET_IMPLEMENTED  # <<
     GREATER_EQUAL = auto(), NOT_YET_IMPLEMENTED  # >=
     LESSER_EQUAL = auto(), NOT_YET_IMPLEMENTED  # <=
-    EQUAL_EQUAL = auto(), NOT_YET_IMPLEMENTED  # ==
+    EQUAL_EQUAL = auto()  # ==
     NOT_EQUAL = auto(), NOT_YET_IMPLEMENTED  # !=
 
     # Unimplemented in tokenizer (no plan to implement these yet)
@@ -72,7 +73,6 @@ class TokenType(Enum):
     # VBAR_EQUAL = WONT_BE_IMPLEMENTED        # |=
     # AT_EQUAL = WONT_BE_IMPLEMENTED          # @=
     # BSLASH = auto(), WONT_BE_IMPLEMENTED    # \
-
 
     # Multicharacter conglomerates
     IDENTIFIER = auto()  # [A-Za-z_][A-Za-z_0-9]
@@ -99,68 +99,68 @@ class TokenType(Enum):
     NOT = auto()
 
 
-SYMBOL_CONTROL: Dict[Optional[str], Union[Dict, TokenType]] = {
-    "(": {None: TokenType.LPAREN},
-    ")": {None: TokenType.RPAREN},
-    "[": {None: TokenType.LSQB},
-    "]": {None: TokenType.RSQB},
-    "{": {None: TokenType.LBRACE},
-    "}": {None: TokenType.RBRACE},
-    ",": {None: TokenType.COMMA},
-    ".": {None: TokenType.DOT},
-    ";": {None: TokenType.SEMICOLON},
-    "?": {None: TokenType.QUESTION},
-    "|": {None: TokenType.QUESTION},
-    "&": {None: TokenType.AMPERSAND},
-    "^": {None: TokenType.CIRCUMFLEX},
-    "@": {None: TokenType.AT},
+SYMBOL_CONTROL: Dict[Optional[str], Union[Dict, LolTokenType]] = {
+    "(": {None: LolTokenType.LPAREN},
+    ")": {None: LolTokenType.RPAREN},
+    "[": {None: LolTokenType.LSQB},
+    "]": {None: LolTokenType.RSQB},
+    "{": {None: LolTokenType.LBRACE},
+    "}": {None: LolTokenType.RBRACE},
+    ",": {None: LolTokenType.COMMA},
+    ".": {None: LolTokenType.DOT},
+    ";": {None: LolTokenType.SEMICOLON},
+    "?": {None: LolTokenType.QUESTION},
+    "|": {None: LolTokenType.VBAR},
+    "&": {None: LolTokenType.AMPERSAND},
+    "^": {None: LolTokenType.CIRCUMFLEX},
+    "@": {None: LolTokenType.AT},
     ":": {
-        ":": TokenType.COLON_COLON,
-        None: TokenType.COLON,
+        ":": LolTokenType.COLON_COLON,
+        None: LolTokenType.COLON,
     },
     "=": {
-        "=": TokenType.EQUAL_EQUAL,
-        None: TokenType.EQUAL,
+        "=": LolTokenType.EQUAL_EQUAL,
+        None: LolTokenType.EQUAL,
     },
     ">": {
-        ">": TokenType.RSHIFT,
-        "=": TokenType.GREATER_EQUAL,
-        None: TokenType.GREATER,
+        ">": LolTokenType.RSHIFT,
+        "=": LolTokenType.GREATER_EQUAL,
+        None: LolTokenType.GREATER,
     },
     "<": {
-        "<": TokenType.LSHIFT,
-        "=": TokenType.LESSER_EQUAL,
-        None: TokenType.LESSER,
+        "<": LolTokenType.LSHIFT,
+        "=": LolTokenType.LESSER_EQUAL,
+        None: LolTokenType.LESSER,
     },
     "!": {
-        "=": TokenType.NOT_EQUAL,
-        None: TokenType.NOT,
+        "=": LolTokenType.NOT_EQUAL,
+        None: LolTokenType.NOT,
     },
     "+": {
-        "+": TokenType.PLUS_PLUS,
-        None: TokenType.PLUS,
+        "+": LolTokenType.PLUS_PLUS,
+        None: LolTokenType.PLUS,
     },
     "*": {
-        "*": TokenType.STAR_STAR,
-        None: TokenType.STAR,
+        "*": LolTokenType.STAR_STAR,
+        None: LolTokenType.STAR,
     },
     "-": {
-        "-": TokenType.MINUS,
-        ">": TokenType.ARROW,
-        None: TokenType.MINUS,
+        "-": LolTokenType.MINUS,
+        ">": LolTokenType.ARROW,
+        None: LolTokenType.MINUS,
     },
     "/": {
-        "/": TokenType.SLASH_SLASH,
-        None: TokenType.SLASH,
+        "/": LolTokenType.SLASH_SLASH,
+        None: LolTokenType.SLASH,
     },
 }
 
 
-class Token:
+class LolToken:
     def __init__(
         self,
         lexeme: str,
-        token_type: TokenType,
+        token_type: LolTokenType,
         *,
         start_position: Optional[int] = None,
         full_text: Optional[str] = None,
@@ -171,7 +171,7 @@ class Token:
         self.start_position = start_position
         self.full_text = full_text
 
-    def is_type(self, token_type: TokenType) -> bool:
+    def is_type(self, token_type: LolTokenType) -> bool:
         return self.token_type == token_type
 
     def as_str(self):
@@ -186,19 +186,19 @@ class Token:
     def __repr__(self):
         """Pretty print the token. This is NOT for serialization, because the
         token type should be an integer id so that it's easier to parse."""
-        return (
-            f"Token(lexeme={repr(self.lexeme)}, token_type={self.get_token_type_as_str()}, start_idx={self.start_position}, full_text?={isinstance(self.full_text, str)})"
-        )
+        return f"LolToken(lexeme={repr(self.lexeme)}, token_type={self.get_token_type_as_str()}, start_idx={self.start_position}, full_text?={isinstance(self.full_text, str)})"
 
     def get_line_and_column_numbers(self) -> Optional[Tuple[int, int]]:
         if self.start_position is None or self.full_text is None:
             return None
-        line_no = self.full_text[:self.start_position].count("\n") + 1
+        line_no = self.full_text[: self.start_position].count("\n") + 1
         lines = self.full_text.split("\n")
-        col_no = self.start_position - sum(len(line) for line in lines[:line_no])
+        col_no = self.start_position - sum(
+            len(line) for line in lines[:line_no]
+        )
         return line_no, col_no
 
-    def to_dict(self) -> Dict[str, Union[TokenType, int, str]]:
+    def to_dict(self) -> Dict[str, Union[LolTokenType, int, str]]:
         """
         Pretty print the serialized token.
 
@@ -213,37 +213,24 @@ class Token:
 
 
 class CharacterStream:
-    def __init__(self, text: str):
-        self.text = text
-        self.idx = 0
-        self.line_number = 1
-        self.column_number = 1
+    def __init__(self, path: Path):
+        self.path: Path = path
+        with path.open() as f:
+            self.text: str = f.read()
+        self.position: int = 0
 
     def get_text_after(self):
-        return self.text[self.idx:]
-
-    def get_text(self) -> str:
-        return self.text
+        return self.text[self.position :]
 
     def get_char(self, *, offset: Optional[int] = 0) -> Optional[str]:
         """Get the current character or return None"""
-        if self.idx + offset >= len(self.text):
+        if self.position + offset >= len(self.text):
             return None
-        return self.text[self.idx + offset]
+        return self.text[self.position + offset]
 
     def next_char(self):
         """Advance to the next character or return early if we are at the last character."""
         c = self.get_char()
         if c is None:
             return
-        self.idx += 1
-        if c == "\n":
-            self.line_number += 1
-            self.column_number = 1
-        else:
-            self.column_number += 1
-
-    def get_pos(self) -> int:
-        """Get the current character position in a (absolute_index, line_number,
-        column_number) tuple"""
-        return self.idx
+        self.position += 1

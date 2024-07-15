@@ -43,51 +43,61 @@ Future tokens to accept in the future are:
 6. Add multiline strings ('''multiline string''')
 7. Add multiline comments
 """
+
+from pathlib import Path
 from typing import Dict, List
 
 from compiler.lexer.lol_lexer_types import (
-    TokenType, Token, CharacterStream, SYMBOL_CONTROL
+    LolTokenType,
+    LolToken,
+    CharacterStream,
+    SYMBOL_CONTROL,
 )
+
+from compiler.error import LolError
 
 
 class Lexer:
-    def __init__(self, src: str):
-        self.stream = CharacterStream(src)
+    def __init__(self, path: Path):
+        self.stream = CharacterStream(path)
         self.tokens = []
 
     @staticmethod
-    def _get_identifier_token_type(identifier: str):
+    def _get_identifier_token_type(identifier: str) -> LolTokenType | None:
         if identifier in {
-            "while", "for", "namespace", "break", "continue", "not"
+            "while",
+            "for",
+            "namespace",
+            "break",
+            "continue",
+            "not",
         }:
-            raise NotImplementedError(
-                f"lexer supports keyword '{identifier}'; no further stage does"
-            )
-        key_words: Dict[str, TokenType] = {
-            "if": TokenType.IF,
-            "else": TokenType.ELSE,
-            "let": TokenType.LET,
-            "while": TokenType.WHILE,
-            "for": TokenType.FOR,
-            "function": TokenType.FUNCTION,
-            "return": TokenType.RETURN,
-            "namespace": TokenType.NAMESPACE,
-            "module": TokenType.MODULE,
-            "import": TokenType.IMPORT,
-            "break": TokenType.BREAK,
-            "continue": TokenType.CONTINUE,
-            "and": TokenType.AND,
-            "or": TokenType.OR,
-            "not": TokenType.NOT,
+            return None
+        key_words: Dict[str, LolTokenType] = {
+            "if": LolTokenType.IF,
+            "else": LolTokenType.ELSE,
+            "let": LolTokenType.LET,
+            "while": LolTokenType.WHILE,
+            "for": LolTokenType.FOR,
+            "function": LolTokenType.FUNCTION,
+            "return": LolTokenType.RETURN,
+            "namespace": LolTokenType.NAMESPACE,
+            "module": LolTokenType.MODULE,
+            "import": LolTokenType.IMPORT,
+            "break": LolTokenType.BREAK,
+            "continue": LolTokenType.CONTINUE,
+            "and": LolTokenType.AND,
+            "or": LolTokenType.OR,
+            "not": LolTokenType.NOT,
         }
-        token_type = key_words.get(identifier, TokenType.IDENTIFIER)
+        token_type = key_words.get(identifier, LolTokenType.IDENTIFIER)
         return token_type
 
     @staticmethod
     def lex_identifier(stream: CharacterStream):
         # Concatentation to a list is more efficient than to a string, since
         # strings are immutable.
-        c, pos = stream.get_char(), stream.get_pos()
+        c, pos = stream.get_char(), stream.position
         token = []
         while c.isalnum() or c == "_":
             token.append(c)
@@ -96,18 +106,27 @@ class Lexer:
 
         identifier = "".join(token)
         token_type = Lexer._get_identifier_token_type(identifier)
-        return Token(
+        if token_type is None:
+            LolError.print_error(
+                stream.text,
+                pos,
+                pos + len(identifier),
+                "heretofore unsupported token",
+            )
+            raise NotImplementedError(
+                f"lexer supports keyword '{identifier}'; no further stage does"
+            )
+        return LolToken(
             identifier,
             token_type,
             start_position=pos,
-            full_text=stream.get_text()
         )
 
     @staticmethod
     def lex_number(stream: CharacterStream):
         # NOTE(dchu): for now, we assume that the number is a base-10 integer.
-        c, pos = stream.get_char(), stream.get_pos()
-        current_token_type = TokenType.INTEGER
+        c, pos = stream.get_char(), stream.position
+        current_token_type = LolTokenType.INTEGER
         # Concatentation to a list is more efficient than to a string, since
         # strings are immutable.
         token = []
@@ -116,19 +135,35 @@ class Lexer:
                 token.append(c)
                 stream.next_char()
                 c = stream.get_char()
-            elif c == "." and current_token_type == TokenType.INTEGER:
+            elif c == "." and current_token_type == LolTokenType.INTEGER:
+                LolError.print_error(
+                    stream.text,
+                    pos,
+                    pos + len(token),
+                    "floats not supported yet",
+                )
                 raise NotImplementedError("floats not supported yet!")
-                current_token_type = TokenType.FLOAT
+                current_token_type = LolTokenType.FLOAT
                 token.append(c)
                 stream.next_char()
                 c = stream.get_char()
             else:
+                LolError.print_error(
+                    stream.text,
+                    pos,
+                    pos + len(token),
+                    "unrecognized number format (0b0, 0o0, 0x0, etc not supported)",
+                )
                 raise NotImplementedError
-        return Token("".join(token), current_token_type, start_position=pos, full_text=stream.get_text())
+        return LolToken(
+            "".join(token),
+            current_token_type,
+            start_position=pos,
+        )
 
     @staticmethod
     def lex_string(stream: CharacterStream):
-        c, pos = stream.get_char(), stream.get_pos()
+        c, pos = stream.get_char(), stream.position
         # Concatentation to a list is more efficient than to a string, since
         # strings are immutable.
         stream.next_char()
@@ -143,13 +178,17 @@ class Lexer:
             stream.next_char()
         # Add trailing quote
         token.append(c)
-        return Token("".join(token), TokenType.STRING, start_position=pos, full_text=stream.get_text())
+        return LolToken(
+            "".join(token),
+            LolTokenType.STRING,
+            start_position=pos,
+        )
 
     @staticmethod
     def lex_comment(stream: CharacterStream):
         """Get a comment that is like a C-style comment: /* Comment */. We
         assume that there is already a '/*' and the front."""
-        pos = stream.get_pos()
+        pos = stream.position
         assert stream.get_char() == "/" and stream.get_char(offset=1) == "*"
         stream.next_char()
         stream.next_char()
@@ -166,11 +205,21 @@ class Lexer:
                 stream.next_char()
                 break
             elif c is None:
+                LolError.print_error(
+                    stream.text,
+                    pos,
+                    pos + len("/*"),
+                    "expecting closing '*/' for comment",
+                )
                 raise ValueError("expected terminal '*/' in the comment")
-        return Token("".join(token), TokenType.COMMENT, start_position=pos, full_text=stream.get_text())
+        return LolToken(
+            "".join(token),
+            LolTokenType.COMMENT,
+            start_position=pos,
+        )
 
     @staticmethod
-    def _is_punctuation_implemented(token_type: TokenType) -> bool:
+    def _is_punctuation_implemented(token_type: LolTokenType) -> bool:
         # TODO(dchu): This is a hack! I should just maintain a list of
         #  unimplemented punctuation token types. The reason I do this is
         #  because it is very clear when inspecting the TokenType definition to
@@ -178,31 +227,31 @@ class Lexer:
         if (
             isinstance(token_type.value, tuple)
             and len(token_type.value) >= 2
-            and token_type.value[1] in {
-                TokenType.NOT_YET_IMPLEMENTED, TokenType.WONT_BE_IMPLEMENTED
+            and token_type.value[1]
+            in {
+                LolTokenType.NOT_YET_IMPLEMENTED.value,
+                LolTokenType.WONT_BE_IMPLEMENTED.value,
             }
         ):
-            raise NotImplementedError(
-                f"token_type {token_type.n} not implemented"
-            )
+            return False
         return True
 
     @staticmethod
     def lex_punctuation(stream: CharacterStream):
-        start_pos = stream.get_pos()
+        start_pos = stream.position
 
         control = SYMBOL_CONTROL
         lexeme = []
         while True:
             c = stream.get_char()
             if c is None:
-                if isinstance(control, TokenType):
+                if isinstance(control, LolTokenType):
                     token_type = control
                     break
                 elif None in control:
                     token_type = control[None]
                     break
-            if isinstance(control, TokenType):
+            if isinstance(control, LolTokenType):
                 token_type = control
                 break
             elif c in control:
@@ -213,14 +262,26 @@ class Lexer:
                 token_type = control[None]
                 break
             else:
-                raise ValueError(f"cannot append {c} to {''.join(lexeme)} -- potential bug, just separate the symbols")
+                LolError.print_error(
+                    stream.text, start_pos, start_pos + len(lexeme), ""
+                )
+                raise ValueError(
+                    f"cannot append {c} to {''.join(lexeme)} -- potential bug, just separate the symbols"
+                )
 
         if not Lexer._is_punctuation_implemented(token_type):
+            LolError.print_error(
+                stream.text,
+                start_pos,
+                start_pos + len(lexeme),
+                "unimplemented token",
+            )
             raise NotImplementedError
 
-        return Token(
-            "".join(lexeme), token_type,
-            start_position=start_pos, full_text=stream.get_text()
+        return LolToken(
+            "".join(lexeme),
+            token_type,
+            start_position=start_pos,
         )
 
     def tokenize(self):
@@ -251,10 +312,16 @@ class Lexer:
                 token = self.lex_punctuation(self.stream)
                 self.tokens.append(token)
             else:
+                LolError.print_error(
+                    self.stream.text,
+                    self.stream.position,
+                    self.stream.position + 1,
+                    "character is not supported",
+                )
                 raise ValueError(f"character '{c}' not supported!")
 
 
-def tokenize(text: str) -> List[Token]:
-    t = Lexer(text)
+def tokenize(path: Path) -> List[LolToken]:
+    t = Lexer(path)
     t.tokenize()
     return t.tokens
