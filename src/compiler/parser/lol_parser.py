@@ -211,10 +211,12 @@ def eat_token(stream: TokenStream, expected_type: LolTokenType) -> LolToken:
 
 
 def get_start(token: LolToken) -> int:
+    """Get the start position of a token."""
     return token.start_position
 
 
 def get_end(token: LolToken) -> int:
+    """Get the end position of a token."""
     return token.start_position + len(token.lexeme)
 
 
