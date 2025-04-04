@@ -21,6 +21,8 @@ from compiler.parser.lol_parser import (
     LolParserFunctionDefinition,
     LolParserReturnStatement,
     LolParserIfStatement,
+    LolParserItemAccess,
+    LolParserOperatorType,
 )
 
 ################################################################################
@@ -374,7 +376,11 @@ class LolAnalysisFunction:
         body_block: List[LolIRStatement],
     ) -> str:
         if isinstance(x, LolParserOperatorExpression):
-            op_name: str = x.operator
+            op_name: str = {
+                LolParserOperatorType.BINARY_INFIX: "infix",
+                LolParserOperatorType.UNARY_PREFIX: "prefix",
+                LolParserOperatorType.UNARY_POSTFIX: "postfix",
+            }[x.type] + f"{x.operator}"
             operands: List["LolAnalysisVariable"] = [
                 self._get_symbol(
                     module_symbol_table,
@@ -485,7 +491,10 @@ class LolAnalysisFunction:
         if isinstance(x, LolParserVariableDefinition):
             name = x.get_name_as_str()
             ast_data_type = x.type
-            assert isinstance(ast_data_type, LolParserIdentifier)
+            assert isinstance(
+                ast_data_type, (LolParserIdentifier, LolParserItemAccess)
+            )
+
             data_type = self._get_symbol(
                 module_symbol_table, ast_data_type.name
             )
@@ -552,19 +561,26 @@ class LolAnalysisModule:
 
     def add_builtin_types(self, caller_module: Optional["LolAnalysisModule"]):
         if caller_module is None:
+            type_ = LolAnalysisBuiltinType("Type", {})
             i32 = LolAnalysisBuiltinType("i32", {})
-            i32.ops["+"] = i32
-            i32.ops["-"] = i32
-            i32.ops["*"] = i32
-            i32.ops["/"] = i32
+            i32.ops["infix+"] = i32
+            i32.ops["infix-"] = i32
+            i32.ops["infix*"] = i32
+            i32.ops["infix/"] = i32
             cstr = LolAnalysisBuiltinType("cstr", {})
             void = LolAnalysisBuiltinType("void", {})
+            array_generic = LolAnalysisBuiltinType("Array", {})
+            array_generic.ops["postfix[]"] = type_
         else:
             # We want all of the built-in objects to be identical objects with
             # even the pointers matching (so module_a's i32 is module_b's i32)
             i32 = caller_module.module_symbol_table["i32"]
             cstr = caller_module.module_symbol_table["cstr"]
             void = caller_module.module_symbol_table["void"]
+            type_ = caller_module.module_symbol_table["Type"]
+            array_generic = caller_module.module_symbol_table["Array"]
+        self.add_to_module_symbol_table("Type", type_)
+        self.add_to_module_symbol_table("Array", array_generic)
         self.add_to_module_symbol_table("i32", i32)
         self.add_to_module_symbol_table("cstr", cstr)
         self.add_to_module_symbol_table("void", void)

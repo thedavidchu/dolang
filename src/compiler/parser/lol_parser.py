@@ -115,6 +115,15 @@ class LolParserFunctionCall(LolParserGeneric):
 
 
 @frozen_dataclass
+class LolParserItemAccess(LolParserGeneric):
+    name: LolParserIdentifier
+    arguments: List[LolParserExpression]
+
+    def get_name_as_str(self):
+        return self.name.name
+
+
+@frozen_dataclass
 class LolParserVariableDefinition(LolParserGeneric):
     name: LolParserIdentifier
     type: LolParserTypeExpression
@@ -251,34 +260,65 @@ class Parser:
         return ret
 
     @staticmethod
-    def parse_func_call_args(
-        stream: TokenStream, func_identifier: LolParserIdentifier
-    ) -> LolParserFunctionCall:
-        start_pos = func_identifier.start_position
-        eat_token(stream, LolTokenType.LPAREN)
-        args: List[LolParserValueExpression] = []
+    def parse_comma_separated_expressions(
+        stream: TokenStream, start_position: int, end_token_type: LolTokenType
+    ) -> list[LolParserExpression]:
+        args: List[LolParserExpression] = []
         token = stream.get_token()
         # Check if empty set of arguments
-        if token.is_type(LolTokenType.RPAREN):
-            rp_tok = eat_token(stream, LolTokenType.RPAREN)
-            return LolParserFunctionCall(
-                start_pos, get_end(rp_tok), func_identifier, args
-            )
+        if token.is_type(end_token_type):
+            eat_token(stream, end_token_type)
+            return args
         # At this point, we have at least one argument (or error)
         while True:
             expr = Parser.parse_value_expression(stream)
             args.append(expr)
             token = stream.get_token()
-            if token.is_type(LolTokenType.RPAREN):
-                eat_token(stream, LolTokenType.RPAREN)
+            if token.is_type(end_token_type):
+                eat_token(stream, end_token_type)
                 break
             elif token.is_type(LolTokenType.COMMA):
                 eat_token(stream, LolTokenType.COMMA)
                 continue
             else:
-                raise ValueError("Expected COMMA or RPAREN")
+                error_msg = f"Expected COMMA or {end_token_type.name}, got {token.token_type.name}"
+                LolError.print_error(
+                    stream.path, start_position, start_position + 1, error_msg
+                )
+                raise ValueError(error_msg)
+        return args
+
+    @staticmethod
+    def parse_func_call_args(
+        stream: TokenStream, func_identifier: LolParserIdentifier
+    ) -> LolParserFunctionCall:
+        start_pos = func_identifier.start_position
+        eat_token(stream, LolTokenType.LPAREN)
+        args = Parser.parse_comma_separated_expressions(
+            stream, start_pos, LolTokenType.RPAREN
+        )
         end_pos = get_end(stream.get_token(offset=-1))
         return LolParserFunctionCall(start_pos, end_pos, func_identifier, args)
+
+    @staticmethod
+    def parse_item_access_args(
+        stream: TokenStream, func_identifier: LolParserIdentifier
+    ) -> LolParserFunctionCall:
+        start_pos = func_identifier.start_position
+        eat_token(stream, LolTokenType.LSQB)
+        args = Parser.parse_comma_separated_expressions(
+            stream, start_pos, LolTokenType.RSQB
+        )
+        end_pos = get_end(stream.get_token(offset=-1))
+        return LolParserItemAccess(start_pos, end_pos, func_identifier, args)
+
+    @staticmethod
+    def parse_list(stream: TokenStream) -> list[LolParserExpression]:
+        start_pos = get_start(stream.get_token())
+        eat_token(stream, LolTokenType.LSQB)
+        return Parser.parse_comma_separated_expressions(
+            stream, start_pos, LolTokenType.RSQB
+        )
 
     @staticmethod
     def parse_identifier_with_namespace_separator(
@@ -336,7 +376,7 @@ class Parser:
         if token.is_type(LolTokenType.LPAREN):
             return Parser.parse_func_call_args(stream, identifier_leaf)
         elif token.is_type(LolTokenType.LSQB):
-            raise ValueError("accesses not supported yet... i.e. `x[100]`")
+            return Parser.parse_item_access_args(stream, identifier_leaf)
         else:
             return LolParserIdentifier(
                 identifier_leaf.start_position,
@@ -368,6 +408,8 @@ class Parser:
             return Parser.parse_literal(stream)
         elif token.is_type(LolTokenType.LPAREN):
             return Parser.parse_parenthetic_expression(stream)
+        elif token.is_type(LolTokenType.LSQB):
+            return Parser.parse_list(stream)
         else:
             error_msg = f"unrecognized primary {token}"
             LolError.print_error(
@@ -474,11 +516,7 @@ class Parser:
 
     @staticmethod
     def parse_type_expression(stream: TokenStream) -> LolParserTypeExpression:
-        # We only support single-token type expressions for now
-        ident = eat_token(stream, LolTokenType.IDENTIFIER)
-        return LolParserIdentifier(
-            get_start(ident), get_end(ident), ident.as_str()
-        )
+        return Parser.parse_expression(stream)
 
     @staticmethod
     def parse_value_expression(stream: TokenStream) -> LolParserValueExpression:
