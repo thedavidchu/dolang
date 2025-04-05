@@ -1,6 +1,8 @@
+use std::cmp::min;
 use std::env;
 use std::fs;
 use std::path::Path;
+use std::process::exit;
 
 #[derive(Debug, Clone, Copy)]
 struct Position {
@@ -298,20 +300,29 @@ impl Lexer<'_> {
         length
     }
 
+    fn is_comment(&self, i: usize) -> bool {
+        &self.text[i..min(i + 2, self.text.len())] == "/*"
+    }
+
     /// @note   We already know this is punctuation.
-    fn parse_comment(&mut self, start: Position) -> usize {
+    fn parse_comment(&mut self, start: Position) -> (Position, usize) {
         let mut length: usize = 2;
         let mut almost_end: bool = false;
+        let mut pos = start.clone();
         if &self.text[start.position..start.position + 2] != "/*" {
-            return 0;
+            return (start, 0);
         }
+        pos.next_column_step(2);
         for c in self.text[start.position + 2..].chars() {
             match c {
                 '*' => {
+                    pos.next_column();
                     length += 1;
                     almost_end = true;
                 }
                 c if almost_end && c == '/' => {
+                    /* Push the position to the next character. */
+                    pos.next_column();
                     length += 1;
                     let raw_text = &self.text[start.position..start.position + length];
                     self.tokens.push(Token::LiteralComment(CommentLiteral {
@@ -319,9 +330,16 @@ impl Lexer<'_> {
                         raw_text: raw_text.to_string(),
                     }));
                     println!("Comment: '{raw_text}'");
-                    return length;
+                    return (pos, length);
+                }
+                /* Comments can span multiple lines. */
+                '\n' => {
+                    pos.next_line();
+                    length += 1;
+                    almost_end = false;
                 }
                 _ => {
+                    pos.next_column();
                     length += 1;
                     almost_end = false;
                 }
@@ -330,12 +348,9 @@ impl Lexer<'_> {
         panic!("reached EOF without finishing string!");
     }
 
+    /// @note   This function does NOT parse comments.
     fn parse_punctuation(&mut self, position: Position) -> usize {
         let mut length: usize = 0;
-
-        if &self.text[position.position..position.position + 2] == "/*" {
-            return self.parse_comment(self.position);
-        }
 
         for c in self.text[position.position..].chars() {
             match c {
@@ -376,6 +391,7 @@ impl Lexer<'_> {
                 let p = self.position.position;
                 let pc: &str = &self.text[p..p + 1];
                 eprintln!("Mismatch position: {i} vs {p} => {c} vs {pc}");
+                exit(-1);
             }
             match c {
                 '(' => {
@@ -428,6 +444,12 @@ impl Lexer<'_> {
                     self.position.next_column_step(len);
                     skip = len - 1;
                 }
+                // If this is the end, then
+                c if c == '/' && self.is_comment(i) => {
+                    let (pos, len) = self.parse_comment(self.position);
+                    self.position = pos;
+                    skip = len - 1;
+                }
                 c if c.is_ascii_punctuation() => {
                     let len = self.parse_punctuation(self.position);
                     self.position.next_column_step(len);
@@ -452,7 +474,8 @@ impl Lexer<'_> {
                 Token::Comma(_) => ",".to_string(),
                 _ => t.to_raw_text(),
             };
-            println!("{},{}", t.get_position().to_csv_string(), txt);
+            print!("{} ", txt);
+            // println!("{},{}", t.get_position().to_csv_string(), txt);
         }
     }
 }
