@@ -92,6 +92,10 @@ enum Token {
     KeywordIf(Position),
     KeywordElse(Position),
     KeywordLet(Position),
+    /* Boolean Operations */
+    KeywordAnd(Position),
+    KeywordOr(Position),
+    KeywordNot(Position),
 
     Identifier(Identifier),
 
@@ -109,7 +113,27 @@ enum Token {
     Semicolon(Position),
     Comma(Position),
 
-    OpNot(Position),
+    OpColon(Position),
+    OpSet(Position),
+    OpNamespace(Position),
+    OpDot(Position),
+    OpArrow(Position),
+
+    /* Math Operations */
+    OpPlus(Position),
+    OpMinus(Position),
+    OpDiv(Position),
+    OpMul(Position),
+
+    /* Bitwise Operations (TODO) */
+
+    /* Comparison Operations */
+    OpEq(Position),
+    OpNe(Position),
+    OpLt(Position),
+    OpGt(Position),
+    OpLe(Position),
+    OpGe(Position),
 }
 
 impl Token {
@@ -120,6 +144,10 @@ impl Token {
             Token::KeywordIf(pos) => pos,
             Token::KeywordElse(pos) => pos,
             Token::KeywordLet(pos) => pos,
+            /* Boolean Operations */
+            Token::KeywordAnd(pos) => pos,
+            Token::KeywordOr(pos) => pos,
+            Token::KeywordNot(pos) => pos,
             Token::Identifier(id) => &id.position,
             /* Literals */
             Token::LiteralString(lit) => &lit.position,
@@ -138,8 +166,30 @@ impl Token {
             /* Non-repeating punctuation */
             Token::Semicolon(pos) => pos,
             Token::Comma(pos) => pos,
+
             /* Possbily repeating punctuation */
-            Token::OpNot(pos) => pos,
+            Token::OpColon(pos) => pos,
+            Token::OpSet(pos) => pos,
+            Token::OpNamespace(pos) => pos,
+            Token::OpDot(pos) => pos,
+            Token::OpArrow(pos) => pos,
+
+            /* Math Operations */
+            Token::OpPlus(pos) => pos,
+            Token::OpMinus(pos) => pos,
+            Token::OpDiv(pos) => pos,
+            Token::OpMul(pos) => pos,
+
+            /* Bitwise Operations (TODO) */
+
+
+            /* Comparison Operations */
+            Token::OpEq(pos) => pos,
+            Token::OpNe(pos) => pos,
+            Token::OpLt(pos) => pos,
+            Token::OpGt(pos) => pos,
+            Token::OpLe(pos) => pos,
+            Token::OpGe(pos) => pos,
         }
         .clone()
     }
@@ -151,6 +201,10 @@ impl Token {
             Token::KeywordIf(_) => "if",
             Token::KeywordElse(_) => "else",
             Token::KeywordLet(_) => "let",
+            /* Boolean Operations */
+            Token::KeywordAnd(_) => "and",
+            Token::KeywordOr(_) => "or",
+            Token::KeywordNot(_) => "not",
             Token::Identifier(identifier) => identifier.raw_text.as_str(),
             /* Literals */
             Token::LiteralString(lit) => lit.raw_text.as_str(),
@@ -170,7 +224,27 @@ impl Token {
             Token::Semicolon(_) => ";",
             Token::Comma(_) => ",",
             /* Possbily repeating punctuation */
-            Token::OpNot(_) => "!",
+            Token::OpColon(_) => ":",
+            Token::OpSet(_) => "=",
+            Token::OpNamespace(_) => "::",
+            Token::OpDot(_) => ".",
+            Token::OpArrow(_) => "->",
+
+            /* Math Operations */
+            Token::OpPlus(_) => "+",
+            Token::OpMinus(_) => "-",
+            Token::OpDiv(_) => "/",
+            Token::OpMul(_) => "*",
+
+            /* Bitwise Operations (TODO) */
+
+            /* Comparison Operations */
+            Token::OpEq(_) => "==",
+            Token::OpNe(_) => "!=",
+            Token::OpLt(_) => "<",
+            Token::OpGt(_) => ">",
+            Token::OpLe(_) => "<=",
+            Token::OpGe(_) => ">=",
         }
         .to_string()
     }
@@ -225,6 +299,9 @@ impl Lexer<'_> {
             "if" => self.tokens.push(Token::KeywordIf(position)),
             "else" => self.tokens.push(Token::KeywordElse(position)),
             "let" => self.tokens.push(Token::KeywordLet(position)),
+            "and" => self.tokens.push(Token::KeywordAnd((position))),
+            "or" => self.tokens.push(Token::KeywordOr((position))),
+            "not" => self.tokens.push(Token::KeywordNot((position))),
             _ => self.tokens.push(Token::Identifier(Identifier {
                 position,
                 raw_text: raw_text.to_string(),
@@ -349,10 +426,10 @@ impl Lexer<'_> {
     }
 
     /// @note   This function does NOT parse comments.
-    fn parse_punctuation(&mut self, position: Position) -> usize {
+    fn parse_punctuation(&mut self, start: Position) -> usize {
         let mut length: usize = 0;
 
-        for c in self.text[position.position..].chars() {
+        for c in self.text[start.position..].chars() {
             match c {
                 // These must occur above the ASCII punctuation arm
                 // otherwise they'll be sucked in as well.
@@ -361,13 +438,33 @@ impl Lexer<'_> {
                 _ => break,
             }
         }
-        let raw_text = &self.text[position.position..position.position + length];
+        let raw_text = &self.text[start.position..start.position + length];
         match raw_text {
-            "!" => self.tokens.push(Token::OpNot(position)),
+            ":" => self.tokens.push(Token::OpColon(start)),
+            "=" => self.tokens.push(Token::OpSet(start)),
+            "::" => self.tokens.push(Token::OpNamespace(start)),
+            "." => self.tokens.push(Token::OpDot(start)),
+            "->" => self.tokens.push(Token::OpArrow(start)),
+
+            /* Math Operations */
+            "+" => self.tokens.push(Token::OpPlus(start)),
+            "-" => self.tokens.push(Token::OpMinus(start)),
+            "/" => self.tokens.push(Token::OpDiv(start)),
+            "*" => self.tokens.push(Token::OpMul(start)),
+
+            /* Bitwise Operations (TODO) */
+
+            /* Comparison Operations */
+            "==" => self.tokens.push(Token::OpEq(start)),
+            "!=" => self.tokens.push(Token::OpNe(start)),
+            "<" => self.tokens.push(Token::OpLt(start)),
+            ">" => self.tokens.push(Token::OpGt(start)),
+            "<=" => self.tokens.push(Token::OpLe(start)),
+            ">=" => self.tokens.push(Token::OpGe(start)),
             _ => {
                 println!("unrecognized op '{raw_text}'");
                 self.tokens.push(Token::LiteralUnknownOp(UnknownOpLiteral {
-                    position: position,
+                    position: start,
                     raw_text: raw_text.to_string(),
                 }))
             }
