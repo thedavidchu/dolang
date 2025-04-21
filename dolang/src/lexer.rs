@@ -5,7 +5,7 @@ use std::path::Path;
 use std::process::exit;
 
 #[derive(Debug, Clone, Copy)]
-struct Position {
+pub struct Position {
     position: usize,
     line: usize,
     column: usize,
@@ -36,7 +36,7 @@ impl Position {
         self.column += step;
     }
 
-    fn to_csv_string(&self) -> String {
+    pub fn to_csv_string(&self) -> String {
         let mut s: String = "".to_string();
         s.push_str(self.position.to_string().as_str());
         s.push_str(",");
@@ -82,10 +82,11 @@ struct UnknownOpLiteral {
     raw_text: String,
 }
 
-enum Token {
+#[derive(Debug, Clone)]
+pub enum Token {
     /* IDK if this should be a literal or not. */
-    LiteralComment(CommentLiteral),
-    LiteralUnknownOp(UnknownOpLiteral),
+    LiteralComment(Position, String),
+    LiteralUnknownOp(Position, String),
 
     KeywordFunction(Position),
     KeywordStruct(Position),
@@ -97,11 +98,11 @@ enum Token {
     KeywordOr(Position),
     KeywordNot(Position),
 
-    Identifier(Identifier),
+    Identifier(Position, String),
 
-    LiteralString(StringLiteral),
-    LiteralInteger(IntegerLiteral),
-    LiteralFloat(FloatLiteral),
+    LiteralString(Position, String, String),
+    LiteralInteger(Position, String, i64),
+    LiteralFloat(Position, String, f64),
 
     BracketLeftRound(Position),
     BracketRightRound(Position),
@@ -137,7 +138,7 @@ enum Token {
 }
 
 impl Token {
-    fn get_position(&self) -> Position {
+    pub fn get_position(&self) -> Position {
         match self {
             Token::KeywordFunction(pos) => pos,
             Token::KeywordStruct(pos) => pos,
@@ -148,14 +149,14 @@ impl Token {
             Token::KeywordAnd(pos) => pos,
             Token::KeywordOr(pos) => pos,
             Token::KeywordNot(pos) => pos,
-            Token::Identifier(id) => &id.position,
+            Token::Identifier(pos, _) => &pos,
             /* Literals */
-            Token::LiteralString(lit) => &lit.position,
-            Token::LiteralInteger(lit) => &lit.position,
-            Token::LiteralFloat(lit) => &lit.position,
+            Token::LiteralString(pos, _, _) => &pos,
+            Token::LiteralInteger(pos, _, _) => &pos,
+            Token::LiteralFloat(pos, _, _) => &pos,
             /* Comment */
-            Token::LiteralComment(lit) => &lit.position,
-            Token::LiteralUnknownOp(lit) => &lit.position,
+            Token::LiteralComment(pos, _) => &pos,
+            Token::LiteralUnknownOp(pos, _) => &pos,
             /* Brackets */
             Token::BracketLeftRound(pos) => pos,
             Token::BracketRightRound(pos) => pos,
@@ -194,7 +195,7 @@ impl Token {
         .clone()
     }
 
-    fn to_raw_text(&self) -> String {
+    pub fn to_raw_text(&self) -> String {
         match self {
             Token::KeywordFunction(_) => "function",
             Token::KeywordStruct(_) => "struct",
@@ -205,14 +206,14 @@ impl Token {
             Token::KeywordAnd(_) => "and",
             Token::KeywordOr(_) => "or",
             Token::KeywordNot(_) => "not",
-            Token::Identifier(identifier) => identifier.raw_text.as_str(),
+            Token::Identifier(_, id) => id.as_str(),
             /* Literals */
-            Token::LiteralString(lit) => lit.raw_text.as_str(),
-            Token::LiteralInteger(lit) => lit.raw_text.as_str(),
-            Token::LiteralFloat(lit) => lit.raw_text.as_str(),
+            Token::LiteralString(_, id, _) => id.as_str(),
+            Token::LiteralInteger(_, id, _) => id.as_str(),
+            Token::LiteralFloat(_, id, _) => id.as_str(),
             /* Comment */
-            Token::LiteralComment(lit) => lit.raw_text.as_str(),
-            Token::LiteralUnknownOp(lit) => lit.raw_text.as_str(),
+            Token::LiteralComment(_, id) => id.as_str(),
+            Token::LiteralUnknownOp(_, id) => id.as_str(),
             /* Brackets */
             Token::BracketLeftRound(_) => "(",
             Token::BracketRightRound(_) => ")",
@@ -256,11 +257,11 @@ impl Token {
  *          commas or semicolons) will be greedily combined.
  */
 pub struct Lexer<'a> {
-    input_path: &'a Path,
-    output_path: &'a Path,
+    pub input_path: &'a Path,
+    pub output_path: &'a Path,
     text: String,
     position: Position,
-    tokens: Vec<Token>,
+    pub tokens: Vec<Token>,
 }
 
 impl Lexer<'_> {
@@ -302,10 +303,9 @@ impl Lexer<'_> {
             "and" => self.tokens.push(Token::KeywordAnd((position))),
             "or" => self.tokens.push(Token::KeywordOr((position))),
             "not" => self.tokens.push(Token::KeywordNot((position))),
-            _ => self.tokens.push(Token::Identifier(Identifier {
-                position,
-                raw_text: raw_text.to_string(),
-            })),
+            _ => self
+                .tokens
+                .push(Token::Identifier(position, raw_text.to_string())),
         }
         println!("{raw_text}");
         length
@@ -330,11 +330,8 @@ impl Lexer<'_> {
         let value = raw_text
             .parse()
             .expect("cannot parse int from string '{raw_text}'");
-        self.tokens.push(Token::LiteralInteger(IntegerLiteral {
-            position: position,
-            raw_text: raw_text.to_string(),
-            value: value,
-        }));
+        self.tokens
+            .push(Token::LiteralInteger(position, raw_text.to_string(), value));
         length
     }
 
@@ -368,11 +365,8 @@ impl Lexer<'_> {
         // TODO Panic if reach EOF.
         let raw_text = &self.text[start.position..start.position + length];
         let value = raw_text.parse().expect("cannot parse string from string");
-        self.tokens.push(Token::LiteralString(StringLiteral {
-            position: start,
-            raw_text: raw_text.to_string(),
-            value: value,
-        }));
+        self.tokens
+            .push(Token::LiteralString(start, raw_text.to_string(), value));
         println!("String: '{raw_text}'");
         length
     }
@@ -402,10 +396,8 @@ impl Lexer<'_> {
                     pos.next_column();
                     length += 1;
                     let raw_text = &self.text[start.position..start.position + length];
-                    self.tokens.push(Token::LiteralComment(CommentLiteral {
-                        position: start,
-                        raw_text: raw_text.to_string(),
-                    }));
+                    self.tokens
+                        .push(Token::LiteralComment(start, raw_text.to_string()));
                     println!("Comment: '{raw_text}'");
                     return (pos, length);
                 }
@@ -463,10 +455,8 @@ impl Lexer<'_> {
             ">=" => self.tokens.push(Token::OpGe(start)),
             _ => {
                 println!("unrecognized op '{raw_text}'");
-                self.tokens.push(Token::LiteralUnknownOp(UnknownOpLiteral {
-                    position: start,
-                    raw_text: raw_text.to_string(),
-                }))
+                self.tokens
+                    .push(Token::LiteralUnknownOp(start, raw_text.to_string()))
             }
         }
         println!("Op: '{raw_text}'");
