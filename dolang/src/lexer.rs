@@ -1,5 +1,4 @@
 use std::cmp::min;
-use std::env;
 use std::fs;
 use std::path::Path;
 use std::process::exit;
@@ -47,48 +46,15 @@ impl Position {
     }
 }
 
-struct StringLiteral {
-    position: Position,
-    raw_text: String,
-    value: String,
-}
-
-struct IntegerLiteral {
-    position: Position,
-    raw_text: String,
-    // TODO Use BigInt.
-    value: i64,
-}
-
-struct FloatLiteral {
-    position: Position,
-    raw_text: String,
-    // TODO Use arbitrary precision.
-    value: f64,
-}
-
-struct CommentLiteral {
-    position: Position,
-    raw_text: String,
-}
-
-struct Identifier {
-    position: Position,
-    raw_text: String,
-}
-
-struct UnknownOpLiteral {
-    position: Position,
-    raw_text: String,
-}
-
 #[derive(Debug, Clone)]
 pub enum Token {
     /* IDK if this should be a literal or not. */
     LiteralComment(Position, String),
     LiteralUnknownOp(Position, String),
 
+    KeywordReturn(Position),
     KeywordFunction(Position),
+    KeywordModule(Position),
     KeywordStruct(Position),
     KeywordIf(Position),
     KeywordElse(Position),
@@ -140,7 +106,9 @@ pub enum Token {
 impl Token {
     pub fn get_position(&self) -> Position {
         match self {
+            Token::KeywordReturn(pos) => pos,
             Token::KeywordFunction(pos) => pos,
+            Token::KeywordModule(pos) => pos,
             Token::KeywordStruct(pos) => pos,
             Token::KeywordIf(pos) => pos,
             Token::KeywordElse(pos) => pos,
@@ -195,9 +163,68 @@ impl Token {
         .clone()
     }
 
+    pub fn get_type_string(&self) -> String {
+        match self {
+            Token::KeywordReturn(_) => "KeywordReturn",
+            Token::KeywordFunction(_) => "KeywordFunction",
+            Token::KeywordModule(_) => "KeywordModule",
+            Token::KeywordStruct(_) => "KeywordStruct",
+            Token::KeywordIf(_) => "KeywordIf",
+            Token::KeywordElse(_) => "KeywordElse",
+            Token::KeywordLet(_) => "KeywordLet",
+            /* Boolean Operations */
+            Token::KeywordAnd(_) => "KeywordAnd",
+            Token::KeywordOr(_) => "KeywordOr",
+            Token::KeywordNot(_) => "KeywordNot",
+            Token::Identifier(_, _) => "",
+            /* Literals */
+            Token::LiteralString(_, _, _) => "LiteralString",
+            Token::LiteralInteger(_, _, _) => "LiteralInteger",
+            Token::LiteralFloat(_, _, _) => "LiteralFloat",
+            /* Comment */
+            Token::LiteralComment(_, _) => "LiteralComment",
+            Token::LiteralUnknownOp(_, _) => "LiteralUnknownOp",
+            /* Brackets */
+            Token::BracketLeftRound(_) => "BracketLeftRound",
+            Token::BracketRightRound(_) => "BracketRightRound",
+            Token::BracketLeftSquare(_) => "BracketLeftSquare",
+            Token::BracketRightSquare(_) => "BracketRightSquare",
+            Token::BracketLeftCurly(_) => "BracketLeftCurly",
+            Token::BracketRightCurly(_) => "BracketRightCurly",
+            /* Non-repeating punctuation */
+            Token::Semicolon(_) => "Semicolon",
+            Token::Comma(_) => "Comma",
+            /* Possbily repeating punctuation */
+            Token::OpColon(_) => "OpColon",
+            Token::OpSet(_) => "OpSet",
+            Token::OpNamespace(_) => "OpNamespace",
+            Token::OpDot(_) => "OpDot",
+            Token::OpArrow(_) => "OpArrow",
+
+            /* Math Operations */
+            Token::OpPlus(_) => "OpPlus",
+            Token::OpMinus(_) => "OpMinus",
+            Token::OpDiv(_) => "OpDiv",
+            Token::OpMul(_) => "OpMul",
+
+            /* Bitwise Operations (TODO) */
+
+            /* Comparison Operations */
+            Token::OpEq(_) => "OpEq",
+            Token::OpNe(_) => "OpNe",
+            Token::OpLt(_) => "OpLt",
+            Token::OpGt(_) => "OpGt",
+            Token::OpLe(_) => "OpLe",
+            Token::OpGe(_) => "OpGe",
+        }
+        .to_string()
+    }
+
     pub fn to_raw_text(&self) -> String {
         match self {
+            Token::KeywordReturn(_) => "return",
             Token::KeywordFunction(_) => "function",
+            Token::KeywordModule(_) => "module",
             Token::KeywordStruct(_) => "struct",
             Token::KeywordIf(_) => "if",
             Token::KeywordElse(_) => "else",
@@ -219,8 +246,8 @@ impl Token {
             Token::BracketRightRound(_) => ")",
             Token::BracketLeftSquare(_) => "[",
             Token::BracketRightSquare(_) => "]",
-            Token::BracketLeftCurly(_) => "{{",
-            Token::BracketRightCurly(_) => "}}",
+            Token::BracketLeftCurly(_) => "{",
+            Token::BracketRightCurly(_) => "}",
             /* Non-repeating punctuation */
             Token::Semicolon(_) => ";",
             Token::Comma(_) => ",",
@@ -248,6 +275,82 @@ impl Token {
             Token::OpGe(_) => ">=",
         }
         .to_string()
+    }
+
+    pub fn parse_dummy(s: &str) -> Self {
+        let p = Position {
+            position: 0,
+            line: 0,
+            column: 0,
+        };
+        match s {
+            "return" => Token::KeywordReturn(p),
+            "function" => Token::KeywordFunction(p),
+            "module" => Token::KeywordModule(p),
+            "struct" => Token::KeywordStruct(p),
+            "if" => Token::KeywordIf(p),
+            "else" => Token::KeywordElse(p),
+            "let" => Token::KeywordLet(p),
+            /* Boolean Operations */
+            "and" => Token::KeywordAnd(p),
+            "or" => Token::KeywordOr(p),
+            "not" => Token::KeywordNot(p),
+            /* Brackets */
+            "(" => Token::BracketLeftRound(p),
+            ")" => Token::BracketRightRound(p),
+            "[" => Token::BracketLeftSquare(p),
+            "]" => Token::BracketRightSquare(p),
+            "{" => Token::BracketLeftCurly(p),
+            "}" => Token::BracketRightCurly(p),
+            /* Non-repeating punctuation */
+            ";" => Token::Semicolon(p),
+            "," => Token::Comma(p),
+            /* Possbily repeating punctuation */
+            ":" => Token::OpColon(p),
+            "=" => Token::OpSet(p),
+            "::" => Token::OpNamespace(p),
+            "." => Token::OpDot(p),
+            "->" => Token::OpArrow(p),
+
+            /* Math Operations */
+            "+" => Token::OpPlus(p),
+            "-" => Token::OpMinus(p),
+            "/" => Token::OpDiv(p),
+            "*" => Token::OpMul(p),
+
+            /* Bitwise Operations (TODO) */
+
+            /* Comparison Operations */
+            "==" => Token::OpEq(p),
+            "!=" => Token::OpNe(p),
+            "<" => Token::OpLt(p),
+            ">" => Token::OpGt(p),
+            "<=" => Token::OpLe(p),
+            ">=" => Token::OpGe(p),
+
+            /* Literals */
+            s if s.starts_with("\"") => Token::LiteralString(
+                p,
+                String::from(s),
+                String::from(s)[1..s.len() - 1].parse().expect("blah"),
+            ),
+            /* Comment */
+            s if s.starts_with("/*") => Token::LiteralComment(p, String::from(s)),
+            // TODO Parse identifier and integers
+            _ => Token::LiteralUnknownOp(p, String::from(s)),
+        }
+    }
+
+    #[allow(unused)]
+    pub fn is_literal(&self) -> bool {
+        match self {
+            Self::LiteralComment(_, _)
+            | Self::LiteralFloat(_, _, _)
+            | Self::LiteralInteger(_, _, _)
+            | Self::LiteralString(_, _, _)
+            | Self::LiteralUnknownOp(_, _) => true,
+            _ => false,
+        }
     }
 }
 
@@ -295,19 +398,20 @@ impl Lexer<'_> {
 
         let raw_text: String = self.text[position.position..position.position + length].to_string();
         match raw_text.as_str() {
+            "return" => self.tokens.push(Token::KeywordReturn(position)),
             "function" => self.tokens.push(Token::KeywordFunction(position)),
+            "module" => self.tokens.push(Token::KeywordModule(position)),
             "struct" => self.tokens.push(Token::KeywordStruct(position)),
             "if" => self.tokens.push(Token::KeywordIf(position)),
             "else" => self.tokens.push(Token::KeywordElse(position)),
             "let" => self.tokens.push(Token::KeywordLet(position)),
-            "and" => self.tokens.push(Token::KeywordAnd((position))),
-            "or" => self.tokens.push(Token::KeywordOr((position))),
-            "not" => self.tokens.push(Token::KeywordNot((position))),
+            "and" => self.tokens.push(Token::KeywordAnd(position)),
+            "or" => self.tokens.push(Token::KeywordOr(position)),
+            "not" => self.tokens.push(Token::KeywordNot(position)),
             _ => self
                 .tokens
                 .push(Token::Identifier(position, raw_text.to_string())),
         }
-        println!("{raw_text}");
         length
     }
 
@@ -367,7 +471,6 @@ impl Lexer<'_> {
         let value = raw_text.parse().expect("cannot parse string from string");
         self.tokens
             .push(Token::LiteralString(start, raw_text.to_string(), value));
-        println!("String: '{raw_text}'");
         length
     }
 
@@ -398,7 +501,6 @@ impl Lexer<'_> {
                     let raw_text = &self.text[start.position..start.position + length];
                     self.tokens
                         .push(Token::LiteralComment(start, raw_text.to_string()));
-                    println!("Comment: '{raw_text}'");
                     return (pos, length);
                 }
                 /* Comments can span multiple lines. */
@@ -454,16 +556,15 @@ impl Lexer<'_> {
             "<=" => self.tokens.push(Token::OpLe(start)),
             ">=" => self.tokens.push(Token::OpGe(start)),
             _ => {
-                println!("unrecognized op '{raw_text}'");
+                eprintln!("unrecognized op '{raw_text}'");
                 self.tokens
                     .push(Token::LiteralUnknownOp(start, raw_text.to_string()))
             }
         }
-        println!("Op: '{raw_text}'");
         length
     }
 
-    pub fn run(&mut self) {
+    pub fn lex_module(&mut self) {
         // HACK This is just to prevent a reference to the Lexer from
         //      being created.
         let text = self.text.clone();
@@ -473,7 +574,6 @@ impl Lexer<'_> {
                 skip -= 1;
                 continue;
             }
-            println!("{i}: {c}");
             if i != self.position.position {
                 let p = self.position.position;
                 let pc: &str = &self.text[p..p + 1];
@@ -555,14 +655,41 @@ impl Lexer<'_> {
         }
     }
 
+    #[allow(unused)]
+    pub fn print_error(&self, t: &Token) {
+        let Position {
+            position: p,
+            line: l,
+            column: c,
+        } = t.get_position();
+        let lines: Vec<String> = self.text.lines().map(String::from).collect();
+        eprintln!("{}", "-".repeat(80));
+        eprintln!("| Error on {:?}:{}:{}", self.input_path, l, c);
+        eprintln!("| {}", lines[l - 1]);
+        eprintln!(
+            "| {}{}",
+            " ".repeat(c - 1),
+            "^".repeat(t.to_raw_text().len())
+        );
+        eprintln!("{}", "-".repeat(80));
+    }
+
+    #[allow(unused)]
     pub fn print_csv(&self) {
         for t in &self.tokens {
             let txt = match t {
-                Token::Comma(_) => ",".to_string(),
+                Token::Comma(_) => "\",\"".to_string(),
                 _ => t.to_raw_text(),
             };
-            print!("{} ", txt);
-            // println!("{},{}", t.get_position().to_csv_string(), txt);
+            println!("{},{}", t.get_position().to_csv_string(), txt);
         }
+    }
+
+    #[allow(unused)]
+    pub fn print_single_line(&self) {
+        for t in &self.tokens {
+            print!("{} ", t.to_raw_text());
+        }
+        println!("");
     }
 }
