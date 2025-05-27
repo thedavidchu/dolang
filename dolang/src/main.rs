@@ -19,8 +19,8 @@ fn main() -> Result<(), i32> {
     lexer.lex_module();
     lexer.print_single_line();
 
-    if let Ok(mut parser) = parser::Parser::new(lexer) {
-        parser.parse_module().expect("failed to parse");
-    }
+    let mut parser = parser::Parser::new(lexer).expect("invalid parser");
+    parser.parse_module().expect("failed to parse");
+    parser.print();
     Ok(())
 }

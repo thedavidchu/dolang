@@ -9,6 +9,9 @@ use crate::lexer::{self, Lexer, Token};
 pub enum Node {
     Dummy {},
     Empty {},
+    Statement {
+        x: Box<Node>,
+    },
     LitStr {
         x: Token,
     },
@@ -28,7 +31,7 @@ pub enum Node {
         body: Vec<Box<Node>>,
     },
     DefStruct {},
-    DefIfElse {
+    IfElseStatement {
         cond: Box<Node>,
         if_block: Vec<Box<Node>>,
         else_block: Vec<Box<Node>>,
@@ -129,6 +132,94 @@ pub enum Node {
         x: Box<Node>,
         y: Box<Node>,
     },
+    BracketRound {
+        x: Box<Node>,
+    },
+    BracketSquare {
+        x: Box<Node>,
+    },
+}
+
+impl Node {
+    fn to_string(&self) -> String {
+        match self {
+            Node::Empty {} => String::from(""),
+            Node::ExprNot { x } => String::from("not ") + x.to_string().as_str(),
+            Node::ExprAnd { x, y } => x.to_string() + " and " + y.to_string().as_str(),
+            Node::ExprOr { x, y } => x.to_string() + " or " + y.to_string().as_str(),
+            Node::Return { x } => String::from("return ") + x.to_string().as_str(),
+            Node::Id { x } => x.to_raw_text(),
+            Node::LitFloat { x } => x.to_raw_text(),
+            Node::LitInt { x } => x.to_raw_text(),
+            Node::LitStr { x } => x.to_raw_text(),
+            Node::Access { x, y } => x.to_string() + "[" + y.to_string().as_str() + "]",
+            Node::BracketRound { x } => String::from("(") + x.to_string().as_str() + ")",
+            Node::BracketSquare { x } => String::from("[") + x.to_string().as_str() + "]",
+            Node::Call { x, y } => x.to_string() + "(" + y.to_string().as_str() + ")",
+            Node::ModuleImport { x } => String::from("module ") + x.to_string().as_str(),
+            Node::Set { x, y } => x.to_string() + " = " + y.to_string().as_str(),
+            Node::Statement { x } => x.to_string() + "; ",
+            Node::DefFunc {
+                name,
+                params,
+                rets,
+                body,
+            } => {
+                String::from("function ")
+                    + name.to_string().as_str()
+                    + "("
+                    + params.to_string().as_str()
+                    + ") -> "
+                    + rets.to_string().as_str()
+                    + " {"
+                    + body
+                        .iter()
+                        .map(|x| x.to_string())
+                        .collect::<Vec<String>>()
+                        .join("")
+                        .as_str()
+                    + "}"
+            }
+            Node::IfElseStatement {
+                cond,
+                if_block,
+                else_block,
+            } => {
+                String::from("if ")
+                    + cond.to_string().as_str()
+                    + " { "
+                    + if_block
+                        .iter()
+                        .map(|x| x.to_string())
+                        .collect::<Vec<String>>()
+                        .join("")
+                        .as_str()
+                    + " } else { "
+                    + else_block
+                        .iter()
+                        .map(|x| x.to_string())
+                        .collect::<Vec<String>>()
+                        .join("")
+                        .as_str()
+                    + "} "
+            }
+            Node::DefVar { name } => String::from("let ") + name.to_string().as_str(),
+            Node::ExprAdd { x, y } => x.to_string() + " + " + y.to_string().as_str(),
+            Node::ExprSub { x, y } => x.to_string() + " - " + y.to_string().as_str(),
+            Node::ExprMul { x, y } => x.to_string() + " * " + y.to_string().as_str(),
+            Node::ExprDiv { x, y } => x.to_string() + " / " + y.to_string().as_str(),
+            Node::ExprEq { x, y } => x.to_string() + " == " + y.to_string().as_str(),
+            Node::ExprNeq { x, y } => x.to_string() + " != " + y.to_string().as_str(),
+            Node::ExprGe { x, y } => x.to_string() + " >= " + y.to_string().as_str(),
+            Node::ExprGt { x, y } => x.to_string() + " > " + y.to_string().as_str(),
+            Node::ExprLe { x, y } => x.to_string() + " <= " + y.to_string().as_str(),
+            Node::ExprLt { x, y } => x.to_string() + " < " + y.to_string().as_str(),
+            Node::ExprColon { x, y } => x.to_string() + ": " + y.to_string().as_str(),
+            Node::ExprNamespace { x, y } => x.to_string() + "::" + y.to_string().as_str(),
+            Node::Comma { x, y } => x.to_string() + ", " + y.to_string().as_str(),
+            _ => String::from("?"),
+        }
+    }
 }
 
 pub struct Parser<'a> {
@@ -355,13 +446,40 @@ impl Parser<'_> {
     }
 
     fn parse_bracket_expr<'a>(&'a mut self) -> Result<Node, ()> {
-        self.eat_next_token("{ [ (")?;
+        let s: &str = match self.get_token()? {
+            Token::BracketLeftCurly(_) => {
+                self.eat_next_token("{");
+                "}"
+            }
+            Token::BracketLeftRound(_) => {
+                self.eat_next_token("(");
+                ")"
+            }
+            Token::BracketLeftSquare(_) => "]",
+            _ => panic!("expected left bracket: {{ ( ["),
+        };
         let x = match self.get_token()? {
             Token::BracketRightRound(_) | Token::BracketRightSquare(_) => Node::Empty {},
             _ => self.parse_expr()?,
         };
-        self.eat_next_token(") ] }")?;
-        Ok(x)
+        match self.get_token()? {
+            Token::BracketRightCurly(_) => {
+                assert!(s == "}");
+                self.eat_next_token(s);
+                panic!("curly bracket expressions not supported!");
+            }
+            Token::BracketRightRound(_) => {
+                assert!(s == ")");
+                self.eat_next_token(s);
+                Ok(Node::BracketRound { x: Box::new(x) })
+            }
+            Token::BracketRightSquare(_) => {
+                assert!(s == "]");
+                self.eat_next_token(s);
+                Ok(Node::BracketSquare { x: Box::new(x) })
+            }
+            _ => panic!("expected right bracket: ] ) }}"),
+        }
     }
 
     /// @brief  Parse an expression starting with a primary.
@@ -423,7 +541,7 @@ impl Parser<'_> {
                 } else {
                     Vec::new()
                 };
-                return Ok(Node::DefIfElse {
+                return Ok(Node::IfElseStatement {
                     cond: Box::new(if_cond),
                     if_block: if_block,
                     else_block: else_block,
@@ -462,9 +580,12 @@ impl Parser<'_> {
                     self.eat_next_token("}")?;
                     return Ok(r);
                 }
+                // NOTE If-statement is already a statement
                 Token::KeywordIf(_) => r.push(Box::new(self.parse_expr()?)),
                 _ => {
-                    r.push(Box::new(self.parse_expr()?));
+                    r.push(Box::new(Node::Statement {
+                        x: Box::new(self.parse_expr()?),
+                    }));
                     self.eat_next_token(";")?;
                 }
             }
@@ -509,7 +630,9 @@ impl Parser<'_> {
         self.eat_next_token("module")?;
         let node = self.parse_expr()?;
         self.eat_next_token(";")?;
-        Ok(node)
+        Ok(Node::Statement {
+            x: Box::new(Node::ModuleImport { x: Box::new(node) }),
+        })
     }
 
     pub fn parse_module(&mut self) -> Result<(), ()> {
@@ -546,5 +669,11 @@ impl Parser<'_> {
             }
         }
         Ok(())
+    }
+
+    pub fn print(&self) {
+        for x in &self.ast {
+            println!("{}", x.to_string());
+        }
     }
 }
