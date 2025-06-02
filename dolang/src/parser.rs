@@ -6,11 +6,11 @@ use std::backtrace::Backtrace;
 
 use crate::lexer::{self, Lexer, Token};
 
-pub enum Node {
+pub enum CstNode {
     Dummy {},
     Empty {},
     Statement {
-        x: Box<Node>,
+        x: Box<CstNode>,
     },
     LitStr {
         x: Token,
@@ -25,141 +25,141 @@ pub enum Node {
         x: Token,
     },
     DefFunc {
-        name: Box<Node>,
-        params: Box<Node>,
-        rets: Box<Node>,
-        body: Vec<Box<Node>>,
+        name: Box<CstNode>,
+        params: Box<CstNode>,
+        rets: Box<CstNode>,
+        body: Vec<Box<CstNode>>,
     },
     DefStruct {},
     IfElseStatement {
-        cond: Box<Node>,
-        if_block: Vec<Box<Node>>,
-        else_block: Vec<Box<Node>>,
+        cond: Box<CstNode>,
+        if_block: Vec<Box<CstNode>>,
+        else_block: Vec<Box<CstNode>>,
     },
     // This is either a 'let' statement or function parameter.
-    DefVar {
-        name: Box<Node>,
+    StatementDefVar {
+        name: Box<CstNode>,
         // r#type: Option<Box<Node>>, value: Option<Box<Node>>,
     },
     ModuleImport {
-        x: Box<Node>,
+        x: Box<CstNode>,
     },
     Return {
-        x: Box<Node>,
+        x: Box<CstNode>,
     },
     ExprArrow {
-        x: Box<Node>,
-        y: Box<Node>,
+        x: Box<CstNode>,
+        y: Box<CstNode>,
     },
     ExprColon {
-        x: Box<Node>,
-        y: Box<Node>,
+        x: Box<CstNode>,
+        y: Box<CstNode>,
     },
     ExprAnd {
-        x: Box<Node>,
-        y: Box<Node>,
+        x: Box<CstNode>,
+        y: Box<CstNode>,
     },
     ExprOr {
-        x: Box<Node>,
-        y: Box<Node>,
+        x: Box<CstNode>,
+        y: Box<CstNode>,
     },
     ExprNot {
-        x: Box<Node>,
+        x: Box<CstNode>,
     },
     ExprNamespace {
-        x: Box<Node>,
-        y: Box<Node>,
+        x: Box<CstNode>,
+        y: Box<CstNode>,
     },
     ExprMul {
-        x: Box<Node>,
-        y: Box<Node>,
+        x: Box<CstNode>,
+        y: Box<CstNode>,
     },
     ExprDiv {
-        x: Box<Node>,
-        y: Box<Node>,
+        x: Box<CstNode>,
+        y: Box<CstNode>,
     },
     ExprAdd {
-        x: Box<Node>,
-        y: Box<Node>,
+        x: Box<CstNode>,
+        y: Box<CstNode>,
     },
     ExprSub {
-        x: Box<Node>,
-        y: Box<Node>,
+        x: Box<CstNode>,
+        y: Box<CstNode>,
     },
     ExprPos {
-        x: Box<Node>,
+        x: Box<CstNode>,
     },
     ExprNeg {
-        x: Box<Node>,
+        x: Box<CstNode>,
     },
     ExprEq {
-        x: Box<Node>,
-        y: Box<Node>,
+        x: Box<CstNode>,
+        y: Box<CstNode>,
     },
     ExprNeq {
-        x: Box<Node>,
-        y: Box<Node>,
+        x: Box<CstNode>,
+        y: Box<CstNode>,
     },
     ExprGt {
-        x: Box<Node>,
-        y: Box<Node>,
+        x: Box<CstNode>,
+        y: Box<CstNode>,
     },
     ExprLt {
-        x: Box<Node>,
-        y: Box<Node>,
+        x: Box<CstNode>,
+        y: Box<CstNode>,
     },
     ExprGe {
-        x: Box<Node>,
-        y: Box<Node>,
+        x: Box<CstNode>,
+        y: Box<CstNode>,
     },
     ExprLe {
-        x: Box<Node>,
-        y: Box<Node>,
+        x: Box<CstNode>,
+        y: Box<CstNode>,
     },
     Set {
-        x: Box<Node>,
-        y: Box<Node>,
+        x: Box<CstNode>,
+        y: Box<CstNode>,
     },
     Comma {
-        x: Box<Node>,
-        y: Box<Node>,
+        x: Box<CstNode>,
+        y: Box<CstNode>,
     },
     Call {
-        x: Box<Node>,
-        y: Box<Node>,
+        x: Box<CstNode>,
+        y: Box<CstNode>,
     },
     Access {
-        x: Box<Node>,
-        y: Box<Node>,
+        x: Box<CstNode>,
+        y: Box<CstNode>,
     },
     BracketRound {
-        x: Box<Node>,
+        x: Box<CstNode>,
     },
     BracketSquare {
-        x: Box<Node>,
+        x: Box<CstNode>,
     },
 }
 
-impl Node {
+impl CstNode {
     fn to_string(&self) -> String {
         match self {
-            Node::Empty {} => String::from(""),
-            Node::ExprNot { x } => String::from("not ") + x.to_string().as_str(),
-            Node::ExprAnd { x, y } => x.to_string() + " and " + y.to_string().as_str(),
-            Node::ExprOr { x, y } => x.to_string() + " or " + y.to_string().as_str(),
-            Node::Return { x } => String::from("return ") + x.to_string().as_str(),
-            Node::Id { x } => x.to_raw_text(),
-            Node::LitFloat { x } => x.to_raw_text(),
-            Node::LitInt { x } => x.to_raw_text(),
-            Node::LitStr { x } => x.to_raw_text(),
-            Node::Access { x, y } => x.to_string() + "[" + y.to_string().as_str() + "]",
-            Node::BracketRound { x } => String::from("(") + x.to_string().as_str() + ")",
-            Node::BracketSquare { x } => String::from("[") + x.to_string().as_str() + "]",
-            Node::Call { x, y } => x.to_string() + "(" + y.to_string().as_str() + ")",
-            Node::ModuleImport { x } => String::from("module ") + x.to_string().as_str(),
-            Node::Set { x, y } => x.to_string() + " = " + y.to_string().as_str(),
-            Node::Statement { x } => x.to_string() + "; ",
-            Node::DefFunc {
+            CstNode::Empty {} => String::from(""),
+            CstNode::ExprNot { x } => String::from("not ") + x.to_string().as_str(),
+            CstNode::ExprAnd { x, y } => x.to_string() + " and " + y.to_string().as_str(),
+            CstNode::ExprOr { x, y } => x.to_string() + " or " + y.to_string().as_str(),
+            CstNode::Return { x } => String::from("return ") + x.to_string().as_str(),
+            CstNode::Id { x } => x.to_raw_text(),
+            CstNode::LitFloat { x } => x.to_raw_text(),
+            CstNode::LitInt { x } => x.to_raw_text(),
+            CstNode::LitStr { x } => x.to_raw_text(),
+            CstNode::Access { x, y } => x.to_string() + "[" + y.to_string().as_str() + "]",
+            CstNode::BracketRound { x } => String::from("(") + x.to_string().as_str() + ")",
+            CstNode::BracketSquare { x } => String::from("[") + x.to_string().as_str() + "]",
+            CstNode::Call { x, y } => x.to_string() + "(" + y.to_string().as_str() + ")",
+            CstNode::ModuleImport { x } => String::from("module ") + x.to_string().as_str(),
+            CstNode::Set { x, y } => x.to_string() + " = " + y.to_string().as_str(),
+            CstNode::Statement { x } => x.to_string() + "; ",
+            CstNode::DefFunc {
                 name,
                 params,
                 rets,
@@ -180,7 +180,7 @@ impl Node {
                         .as_str()
                     + "}"
             }
-            Node::IfElseStatement {
+            CstNode::IfElseStatement {
                 cond,
                 if_block,
                 else_block,
@@ -203,20 +203,22 @@ impl Node {
                         .as_str()
                     + "} "
             }
-            Node::DefVar { name } => String::from("let ") + name.to_string().as_str(),
-            Node::ExprAdd { x, y } => x.to_string() + " + " + y.to_string().as_str(),
-            Node::ExprSub { x, y } => x.to_string() + " - " + y.to_string().as_str(),
-            Node::ExprMul { x, y } => x.to_string() + " * " + y.to_string().as_str(),
-            Node::ExprDiv { x, y } => x.to_string() + " / " + y.to_string().as_str(),
-            Node::ExprEq { x, y } => x.to_string() + " == " + y.to_string().as_str(),
-            Node::ExprNeq { x, y } => x.to_string() + " != " + y.to_string().as_str(),
-            Node::ExprGe { x, y } => x.to_string() + " >= " + y.to_string().as_str(),
-            Node::ExprGt { x, y } => x.to_string() + " > " + y.to_string().as_str(),
-            Node::ExprLe { x, y } => x.to_string() + " <= " + y.to_string().as_str(),
-            Node::ExprLt { x, y } => x.to_string() + " < " + y.to_string().as_str(),
-            Node::ExprColon { x, y } => x.to_string() + ": " + y.to_string().as_str(),
-            Node::ExprNamespace { x, y } => x.to_string() + "::" + y.to_string().as_str(),
-            Node::Comma { x, y } => x.to_string() + ", " + y.to_string().as_str(),
+            CstNode::StatementDefVar { name } => {
+                String::from("let ") + name.to_string().as_str() + ";"
+            }
+            CstNode::ExprAdd { x, y } => x.to_string() + " + " + y.to_string().as_str(),
+            CstNode::ExprSub { x, y } => x.to_string() + " - " + y.to_string().as_str(),
+            CstNode::ExprMul { x, y } => x.to_string() + " * " + y.to_string().as_str(),
+            CstNode::ExprDiv { x, y } => x.to_string() + " / " + y.to_string().as_str(),
+            CstNode::ExprEq { x, y } => x.to_string() + " == " + y.to_string().as_str(),
+            CstNode::ExprNeq { x, y } => x.to_string() + " != " + y.to_string().as_str(),
+            CstNode::ExprGe { x, y } => x.to_string() + " >= " + y.to_string().as_str(),
+            CstNode::ExprGt { x, y } => x.to_string() + " > " + y.to_string().as_str(),
+            CstNode::ExprLe { x, y } => x.to_string() + " <= " + y.to_string().as_str(),
+            CstNode::ExprLt { x, y } => x.to_string() + " < " + y.to_string().as_str(),
+            CstNode::ExprColon { x, y } => x.to_string() + ": " + y.to_string().as_str(),
+            CstNode::ExprNamespace { x, y } => x.to_string() + "::" + y.to_string().as_str(),
+            CstNode::Comma { x, y } => x.to_string() + ", " + y.to_string().as_str(),
             _ => String::from("?"),
         }
     }
@@ -225,7 +227,8 @@ impl Node {
 pub struct Parser<'a> {
     lexer: lexer::Lexer<'a>,
     pos: usize,
-    ast: Vec<Node>,
+    // Initially a Concrete Syntax Tree, but gradually lowered into an AST.
+    cst: Vec<CstNode>,
     // HACK: This stores a flat vector of ALL the nodes; this is to // simplify ownership.
     // I'm confused by rust, so I'll just increment this to change the data structure.
     todo: usize,
@@ -291,7 +294,7 @@ impl Parser<'_> {
         Ok(Parser {
             lexer,
             pos: 0,
-            ast: Vec::new(),
+            cst: Vec::new(),
             todo: 0,
         })
     }
@@ -324,7 +327,12 @@ impl Parser<'_> {
                 if expected == "" || expected.contains(&token.to_raw_text()) {
                 } else {
                     self.lexer.print_error(&token);
-                    eprintln!("Got {}, expected {}", token.to_raw_text(), expected);
+                    eprintln!(
+                        "Expected '{}', got {} of type '{}'",
+                        expected,
+                        token.to_raw_text(),
+                        token.get_type_string()
+                    );
                     eprintln!("Backtrace: {}", Backtrace::force_capture());
                     panic!("Unexpected token");
                 }
@@ -338,8 +346,8 @@ impl Parser<'_> {
     fn parse_binop_rhs<'a>(
         &'a mut self,
         min_expr_priority: f32,
-        mut lhs: Node,
-    ) -> Result<Node, ()> {
+        mut lhs: CstNode,
+    ) -> Result<CstNode, ()> {
         // TODO Eat the tokens correctly.
         loop {
             let op_tk_0 = self.get_token()?;
@@ -359,79 +367,79 @@ impl Parser<'_> {
                 rhs = self.parse_binop_rhs(priority_0 + 1.0, rhs)?;
             }
             lhs = match op_tk_0 {
-                Token::OpNamespace(_) => Node::ExprNamespace {
+                Token::OpNamespace(_) => CstNode::ExprNamespace {
                     x: Box::new(lhs),
                     y: Box::new(rhs),
                 },
-                Token::OpPlus(_) => Node::ExprAdd {
+                Token::OpPlus(_) => CstNode::ExprAdd {
                     x: Box::new(lhs),
                     y: Box::new(rhs),
                 },
-                Token::OpMinus(_) => Node::ExprSub {
+                Token::OpMinus(_) => CstNode::ExprSub {
                     x: Box::new(lhs),
                     y: Box::new(rhs),
                 },
-                Token::OpMul(_) => Node::ExprMul {
+                Token::OpMul(_) => CstNode::ExprMul {
                     x: Box::new(lhs),
                     y: Box::new(rhs),
                 },
-                Token::OpDiv(_) => Node::ExprDiv {
+                Token::OpDiv(_) => CstNode::ExprDiv {
                     x: Box::new(lhs),
                     y: Box::new(rhs),
                 },
-                Token::OpArrow(_) => Node::ExprArrow {
+                Token::OpArrow(_) => CstNode::ExprArrow {
                     x: Box::new(lhs),
                     y: Box::new(rhs),
                 },
-                Token::OpSet(_) => Node::Set {
+                Token::OpSet(_) => CstNode::Set {
                     x: Box::new(lhs),
                     y: Box::new(rhs),
                 },
-                Token::OpColon(_) => Node::ExprColon {
+                Token::OpColon(_) => CstNode::ExprColon {
                     x: Box::new(lhs),
                     y: Box::new(rhs),
                 },
-                Token::KeywordAnd(_) => Node::ExprAnd {
+                Token::KeywordAnd(_) => CstNode::ExprAnd {
                     x: Box::new(lhs),
                     y: Box::new(rhs),
                 },
-                Token::KeywordOr(_) => Node::ExprOr {
+                Token::KeywordOr(_) => CstNode::ExprOr {
                     x: Box::new(lhs),
                     y: Box::new(rhs),
                 },
-                Token::OpEq(_) => Node::ExprEq {
+                Token::OpEq(_) => CstNode::ExprEq {
                     x: Box::new(lhs),
                     y: Box::new(rhs),
                 },
-                Token::OpNe(_) => Node::ExprNeq {
+                Token::OpNe(_) => CstNode::ExprNeq {
                     x: Box::new(lhs),
                     y: Box::new(rhs),
                 },
-                Token::OpGe(_) => Node::ExprGe {
+                Token::OpGe(_) => CstNode::ExprGe {
                     x: Box::new(lhs),
                     y: Box::new(rhs),
                 },
-                Token::OpGt(_) => Node::ExprGt {
+                Token::OpGt(_) => CstNode::ExprGt {
                     x: Box::new(lhs),
                     y: Box::new(rhs),
                 },
-                Token::OpLe(_) => Node::ExprLe {
+                Token::OpLe(_) => CstNode::ExprLe {
                     x: Box::new(lhs),
                     y: Box::new(rhs),
                 },
-                Token::OpLt(_) => Node::ExprLt {
+                Token::OpLt(_) => CstNode::ExprLt {
                     x: Box::new(lhs),
                     y: Box::new(rhs),
                 },
-                Token::BracketLeftRound(_) => Node::Call {
+                Token::BracketLeftRound(_) => CstNode::Call {
                     x: Box::new(lhs),
                     y: Box::new(rhs),
                 },
-                Token::BracketLeftSquare(_) => Node::Access {
+                Token::BracketLeftSquare(_) => CstNode::Access {
                     x: Box::new(lhs),
                     y: Box::new(rhs),
                 },
-                Token::Comma(_) => Node::Comma {
+                Token::Comma(_) => CstNode::Comma {
                     x: Box::new(lhs),
                     y: Box::new(rhs),
                 },
@@ -445,38 +453,38 @@ impl Parser<'_> {
         }
     }
 
-    fn parse_bracket_expr<'a>(&'a mut self) -> Result<Node, ()> {
+    fn parse_bracket_expr<'a>(&'a mut self) -> Result<CstNode, ()> {
         let s: &str = match self.get_token()? {
             Token::BracketLeftCurly(_) => {
-                self.eat_next_token("{");
+                self.eat_next_token("{")?;
                 "}"
             }
             Token::BracketLeftRound(_) => {
-                self.eat_next_token("(");
+                self.eat_next_token("(")?;
                 ")"
             }
             Token::BracketLeftSquare(_) => "]",
             _ => panic!("expected left bracket: {{ ( ["),
         };
         let x = match self.get_token()? {
-            Token::BracketRightRound(_) | Token::BracketRightSquare(_) => Node::Empty {},
+            Token::BracketRightRound(_) | Token::BracketRightSquare(_) => CstNode::Empty {},
             _ => self.parse_expr()?,
         };
         match self.get_token()? {
             Token::BracketRightCurly(_) => {
                 assert!(s == "}");
-                self.eat_next_token(s);
+                self.eat_next_token(s)?;
                 panic!("curly bracket expressions not supported!");
             }
             Token::BracketRightRound(_) => {
                 assert!(s == ")");
-                self.eat_next_token(s);
-                Ok(Node::BracketRound { x: Box::new(x) })
+                self.eat_next_token(s)?;
+                Ok(CstNode::BracketRound { x: Box::new(x) })
             }
             Token::BracketRightSquare(_) => {
                 assert!(s == "]");
-                self.eat_next_token(s);
-                Ok(Node::BracketSquare { x: Box::new(x) })
+                self.eat_next_token(s)?;
+                Ok(CstNode::BracketSquare { x: Box::new(x) })
             }
             _ => panic!("expected right bracket: ] ) }}"),
         }
@@ -491,43 +499,43 @@ impl Parser<'_> {
     ///         4. Prefix operators (e.g. '+x', '++x')
     ///         5. Postfix operators (e.g. 'x++')
     ///         Source: https://stackoverflow.com/questions/15675427/what-is-a-primary-expression
-    fn parse_expr<'a>(&'a mut self) -> Result<Node, ()> {
+    fn parse_expr<'a>(&'a mut self) -> Result<CstNode, ()> {
         let x = self.get_token()?;
         return match x {
             Token::Identifier(_, _) => {
                 self.eat_next_token("")?;
-                self.parse_binop_rhs(0.0, Node::Id { x })
+                self.parse_binop_rhs(0.0, CstNode::Id { x })
             }
             Token::BracketLeftRound(_) | Token::BracketLeftSquare(_) => self.parse_bracket_expr(),
             // Literals
             Token::LiteralFloat(_, _, _) => {
                 self.eat_next_token("")?;
-                self.parse_binop_rhs(0.0, Node::LitFloat { x })
+                self.parse_binop_rhs(0.0, CstNode::LitFloat { x })
             }
             Token::LiteralInteger(_, _, _) => {
                 self.eat_next_token("")?;
-                self.parse_binop_rhs(0.0, Node::LitInt { x })
+                self.parse_binop_rhs(0.0, CstNode::LitInt { x })
             }
             Token::LiteralString(_, _, _) => {
                 self.eat_next_token("")?;
-                self.parse_binop_rhs(0.0, Node::LitStr { x })
+                self.parse_binop_rhs(0.0, CstNode::LitStr { x })
             }
             // Prefix operators
             Token::OpMinus(_) => {
                 self.eat_next_token("-")?;
-                return Ok(Node::ExprNeg {
+                return Ok(CstNode::ExprNeg {
                     x: Box::new(self.parse_expr()?),
                 });
             }
             Token::OpPlus(_) => {
                 self.eat_next_token("+")?;
-                return Ok(Node::ExprPos {
+                return Ok(CstNode::ExprPos {
                     x: Box::new(self.parse_expr()?),
                 });
             }
             Token::KeywordNot(_) => {
                 self.eat_next_token("not")?;
-                return Ok(Node::ExprNot {
+                return Ok(CstNode::ExprNot {
                     x: Box::new(self.parse_expr()?),
                 });
             }
@@ -537,11 +545,12 @@ impl Parser<'_> {
                 let if_cond = self.parse_expr()?;
                 let if_block = self.parse_statements()?;
                 let else_block = if let Token::KeywordElse(_) = self.get_token()? {
+                    self.eat_next_token("else")?;
                     self.parse_statements()?
                 } else {
                     Vec::new()
                 };
-                return Ok(Node::IfElseStatement {
+                return Ok(CstNode::IfElseStatement {
                     cond: Box::new(if_cond),
                     if_block: if_block,
                     else_block: else_block,
@@ -549,13 +558,13 @@ impl Parser<'_> {
             }
             Token::KeywordReturn(_) => {
                 self.eat_next_token("return")?;
-                return Ok(Node::Return {
+                return Ok(CstNode::Return {
                     x: Box::new(self.parse_expr()?),
                 });
             }
             Token::KeywordLet(_) => {
                 self.eat_next_token("let")?;
-                return Ok(Node::DefVar {
+                return Ok(CstNode::StatementDefVar {
                     name: Box::new(self.parse_expr()?),
                 });
             }
@@ -571,9 +580,9 @@ impl Parser<'_> {
     }
 
     /// @brief  Parse statements in "{<expr>; <expr>;}".
-    fn parse_statements<'a>(&'a mut self) -> Result<Vec<Box<Node>>, ()> {
+    fn parse_statements<'a>(&'a mut self) -> Result<Vec<Box<CstNode>>, ()> {
         self.eat_next_token("{")?;
-        let mut r: Vec<Box<Node>> = Vec::new();
+        let mut r: Vec<Box<CstNode>> = Vec::new();
         loop {
             match self.get_token()? {
                 Token::BracketRightCurly(_) => {
@@ -582,8 +591,11 @@ impl Parser<'_> {
                 }
                 // NOTE If-statement is already a statement
                 Token::KeywordIf(_) => r.push(Box::new(self.parse_expr()?)),
+                Token::KeywordLet(_) => {
+                    r.push(Box::new(self.parse_var_def()?));
+                }
                 _ => {
-                    r.push(Box::new(Node::Statement {
+                    r.push(Box::new(CstNode::Statement {
                         x: Box::new(self.parse_expr()?),
                     }));
                     self.eat_next_token(";")?;
@@ -596,11 +608,11 @@ impl Parser<'_> {
     /// @todo   Allow trailing commas
     fn parse_params<'a>(&'a mut self) {}
 
-    fn parse_function_def<'a>(&'a mut self) -> Result<Node, ()> {
+    fn parse_function_def<'a>(&'a mut self) -> Result<CstNode, ()> {
         self.eat_next_token("function")?;
         // TODO 1. Support namespaces
         // TODO 2. Make safe (i.e. don't just unwrap it)
-        let name = Node::Id {
+        let name = CstNode::Id {
             x: self.eat_next_token("")?,
         };
         let name = Box::new(self.parse_binop_rhs(get_priority(&Token::parse_dummy("::")), name)?);
@@ -608,7 +620,7 @@ impl Parser<'_> {
         self.eat_next_token("->")?;
         let rets = Box::new(self.parse_expr()?);
         let body = self.parse_statements()?;
-        Ok(Node::DefFunc {
+        Ok(CstNode::DefFunc {
             name,
             params,
             rets,
@@ -616,22 +628,26 @@ impl Parser<'_> {
         })
     }
 
-    fn parse_struct_def<'a>(&'a mut self) -> Result<Node, ()> {
+    fn parse_struct_def<'a>(&'a mut self) -> Result<CstNode, ()> {
         self.eat_next_token("struct")?;
-        Ok(Node::Dummy {})
+        Ok(CstNode::Dummy {})
     }
 
-    fn parse_let_def<'a>(&'a mut self) -> Result<Node, ()> {
+    fn parse_var_def<'a>(&'a mut self) -> Result<CstNode, ()> {
         self.eat_next_token("let")?;
-        Ok(Node::Dummy {})
+        let node = CstNode::StatementDefVar {
+            name: Box::new(self.parse_expr()?),
+        };
+        self.eat_next_token(";")?;
+        Ok(node)
     }
 
-    fn parse_module_import<'a>(&'a mut self) -> Result<Node, ()> {
+    fn parse_module_import<'a>(&'a mut self) -> Result<CstNode, ()> {
         self.eat_next_token("module")?;
         let node = self.parse_expr()?;
         self.eat_next_token(";")?;
-        Ok(Node::Statement {
-            x: Box::new(Node::ModuleImport { x: Box::new(node) }),
+        Ok(CstNode::Statement {
+            x: Box::new(CstNode::ModuleImport { x: Box::new(node) }),
         })
     }
 
@@ -640,25 +656,26 @@ impl Parser<'_> {
             match t {
                 Token::KeywordModule(_) => {
                     let x = self.parse_module_import()?;
-                    self.ast.push(x);
+                    self.cst.push(x);
                 }
                 Token::KeywordFunction(_) => {
                     let x = self.parse_function_def()?;
-                    self.ast.push(x);
+                    self.cst.push(x);
                 }
                 Token::KeywordStruct(_) => {
                     let x = self.parse_struct_def()?;
-                    self.ast.push(x);
+                    self.cst.push(x);
                 }
                 Token::KeywordLet(_) => {
-                    let x = self.parse_let_def()?;
-                    self.ast.push(x);
+                    let x = self.parse_var_def()?;
+                    self.cst.push(x);
                 }
                 Token::LiteralComment(_, _) => {
                     self.eat_next_token("")?;
                 }
                 _ => {
                     self.lexer.print_error(&t);
+                    eprintln!("Backtrace: {}", Backtrace::force_capture());
                     panic!(
                         "unrecognized module-level token at {}: '{}' of type '{}'",
                         t.get_position().to_csv_string(),
@@ -672,7 +689,7 @@ impl Parser<'_> {
     }
 
     pub fn print(&self) {
-        for x in &self.ast {
+        for x in &self.cst {
             println!("{}", x.to_string());
         }
     }

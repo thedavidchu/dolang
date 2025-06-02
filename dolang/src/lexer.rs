@@ -176,7 +176,7 @@ impl Token {
             Token::KeywordAnd(_) => "KeywordAnd",
             Token::KeywordOr(_) => "KeywordOr",
             Token::KeywordNot(_) => "KeywordNot",
-            Token::Identifier(_, _) => "",
+            Token::Identifier(_, _) => "Identifier",
             /* Literals */
             Token::LiteralString(_, _, _) => "LiteralString",
             Token::LiteralInteger(_, _, _) => "LiteralInteger",
@@ -277,6 +277,7 @@ impl Token {
         .to_string()
     }
 
+    #[allow(unused)]
     pub fn parse_dummy(s: &str) -> Self {
         let p = Position {
             position: 0,
@@ -665,9 +666,9 @@ impl Lexer<'_> {
         let lines: Vec<String> = self.text.lines().map(String::from).collect();
         eprintln!("{}", "-".repeat(80));
         eprintln!("| Error on {:?}:{}:{}", self.input_path, l, c);
-        eprintln!("| {}", lines[l - 1]);
+        eprintln!("| > {}", lines[l - 1]);
         eprintln!(
-            "| {}{}",
+            "|   {}{}",
             " ".repeat(c - 1),
             "^".repeat(t.to_raw_text().len())
         );
